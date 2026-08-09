@@ -8,6 +8,7 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.QueryProductDetailsParams;
+import com.android.billingclient.api.QueryProductDetailsResult;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AccountInstance;
@@ -213,7 +214,8 @@ public class BoostRepository {
                 .setProductType(BillingClient.ProductType.INAPP)
                 .setProductId(option.store_product)
                 .build();
-        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, list) -> {
+        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> {
+            List<ProductDetails> list = queryResult.getProductDetailsList();
             ProductDetails.OneTimePurchaseOfferDetails offerDetails = list.get(0).getOneTimePurchaseOfferDetails();
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
@@ -453,7 +455,8 @@ public class BoostRepository {
                 .setProductType(BillingClient.ProductType.INAPP)
                 .setProductId(option.store_product)
                 .build();
-        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, list) -> {
+        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> {
+            List<ProductDetails> list = queryResult.getProductDetailsList();
             ProductDetails.OneTimePurchaseOfferDetails offerDetails = list.get(0).getOneTimePurchaseOfferDetails();
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
@@ -678,7 +681,8 @@ public class BoostRepository {
                     });
                     return;
                 }
-                BillingController.getInstance().queryProductDetails(products, (billingResult, list) -> {
+                BillingController.getInstance().queryProductDetails(products, (billingResult, queryResult) -> {
+                    List<ProductDetails> list = queryResult.getProductDetailsList();
                     for (ProductDetails productDetails : list) {
                         ProductDetails.OneTimePurchaseOfferDetails offerDetails = productDetails.getOneTimePurchaseOfferDetails();
                         for (TLRPC.TL_premiumGiftCodeOption option : result) {

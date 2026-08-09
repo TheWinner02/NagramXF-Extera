@@ -2,9 +2,9 @@ import java.nio.file.Paths
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-    id 'com.android.application'
-    id 'com.google.gms.google-services'
-    id 'com.google.firebase.crashlytics'
+    alias libs.plugins.android.application
+    alias libs.plugins.google.gms.google.services
+    alias libs.plugins.google.firebase.crashlytics
 }
 
 def buildTimestamp = System.getenv('BUILD_TIMESTAMP') ?: '0'
@@ -205,31 +205,31 @@ configurations.configureEach {
 
 dependencies {
     // official
-    implementation 'androidx.core:core-ktx:1.19.0'
-    implementation 'androidx.palette:palette-ktx:1.0.0'
-    implementation 'androidx.exifinterface:exifinterface:1.4.2'
-    implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
-    implementation 'androidx.mediarouter:mediarouter:1.8.1'
-    implementation 'androidx.sharetarget:sharetarget:1.2.0'
-    implementation 'androidx.interpolator:interpolator:1.0.0'
-    implementation 'androidx.biometric:biometric:1.1.0'
-    implementation 'androidx.car.app:app:1.7.0'
-    implementation 'androidx.car.app:app-projected:1.7.0'
-    implementation 'org.nanohttpd:nanohttpd:2.3.1'
-    compileOnly 'org.checkerframework:checker-qual:2.5.2'
-    compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-messaging:25.1.1'
-    implementation 'com.google.firebase:firebase-crashlytics:20.1.0'
-    implementation 'com.google.android.gms:play-services-cast-framework:22.3.1'
-    implementation 'com.google.android.gms:play-services-maps:20.0.0'
-    implementation 'com.google.android.gms:play-services-auth:21.6.0'
-    implementation 'com.google.android.gms:play-services-vision:20.1.3'
-    implementation 'com.google.android.gms:play-services-wearable:20.0.1'
-    implementation 'com.google.android.gms:play-services-location:21.4.0'
-    implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
-    implementation 'com.google.mlkit:language-id:17.0.6'
-    implementation 'com.google.code.gson:gson:2.14.0'
-    implementation ('com.google.guava:guava:33.6.0-android') {
+    implementation libs.core.ktx
+    implementation libs.palette.ktx
+    implementation libs.exifinterface
+    implementation libs.dynamicanimation
+    implementation libs.mediarouter
+    implementation libs.sharetarget
+    implementation libs.interpolator
+    implementation libs.biometric
+    implementation libs.app
+    implementation libs.app.projected
+    implementation libs.nanohttpd
+    compileOnly libs.checker.qual
+    compileOnly libs.checker.compat.qual
+    implementation libs.firebase.messaging
+    implementation libs.firebase.crashlytics
+    implementation libs.play.services.cast.framework
+    implementation libs.play.services.maps
+    implementation libs.play.services.auth
+    implementation libs.play.services.vision
+    implementation libs.play.services.wearable
+    implementation libs.play.services.location
+    implementation libs.isoparser
+    implementation libs.language.id
+    implementation libs.gson
+    implementation (libs.guava) {
         exclude group: 'com.google.code.findbugs', module: 'jsr305'
         exclude group: 'org.checkerframework', module: 'checker-compat-qual'
         exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -237,43 +237,43 @@ dependencies {
         exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
         exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
     }
-    implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
-    implementation 'com.google.android.gms:play-services-mlkit-image-labeling:16.0.8'
-    implementation "androidx.credentials:credentials:1.6.0"
-    implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
-    implementation "io.noties.markwon:core:4.6.2"
-    implementation "io.noties.markwon:ext-strikethrough:4.6.2"
-    implementation "io.noties.markwon:ext-tables:4.6.2"
-    implementation "io.noties.markwon:html:4.6.2"
-    implementation "io.noties.markwon:inline-parser:4.6.2"
-    implementation "io.noties.markwon:ext-latex:4.6.2"
+    implementation libs.play.services.mlkit.subject.segmentation
+    implementation libs.play.services.mlkit.image.labeling
+    implementation libs.credentials
+    implementation libs.credentials.play.services.auth
+    implementation libs.core
+    implementation libs.ext.strikethrough
+    implementation libs.ext.tables
+    implementation libs.html
+    implementation libs.inline.parser
+    implementation libs.ext.latex
     // payment
-    implementation('com.stripe:stripe-android:2.0.2') {
+    implementation(libs.stripe.android) {
         exclude group: 'com.android.support', module: 'support-annotations'
     }
-    implementation 'com.android.billingclient:billing:7.1.1'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
+    implementation libs.billing
+    coreLibraryDesugaring libs.desugar.jdk.libs.nio
 
     // kotlin
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
+    implementation libs.kotlinx.coroutines.android
     // utilities
-    implementation 'org.maplibre.gl:android-sdk:13.4.1'
-    implementation 'com.google.android.material:material:1.13.0'
-    implementation 'org.osmdroid:osmdroid-android:6.1.20'
+    implementation libs.android.sdk
+    implementation libs.material
+    implementation libs.osmdroid.android
     // network
-    implementation 'com.squareup.okhttp3:okhttp:5.4.0'
-    implementation 'dnsjava:dnsjava:3.6.5'
+    implementation libs.okhttp
+    implementation libs.dnsjava
     // add for emoji
-    implementation 'com.jaredrummler:truetypeparser-light:1.0.0'
+    implementation libs.truetypeparser.light
     // add for UnifiedPush
-    implementation 'org.unifiedpush.android:connector:3.3.3'
+    implementation libs.connector
     // add for save deleted messages
-    implementation 'androidx.room:room-runtime:2.8.4'
-    annotationProcessor 'androidx.room:room-compiler:2.8.4'
+    implementation libs.room.runtime
+    annotationProcessor libs.room.compiler
     // add for keep formatting in translations
-    implementation 'org.apache.commons:commons-text:1.15.0'
+    implementation libs.commons.text
     // translator from nekogram
-    implementation 'app.nekogram.translator:translator:1.6.1'
+    implementation libs.translator
 
     compileOnly fileTree('libs')
 }

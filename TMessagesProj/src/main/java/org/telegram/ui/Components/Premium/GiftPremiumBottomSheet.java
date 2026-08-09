@@ -23,6 +23,7 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.QueryProductDetailsParams;
+import com.android.billingclient.api.QueryProductDetailsResult;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -189,7 +190,8 @@ public class GiftPremiumBottomSheet extends BottomSheetWithRecyclerListView impl
                 }
             } else if (!products.isEmpty()) {
                 long startMs = System.currentTimeMillis();
-                BillingController.getInstance().queryProductDetails(products, (billingResult, list) -> {
+                BillingController.getInstance().queryProductDetails(products, (billingResult, queryResult) -> {
+                    List<ProductDetails> list = queryResult.getProductDetailsList();
                     long pricePerMonthMaxStore = 0;
 
                     for (ProductDetails details : list) {

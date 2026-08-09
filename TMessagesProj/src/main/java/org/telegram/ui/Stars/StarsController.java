@@ -23,6 +23,7 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.QueryProductDetailsParams;
+import com.android.billingclient.api.QueryProductDetailsResult;
 
 import org.json.JSONObject;
 import org.telegram.SQLite.SQLiteCursor;
@@ -318,11 +319,12 @@ public class StarsController {
                                 .build()
                         );
                     }
-                    BillingController.getInstance().queryProductDetails(productQueries, (result, list) -> AndroidUtilities.runOnUIThread(() -> {
+                    BillingController.getInstance().queryProductDetails(productQueries, (result, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
                         if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                             bulletinError("BILLING_" + BillingController.getResponseCodeString(result.getResponseCode()));
                             return;
                         }
+                        List<ProductDetails> list = queryResult.getProductDetailsList();
                         if (list != null) {
                             for (int i = 0; i < list.size(); ++i) {
                                 ProductDetails productDetails = list.get(i);
@@ -405,11 +407,12 @@ public class StarsController {
                                         .build()
                         );
                     }
-                    BillingController.getInstance().queryProductDetails(productQueries, (result, list) -> AndroidUtilities.runOnUIThread(() -> {
+                    BillingController.getInstance().queryProductDetails(productQueries, (result, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
                         if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                             bulletinError("BILLING_" + BillingController.getResponseCodeString(result.getResponseCode()));
                             return;
                         }
+                        List<ProductDetails> list = queryResult.getProductDetailsList();
                         if (list != null) {
                             for (int i = 0; i < list.size(); ++i) {
                                 ProductDetails productDetails = list.get(i);
@@ -492,11 +495,12 @@ public class StarsController {
                                 .build()
                         );
                     }
-                    BillingController.getInstance().queryProductDetails(productQueries, (result, list) -> AndroidUtilities.runOnUIThread(() -> {
+                    BillingController.getInstance().queryProductDetails(productQueries, (result, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
                         if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                             bulletinError("BILLING_" + BillingController.getResponseCodeString(result.getResponseCode()));
                             return;
                         }
+                        List<ProductDetails> list = queryResult.getProductDetailsList();
                         if (list != null) {
                             for (int i = 0; i < list.size(); ++i) {
                                 ProductDetails productDetails = list.get(i);
@@ -860,7 +864,8 @@ public class StarsController {
                 .setProductId(option.store_product)
                 .build();
         FileLog.d("StarsController.buy starts queryProductDetails");
-        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, list) -> AndroidUtilities.runOnUIThread(() -> {
+        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
+            List<ProductDetails> list = queryResult.getProductDetailsList();
             if (list.isEmpty()) {
                 FileLog.d("StarsController.buy queryProductDetails done: no products");
                 AndroidUtilities.runOnUIThread(() -> whenDone.run(false, "PRODUCT_NOT_FOUND"));
@@ -990,7 +995,8 @@ public class StarsController {
                 .setProductType(BillingClient.ProductType.INAPP)
                 .setProductId(option.store_product)
                 .build();
-        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, list) -> AndroidUtilities.runOnUIThread(() -> {
+        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
+            List<ProductDetails> list = queryResult.getProductDetailsList();
             if (list.isEmpty()) {
                 AndroidUtilities.runOnUIThread(() -> whenDone.run(false, "PRODUCT_NOT_FOUND"));
                 return;
@@ -1156,7 +1162,8 @@ public class StarsController {
                 .setProductType(BillingClient.ProductType.INAPP)
                 .setProductId(option.store_product)
                 .build();
-        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, list) -> AndroidUtilities.runOnUIThread(() -> {
+        BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
+            List<ProductDetails> list = queryResult.getProductDetailsList();
             if (list.isEmpty()) {
                 AndroidUtilities.runOnUIThread(() -> whenDone.run(false, "PRODUCT_NOT_FOUND"));
                 return;

@@ -18,12 +18,14 @@ import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingResult;
 import com.android.billingclient.api.ConsumeParams;
+import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.ProductDetailsResponseListener;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
+import com.android.billingclient.api.QueryProductDetailsResult;
 import com.android.billingclient.api.QueryPurchasesParams;
 
 import org.telegram.messenger.utils.BillingUtilities;
@@ -79,7 +81,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
     private BillingController(Context ctx) {
         billingClient = BillingClient.newBuilder(ctx)
-                .enablePendingPurchases()
+                .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
                 .setListener(this)
                 .build();
     }
@@ -512,7 +514,8 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         }
     }
 
-    private void onQueriedPremiumProductDetails(BillingResult billingResult, List<ProductDetails> list) {
+    private void onQueriedPremiumProductDetails(BillingResult billingResult, QueryProductDetailsResult result) {
+        List<ProductDetails> list = result.getProductDetailsList();
         FileLog.d("Billing: Query product details finished " + billingResult + ", " + list);
         if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
             for (ProductDetails details : list) {
