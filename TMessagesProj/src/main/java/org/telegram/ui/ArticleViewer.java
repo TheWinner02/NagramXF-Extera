@@ -239,7 +239,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import ru.noties.jlatexmath.JLatexMathDrawable;
 
 import tw.nekomimi.nekogram.NekoConfig;
-import tw.nekomimi.nekogram.parts.ArticleTransKt;
 import xyz.nextalone.nagram.NaConfig;
 
 public class ArticleViewer extends IArticleViewer implements NotificationCenter.NotificationCenterDelegate {
@@ -4979,7 +4978,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             if (id == WebActionBar.trans_item) {
                 if (!pages[0].adapter.trans) {
                     updateTranslateButton(true);
-                    ArticleTransKt.doTransLATE(this);
+                    // ArticleTransKt.doTransLATE(this);
                 } else {
                     updateTranslateButton(false);
                     updatePaintSize();

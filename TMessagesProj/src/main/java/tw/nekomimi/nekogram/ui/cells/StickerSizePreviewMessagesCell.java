@@ -24,6 +24,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
@@ -39,22 +40,42 @@ import tw.nekomimi.nekogram.helpers.MessageHelper;
 public class StickerSizePreviewMessagesCell extends LinearLayout {
 
     private BackgroundGradientDrawable.Disposable backgroundGradientDisposable;
+    private BackgroundGradientDrawable.Disposable oldBackgroundGradientDisposable;
+    private Drawable backgroundDrawable;
+    private Drawable oldBackgroundDrawable;
 
     private final FrameLayout fragmentView;
+    private final INavigationLayout parentLayout;
     private final ChatMessageCell[] cells = new ChatMessageCell[2];
     private final MessageObject[] messageObjects = new MessageObject[2];
+    private final Drawable monetBackgroundDrawable;
     private final Drawable shadowDrawable;
+
+    private boolean isInvalidating;
+
+    // AyuGram-aligned reply-press feedback: 0 == PROGRESS_REPLY, -1 == idle
+    private int progress = -1;
+    private final Runnable cancelProgress = () -> {
+        progress = -1;
+        for (ChatMessageCell cell : cells) {
+            if (cell != null) {
+                cell.invalidate();
+            }
+        }
+    };
 
     public StickerSizePreviewMessagesCell(Context context, BaseFragment fragment) {
         super(context);
 
         var resourcesProvider = fragment.getResourceProvider();
         fragmentView = (FrameLayout) fragment.getFragmentView();
+        parentLayout = fragment.getParentLayout();
 
         setWillNotDraw(false);
         setOrientation(LinearLayout.VERTICAL);
         setPadding(0, dp(11), 0, dp(11));
 
+        monetBackgroundDrawable = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
         shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider));
 
         int date = (int) (System.currentTimeMillis() / 1000) - 60 * 60;
@@ -85,6 +106,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.peer_id.user_id = 0;
         messageObjects[0] = new MessageObject(UserConfig.selectedAccount, message, true, false);
         messageObjects[0].useCustomPhoto = true;
+        messageObjects[0].skipAyuFiltering = true;
 
         message = new TLRPC.TL_message();
         message.message = getString(R.string.StickerSizeDialogMessageReplyTo);
@@ -98,6 +120,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.peer_id.user_id = 1;
         messageObjects[0].customReplyName = getString(R.string.StickerSizeDialogName);
         messageObjects[0].replyMessageObject = new MessageObject(UserConfig.selectedAccount, message, true, false);
+        messageObjects[0].replyMessageObject.skipAyuFiltering = true;
 
         message = new TLRPC.TL_message();
         message.message = NekoConfig.stickerSize.Float() < 9 ? getString(R.string.StickerSizeDialogMessageSmallOne) : getString(R.string.StickerSizeDialogMessageBigOne);
@@ -113,6 +136,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.peer_id = new TLRPC.TL_peerUser();
         message.peer_id.user_id = 1;
         messageObjects[1] = new MessageObject(UserConfig.selectedAccount, message, true, false);
+        messageObjects[1].skipAyuFiltering = true;
         messageObjects[1].replyMessageObject = messageObjects[0];
 
         for (int a = 0; a < cells.length; a++) {
@@ -132,6 +156,19 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
                 @Override
                 public void didPressTime(ChatMessageCell cell) {
                     showTimeHint(cell);
+                }
+
+                @Override
+                public void didPressReplyMessage(ChatMessageCell cell, int id, float x, float y, boolean longpress) {
+                    progress = 0; // ChatActivity.PROGRESS_REPLY
+                    cell.invalidate();
+                    AndroidUtilities.cancelRunOnUIThread(cancelProgress);
+                    AndroidUtilities.runOnUIThread(cancelProgress, 5000L);
+                }
+
+                @Override
+                public boolean isProgressLoading(ChatMessageCell cell, int type) {
+                    return type == progress;
                 }
             });
             cells[a].isChat = false;
@@ -176,52 +213,93 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
     @Override
     public void invalidate() {
         super.invalidate();
-        for (int a = 0; a < cells.length; a++) {
-            if (a == 1) {
-                messageObjects[a].messageOwner.message = NekoConfig.stickerSize.Float() < 9 ? getString(R.string.StickerSizeDialogMessageSmallOne) : getString(R.string.StickerSizeDialogMessageBigOne);
-                messageObjects[a].applyNewText();
-                messageObjects[a].resetLayout();
+        if (isInvalidating) {
+            return;
+        }
+        isInvalidating = true;
+        try {
+            for (int a = 0; a < cells.length; a++) {
+                if (a == 1) {
+                    messageObjects[a].messageOwner.message = NekoConfig.stickerSize.Float() < 9 ? getString(R.string.StickerSizeDialogMessageSmallOne) : getString(R.string.StickerSizeDialogMessageBigOne);
+                    messageObjects[a].applyNewText();
+                    messageObjects[a].resetLayout();
+                }
+                messageObjects[a].forceUpdate = true;
+                cells[a].setMessageObject(messageObjects[a], null, false, false, false);
+                cells[a].invalidate();
             }
-            cells[a].setMessageObject(messageObjects[a], null, false, false, false);
-            cells[a].invalidate();
+        } finally {
+            isInvalidating = false;
         }
     }
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
-        Drawable drawable = Theme.getCachedWallpaperNonBlocking();
-        if (drawable == null) {
-            return;
+        boolean isMonetTheme = Theme.getActiveTheme() != null && Theme.getActiveTheme().isMonet();
+        Drawable newBackground = isMonetTheme ? monetBackgroundDrawable : Theme.getCachedWallpaperNonBlocking();
+        if (newBackground != backgroundDrawable && newBackground != null) {
+            if (Theme.isAnimatingColor()) {
+                oldBackgroundDrawable = backgroundDrawable;
+                oldBackgroundGradientDisposable = backgroundGradientDisposable;
+            } else if (backgroundGradientDisposable != null) {
+                backgroundGradientDisposable.dispose();
+                backgroundGradientDisposable = null;
+            }
+            backgroundDrawable = newBackground;
         }
-        drawable.setAlpha(255);
-        if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
-            drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-            if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {
-                backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
-            } else {
-                drawable.draw(canvas);
+        if (backgroundDrawable == null && oldBackgroundDrawable == null) {
+            canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        } else {
+            float themeAnimationValue = parentLayout != null ? parentLayout.getThemeAnimationValue() : 1f;
+            for (int i = 0; i < 2; i++) {
+                Drawable drawable = i == 0 ? oldBackgroundDrawable : backgroundDrawable;
+                if (drawable == null) {
+                    continue;
+                }
+                int baseAlpha = drawable == monetBackgroundDrawable ? 150 : 255;
+                if (i == 1 && oldBackgroundDrawable != null) {
+                    drawable.setAlpha((int) (baseAlpha * themeAnimationValue));
+                } else {
+                    drawable.setAlpha(baseAlpha);
+                }
+                if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
+                    drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {
+                        backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
+                    } else {
+                        drawable.draw(canvas);
+                    }
+                } else if (drawable instanceof BitmapDrawable bitmapDrawable) {
+                    if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
+                        canvas.save();
+                        float scale = 2.0f / AndroidUtilities.density;
+                        canvas.scale(scale, scale);
+                        drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
+                    } else {
+                        int viewHeight = getMeasuredHeight();
+                        float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
+                        float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
+                        float scale = Math.max(scaleX, scaleY);
+                        int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale);
+                        int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale);
+                        int x = (getMeasuredWidth() - width) / 2;
+                        int y = (viewHeight - height) / 2;
+                        canvas.save();
+                        canvas.clipRect(0, 0, width, getMeasuredHeight());
+                        drawable.setBounds(x, y, x + width, y + height);
+                    }
+                    drawable.draw(canvas);
+                    canvas.restore();
+                }
+                if (i == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1f) {
+                    if (oldBackgroundGradientDisposable != null) {
+                        oldBackgroundGradientDisposable.dispose();
+                        oldBackgroundGradientDisposable = null;
+                    }
+                    oldBackgroundDrawable = null;
+                    invalidate();
+                }
             }
-        } else if (drawable instanceof BitmapDrawable bitmapDrawable) {
-            if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
-                canvas.save();
-                float scale = 2.0f / AndroidUtilities.density;
-                canvas.scale(scale, scale);
-                drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
-            } else {
-                int viewHeight = getMeasuredHeight();
-                float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
-                float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
-                float scale = Math.max(scaleX, scaleY);
-                int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale);
-                int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale);
-                int x = (getMeasuredWidth() - width) / 2;
-                int y = (viewHeight - height) / 2;
-                canvas.save();
-                canvas.clipRect(0, 0, width, getMeasuredHeight());
-                drawable.setBounds(x, y, x + width, y + height);
-            }
-            drawable.draw(canvas);
-            canvas.restore();
         }
         shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
         shadowDrawable.draw(canvas);
@@ -234,6 +312,11 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
             backgroundGradientDisposable.dispose();
             backgroundGradientDisposable = null;
         }
+        if (oldBackgroundGradientDisposable != null) {
+            oldBackgroundGradientDisposable.dispose();
+            oldBackgroundGradientDisposable = null;
+        }
+        AndroidUtilities.cancelRunOnUIThread(cancelProgress);
     }
 
     @Override

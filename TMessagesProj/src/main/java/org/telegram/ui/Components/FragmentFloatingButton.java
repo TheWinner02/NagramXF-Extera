@@ -32,6 +32,7 @@ import me.vkryl.android.animator.FactorAnimator;
 
 @SuppressLint("ViewConstructor")
 public class FragmentFloatingButton extends FrameLayout implements FactorAnimator.Target {
+    public static void notifyShapeChanged() {}
     private final int ANIMATOR_ID_BUTTON_VISIBLE = 0;
     private final int ANIMATOR_ID_PROGRESS_VISIBLE = 1;
 

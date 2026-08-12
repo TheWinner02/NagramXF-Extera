@@ -19,6 +19,7 @@ public class CellGroup {
     public static final int ITEM_TYPE_TEXT_CHECK_ICON = 7;
     public static final int ITEM_TYPE_CHECK2 = 8;
     public static final int ITEM_TYPE_CHECK_BOX = 9;
+    public static final int ITEM_TYPE_TEXT_DETAIL_ICON = 10;
 
     public BaseFragment thisFragment;
     public RecyclerListView listView;
@@ -61,7 +62,11 @@ public class CellGroup {
     }
 
     public boolean needSetDivider(AbstractConfigCell cell) {
-        return !(rows.get(rows.indexOf(cell) + 1) instanceof ConfigCellDivider);
+        int index = rows.indexOf(cell);
+        if (index < 0 || index >= rows.size() - 1) {
+            return false;
+        }
+        return !(rows.get(index + 1) instanceof ConfigCellDivider);
     }
 
 }

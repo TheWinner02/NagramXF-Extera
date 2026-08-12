@@ -3964,6 +3964,7 @@ public class Theme {
     public static final int key_chat_BlurAlpha = colorsCount++;
     public static final int key_chat_BlurAlphaSlow = colorsCount++;
     public static final int key_chat_editMediaButton = colorsCount++;
+    public static final int key_chat_recentDialogsSidebarBackground = colorsCount++;
 
     public static final int key_voipgroup_listSelector = colorsCount++;
     public static final int key_voipgroup_inviteMembersBackground = colorsCount++;

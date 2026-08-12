@@ -70,6 +70,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private static final int MENU_SYNC = 2;
 
     private int generalRow;
+    private int appearanceRow;
+    private int ayuMomentsRow;
     private int translatorRow;
     private int chatRow;
     private int passcodeRow;
@@ -83,13 +85,15 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private int nSettingsEndRow;
 
 
-    private int aboutRow;
+    private int exteraInfoRow;
 
     @Override
     protected void updateRows() {
         super.updateRows();
 
         generalRow = addRow();
+        appearanceRow = addRow();
+        ayuMomentsRow = addRow();
         translatorRow = addRow();
         chatRow = addRow();
         if (!PasscodeHelper.isSettingsHidden()) {
@@ -106,7 +110,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         appRestartRow = addRow();
         nSettingsEndRow = addRow();
 
-        aboutRow = addRow();
+        exteraInfoRow = addRow();
     }
 
     @Override
@@ -335,14 +339,18 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new NekoChatSettingsActivity());
         } else if (position == generalRow) {
             presentFragment(new NekoGeneralSettingsActivity());
+        } else if (position == appearanceRow) {
+            presentFragment(new NekoAppearanceSettingsActivity());
+        } else if (position == ayuMomentsRow) {
+            presentFragment(new NekoAyuMomentsSettingsActivity());
         } else if (position == passcodeRow) {
             presentFragment(new NekoPasscodeSettingsActivity());
         } else if (position == experimentRow) {
             presentFragment(new NekoExperimentalSettingsActivity());
         } else if (position == translatorRow) {
             presentFragment(new NekoTranslatorSettingsActivity());
-        } else if (position == aboutRow) {
-            presentFragment(new NekoAboutActivity());
+        } else if (position == exteraInfoRow) {
+            presentFragment(new NagramExteraAboutActivity());
         } else if (position == importSettingsRow) {
             if (Build.VERSION.SDK_INT >= 33) {
                 openFilePicker();
@@ -361,6 +369,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     () -> {
                         ApplicationLoader.applicationContext.getSharedPreferences("nekocloud", Activity.MODE_PRIVATE).edit().clear().commit();
                         ApplicationLoader.applicationContext.getSharedPreferences("nekox_config", Activity.MODE_PRIVATE).edit().clear().commit();
+                        ApplicationLoader.applicationContext.getSharedPreferences("aichatconfig", Activity.MODE_PRIVATE).edit().clear().commit();
+                        ApplicationLoader.applicationContext.getSharedPreferences("pillstackconfig", Activity.MODE_PRIVATE).edit().clear().commit();
                         NekoConfig.getPreferences().edit().clear().commit();
                         AppRestartHelper.triggerRebirth(getParentActivity(), new Intent(getParentActivity(), LaunchActivity.class));
                     });
@@ -395,7 +405,11 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     if (position == chatRow) {
                         textCell.setTextAndIcon(getString(R.string.Chat), R.drawable.msg_discussion, true);
                     } else if (position == generalRow) {
-                        textCell.setTextAndIcon(getString(R.string.General), R.drawable.msg_theme, true);
+                        textCell.setTextAndIcon(getString(R.string.General), R.drawable.msg_media, true);
+                    } else if (position == appearanceRow) {
+                        textCell.setTextAndIcon(getString(R.string.Appearance), R.drawable.msg_theme, true);
+                    } else if (position == ayuMomentsRow) {
+                        textCell.setTextAndIcon(getString(R.string.AyuMoments), R.drawable.heart_angle_solar, true);
                     } else if (position == translatorRow) {
                         textCell.setTextAndIcon(getString(R.string.TranslatorSettings), R.drawable.ic_translate, true);
                     } else if (position == passcodeRow) {
@@ -410,8 +424,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndIcon(getString(R.string.ResetSettings), R.drawable.msg_reset_solar, true);
                     } else if (position == appRestartRow) {
                         textCell.setTextAndIcon(getString(R.string.RestartApp), R.drawable.msg_retry_solar, true);
-                    } else if (position == aboutRow) {
-                        textCell.setTextAndIcon(getString(R.string.About), R.drawable.msg_info, true);
+                    } else if (position == exteraInfoRow) {
+                        textCell.setTextAndIcon(getString(R.string.NagramExteraInfo), R.drawable.msg_info, false);
                     }
                     break;
                 }
@@ -423,9 +437,9 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         public int getItemViewType(int position) {
             if (position == categoriesEndRow || position == nSettingsEndRow) {
                 return TYPE_SHADOW;
-            } else if (position == chatRow || position == generalRow || position == passcodeRow || position == experimentRow || position == translatorRow ||
+            } else if (position == chatRow || position == generalRow || position == appearanceRow || position == ayuMomentsRow || position == passcodeRow || position == experimentRow || position == translatorRow ||
                     position == importSettingsRow || position == exportSettingsRow || position == resetSettingsRow || position == appRestartRow ||
-                    position == aboutRow) {
+                    position == exteraInfoRow) {
                 return TYPE_TEXT;
             }
             return TYPE_SHADOW;

@@ -3786,7 +3786,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public int getTabCounter(int tabId) {
-                    if (NaConfig.INSTANCE.getIgnoreUnreadCount().Int() == NekoConfig.DIALOG_FILTER_EXCLUDE_ALL) {
+                    if (NaConfig.INSTANCE.getIgnoreUnreadCount().Bool()) {
                         return 0;
                     }
 
@@ -11201,6 +11201,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public static final int DIALOGS_TYPE_START_ATTACH_BOT = 14;
     public static final int DIALOGS_TYPE_BOT_REQUEST_PEER = 15;
     public static final int DIALOGS_TYPE_BOT_SELECT_VERIFY = 16;
+    public static final int DIALOGS_TYPE_REGEX_FILTER = 101;
+    public static final int DIALOGS_TYPE_SHADOW_BAN = 102;
 
     private ArrayList<TLRPC.Dialog> botShareDialogs;
 

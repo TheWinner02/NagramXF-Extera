@@ -63,6 +63,13 @@ import tw.nekomimi.nekogram.NekoConfig;
 
 public final class BulletinFactory {
 
+    public static android.widget.FrameLayout resolveBulletinContainer(BaseFragment fragment) {
+        if (fragment != null) {
+            return fragment.getLayoutContainer();
+        }
+        return null;
+    }
+
     public static BulletinFactory of(BaseFragment fragment) {
         if (fragment == null) return global();
         return new BulletinFactory(fragment);

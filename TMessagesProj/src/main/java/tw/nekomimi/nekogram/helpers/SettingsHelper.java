@@ -16,7 +16,12 @@ import java.util.Map;
 
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.settings.BaseNekoXSettingsActivity;
-import tw.nekomimi.nekogram.settings.NekoAboutActivity;
+import tw.nekomimi.nekogram.settings.GhostModeActivity;
+import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
+import tw.nekomimi.nekogram.settings.NagramExteraAboutActivity;
+import tw.nekomimi.nekogram.settings.NekoAppearanceSettingsActivity;
+import tw.nekomimi.nekogram.settings.NekoAyuMomentsSettingsActivity;
+import tw.nekomimi.nekogram.settings.NekoAyuSpySettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoChatSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoEmojiSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity;
@@ -24,6 +29,7 @@ import tw.nekomimi.nekogram.settings.NekoGeneralSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoPasscodeSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoTranslatorSettingsActivity;
+import tw.nekomimi.nekogram.filters.RegexFiltersSettingActivity;
 
 public class SettingsHelper {
 
@@ -47,12 +53,25 @@ public class SettingsHelper {
         } else {
             switch (segments.get(1)) {
                 case "about":
-                    fragment = new NekoAboutActivity();
+                    fragment = new NagramExteraAboutActivity();
                     break;
                 case "chat":
                 case "chats":
                 case "c":
                     fragment = nekox_fragment = new NekoChatSettingsActivity();
+                    break;
+                case "appearance":
+                case "a":
+                    fragment = nekox_fragment = new NekoAppearanceSettingsActivity();
+                    break;
+                case "ayumoments":
+                case "ayugrammoment":
+                case "m":
+                    fragment = nekox_fragment = new NekoAyuMomentsSettingsActivity();
+                    break;
+                case "ayuspy":
+                case "spy":
+                    fragment = nekox_fragment = new NekoAyuSpySettingsActivity();
                     break;
                 case "experimental":
                 case "e":
@@ -69,6 +88,19 @@ public class SettingsHelper {
                 case "translate":
                 case "t":
                     fragment = nekox_fragment = new NekoTranslatorSettingsActivity();
+                    break;
+                case "ghostmode":
+                case "ghost":
+                    fragment = nekox_fragment = new GhostModeActivity();
+                    break;
+                case "maintabs":
+                case "main_tabs":
+                case "tabs":
+                    fragment = nekox_fragment = new MainTabsCustomizeActivity();
+                    break;
+                case "regexfilters":
+                case "regex":
+                    fragment = nekox_fragment = new RegexFiltersSettingActivity();
                     break;
                 case "send_logs":
                     sendLogs(activity, false);
@@ -112,6 +144,9 @@ public class SettingsHelper {
         ArrayList<SettingsSearchResult> items = new ArrayList<>();
         ArrayList<BaseNekoXSettingsActivity> fragments = new ArrayList<>();
         fragments.add(new NekoGeneralSettingsActivity());
+        fragments.add(new NekoAppearanceSettingsActivity());
+        fragments.add(new NekoAyuMomentsSettingsActivity());
+        fragments.add(new NekoAyuSpySettingsActivity());
         fragments.add(new NekoChatSettingsActivity());
         fragments.add(new NekoExperimentalSettingsActivity());
         fragments.add(new NekoTranslatorSettingsActivity());

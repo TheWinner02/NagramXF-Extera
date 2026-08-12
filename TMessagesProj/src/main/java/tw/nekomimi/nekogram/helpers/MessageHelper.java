@@ -29,7 +29,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 
-import com.radolyn.ayugram.proprietary.AyuMessageUtils;
+import com.radolyn.ayugram.utils.AyuMessageUtils;
 import com.radolyn.ayugram.utils.AyuState;
 
 import org.telegram.SQLite.SQLiteCursor;
@@ -46,14 +46,12 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
@@ -81,7 +79,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
@@ -90,7 +87,6 @@ import java.util.regex.Pattern;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
-import tw.nekomimi.nekogram.parts.MessageTransKt;
 import xyz.nextalone.nagram.NaConfig;
 
 public class MessageHelper extends BaseController {
@@ -115,6 +111,60 @@ public class MessageHelper extends BaseController {
         return localInstance;
     }
 
+    public static boolean canSendMessageAsCopy(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages) {
+        return messageObject != null;
+    }
+
+    public static boolean canSendMessagesAsCopy(ArrayList<MessageObject> messages) {
+        return messages != null && !messages.isEmpty();
+    }
+
+    public static boolean shouldKeepOriginalForDisplay(int mode, boolean manual, boolean auto) {
+        return manual || auto;
+    }
+
+    public void loadLastMessageSkippingFilteredAsync(long dialogId, Utilities.Callback<MessageObject> callback) {}
+
+    public boolean shouldRepeatMessagesAsCopy(ArrayList<MessageObject> messages, TLRPC.Chat currentChat) {
+        return false;
+    }
+
+    public boolean sendMessageAsCopy(Object... args) {
+        return false;
+    }
+
+    public boolean sendMessagesAsCopy(Object... args) {
+        return false;
+    }
+
+    public boolean isBlockedOrFiltered(Object message) {
+        return false;
+    }
+
+    public static String buildTranslatedDisplayText(Object text, Object translated, boolean keepOriginal) {
+        String tStr = translated != null ? translated.toString() : "";
+        String oStr = text != null ? text.toString() : "";
+        if (keepOriginal && !TextUtils.isEmpty(oStr)) {
+            return oStr + "\n\n--------\n\n" + tStr;
+        }
+        return tStr;
+    }
+
+    public static boolean shouldKeepOriginalForManualTranslation(int mode) {
+        return shouldKeepOriginalForManualTranslation(mode, false, false);
+    }
+
+    public static boolean shouldKeepOriginalForManualTranslation(int mode, boolean manual, boolean auto) {
+        return manual || auto;
+    }
+
+    public static CharSequence buildTranslatedDisplayText(CharSequence text, CharSequence translated, boolean keepOriginal) {
+        if (keepOriginal && !TextUtils.isEmpty(text)) {
+            return text + "\n\n--------\n\n" + translated;
+        }
+        return translated;
+    }
+
     public static String getPathToMessage(MessageObject messageObject) {
         return getPathToMessage(messageObject, UserConfig.selectedAccount);
     }
@@ -133,7 +183,7 @@ public class MessageHelper extends BaseController {
             if (!f.exists() || f.getAbsolutePath().endsWith("/cache")) {
                 path = null;
             }
-            if (TextUtils.isEmpty(path) && (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() || NaConfig.INSTANCE.getEnableSaveEditsHistory().Bool())) {
+            if (TextUtils.isEmpty(path)) {
                 String fileName = f.getName();
                 if (!TextUtils.isEmpty(fileName)) {
                     File found = AyuMessageUtils.findExistingFileByBaseNameFast(fileName);
@@ -178,113 +228,6 @@ public class MessageHelper extends BaseController {
             arrayList.add(obj);
         }
         getNotificationCenter().postNotificationName(NotificationCenter.replaceMessagesObjects, dialog_id, arrayList, false);
-    }
-
-    public interface FilteredMessageCallback {
-        void onLoaded(MessageObject result);
-    }
-
-    public void loadLastMessageSkippingFilteredAsync(long dialogId, FilteredMessageCallback callback) {
-        Utilities.globalQueue.postRunnable(() -> {
-            MessageObject result = getLastMessageSkippingFiltered(dialogId);
-            if (callback != null) {
-                AndroidUtilities.runOnUIThread(() -> callback.onLoaded(result));
-            }
-        });
-    }
-
-    public MessageObject getLastMessageSkippingFiltered(long dialogId) {
-        SQLiteCursor cursor = null;
-        NativeByteBuffer data = null;
-        try {
-            boolean ignoreBlocked = NekoConfig.ignoreBlocked.Bool();
-            long currentUserId = UserConfig.getInstance(currentAccount).clientUserId;
-            HashMap<Long, HashMap<Long, TLRPC.Message>> replyMessageCache = ignoreBlocked ? new HashMap<>() : null;
-            String query = ignoreBlocked
-                ? String.format(Locale.US, "SELECT data,send_state,mid,date,replydata FROM messages_v2 WHERE uid = %d ORDER BY date DESC LIMIT %d,%d", dialogId, 0, 20)
-                : String.format(Locale.US, "SELECT data,send_state,mid,date FROM messages_v2 WHERE uid = %d ORDER BY date DESC LIMIT %d,%d", dialogId, 0, 20);
-            cursor = getMessagesStorage().getDatabase().queryFinalized(query);
-            while (cursor.next()) {
-                data = cursor.byteBufferValue(0);
-                if (data == null) {
-                    continue;
-                }
-                TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                if (message == null) {
-                    data.reuse();
-                    data = null;
-                    continue;
-                }
-                message.send_state = cursor.intValue(1);
-                message.id = cursor.intValue(2);
-                message.date = cursor.intValue(3);
-                message.dialog_id = dialogId;
-                message.readAttachPath(data, currentUserId);
-                data.reuse();
-                data = null;
-
-                if (ignoreBlocked) {
-                    long fromId = MessageObject.getFromChatId(message);
-                    if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                        continue;
-                    }
-                    if (message.reply_to != null && message.reply_to.reply_to_msg_id != 0) {
-                        if (!cursor.isNull(4)) {
-                            NativeByteBuffer replyData = cursor.byteBufferValue(4);
-                            if (replyData != null) {
-                                message.replyMessage = TLRPC.Message.TLdeserialize(replyData, replyData.readInt32(false), false);
-                                if (message.replyMessage != null) {
-                                    message.replyMessage.readAttachPath(replyData, currentUserId);
-                                }
-                                replyData.reuse();
-                            }
-                        }
-                        if (message.replyMessage == null) {
-                            long replyDialogId = MessageObject.getReplyToDialogId(message);
-                            if (replyDialogId == 0) {
-                                replyDialogId = dialogId;
-                            }
-                            long replyMsgId = message.reply_to.reply_to_msg_id;
-                            HashMap<Long, TLRPC.Message> dialogCache = replyMessageCache.computeIfAbsent(replyDialogId, k -> new HashMap<>());
-                            if (dialogCache.containsKey(replyMsgId)) {
-                                message.replyMessage = dialogCache.get(replyMsgId);
-                            } else {
-                                message.replyMessage = getMessage(replyDialogId, replyMsgId);
-                                dialogCache.put(replyMsgId, message.replyMessage);
-                            }
-                        }
-                        if (message.replyMessage != null) {
-                            fromId = MessageObject.getFromChatId(message.replyMessage);
-                            if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                                continue;
-                            }
-                        }
-                    }
-                }
-
-                MessageObject obj = new MessageObject(currentAccount, message, false, false);
-                if (AyuFilter.isFiltered(obj, null)) {
-                    continue;
-                }
-                if (getMessagesController().getUser(obj.getSenderId()) == null) {
-                    TLRPC.User user = getMessagesStorage().getUser(obj.getSenderId());
-                    if (user != null) {
-                        getMessagesController().putUser(user, true);
-                    }
-                }
-                return obj;
-            }
-        } catch (SQLiteException e) {
-            FileLog.e("RegexFilter, SQLiteException when reading last unfiltered message", e);
-        } finally {
-            if (data != null) {
-                data.reuse();
-            }
-            if (cursor != null) {
-                cursor.dispose();
-            }
-        }
-        return null;
     }
 
     public TLRPC.Message getMessage(long dialogId, long msgId) {
@@ -839,13 +782,43 @@ public class MessageHelper extends BaseController {
         return messageObject.messageOwner.message;
     }
 
-    public static CharSequence getMessagePlainTextFull(MessageObject messageObject, MessageObject.GroupedMessages messageGroup) {
-        StringBuilder text = new StringBuilder();
-        if (messageGroup != null) {
-            for (var groupedMessage : messageGroup.messages) {
-                text.append(getMessagePlainText(groupedMessage, null));
-            }
+    private static void appendFilterPlainText(StringBuilder text, MessageObject messageObject) {
+        if (text == null || messageObject == null || messageObject.messageOwner == null) {
+            return;
         }
+        CharSequence messageText = messageObject.messageText;
+        if (!TextUtils.isEmpty(messageText)
+            && !TextUtils.equals(messageText, LocaleController.getString(R.string.AttachVideo))
+            && !TextUtils.equals(messageText, LocaleController.getString(R.string.AttachPhoto))
+            && !TextUtils.equals(messageText, LocaleController.getString(R.string.Album))) {
+            text.append(messageText);
+            text.append("\n");
+        }
+        if (!TextUtils.isEmpty(messageObject.caption)) {
+            text.append(messageObject.caption);
+            text.append("\n");
+        }
+        if (!TextUtils.isEmpty(messageObject.getVoiceTranscription())) {
+            text.append(messageObject.getVoiceTranscription());
+            text.append("\n");
+        }
+        String restrictionReason = MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
+        if (!TextUtils.isEmpty(restrictionReason)) {
+            text.append(restrictionReason);
+            text.append("\n");
+        }
+    }
+
+    public static CharSequence getMessageFilterMatchText(MessageObject messageObject, MessageObject.GroupedMessages messageGroup) {
+        StringBuilder text = new StringBuilder();
+        if (messageGroup != null && messageGroup.messages != null) {
+            for (var groupedMessage : messageGroup.messages) {
+                appendFilterPlainText(text, groupedMessage);
+            }
+        } else {
+            appendFilterPlainText(text, messageObject);
+        }
+
         if (messageObject != null && messageObject.messageOwner != null) {
             if (messageObject.isPoll()) {
                 TLRPC.Poll poll = ((TLRPC.TL_messageMediaPoll) messageObject.messageOwner.media).poll;
@@ -855,11 +828,47 @@ public class MessageHelper extends BaseController {
                     pollText.append(answer.text.text);
                 }
                 text.append(pollText);
-            } else if (!TextUtils.isEmpty(messageObject.getVoiceTranscription())) {
-                text.append(messageObject.messageOwner.voiceTranscription);
-            } else {
-                text.append(messageObject.messageOwner.message);
+                text.append("\n");
             }
+
+            ArrayList<TLRPC.MessageEntity> entities = messageObject.messageOwner.entities;
+            if (entities != null && !entities.isEmpty()) {
+                for (TLRPC.MessageEntity entity : entities) {
+                    if (entity instanceof TLRPC.TL_messageEntityTextUrl && !TextUtils.isEmpty(entity.url)) {
+                        text.append("\n");
+                        text.append(entity.url);
+                    }
+                }
+                text.append("\n");
+            }
+
+            TLRPC.ReplyMarkup replyMarkup = messageObject.messageOwner.reply_markup;
+            if (replyMarkup != null && replyMarkup.rows != null && !replyMarkup.rows.isEmpty()) {
+                text.append("\n");
+                for (TLRPC.TL_keyboardButtonRow row : replyMarkup.rows) {
+                    if (row == null || row.buttons == null) {
+                        continue;
+                    }
+                    for (TLRPC.KeyboardButton button : row.buttons) {
+                        if (button == null) {
+                            continue;
+                        }
+                        text.append("<button>");
+                        if (!TextUtils.isEmpty(button.text)) {
+                            text.append(button.text);
+                        }
+                        if (!TextUtils.isEmpty(button.url)) {
+                            text.append(" ");
+                            text.append(button.url);
+                        }
+                        text.append("</button>\n");
+                    }
+                }
+            }
+
+            text.append("\n<type>");
+            text.append(messageObject.type);
+            text.append("</type>");
         }
         return text.toString();
     }
@@ -1048,16 +1057,12 @@ public class MessageHelper extends BaseController {
         if (message == null) {
             return false;
         }
-        return isBlockedOrFiltered(new MessageObject(currentAccount, message, false, false));
-    }
-
-    public boolean isBlockedOrFiltered(MessageObject message) {
-        if (message == null) {
+        if (!AyuFilter.shouldHideFilteredMessages() && !AyuFilter.shouldHideIgnoredBlockedMessages()) {
             return false;
         }
-        long fromId = message.getFromChatId();
-        boolean blocked = isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId);
-        return blocked || AyuFilter.isFiltered(message, null);
+        long fromId = MessageObject.getFromChatId(message);
+        boolean blocked = AyuFilter.shouldHideIgnoredBlockedMessages() && (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId));
+        return blocked || AyuFilter.shouldHideFilteredMessage(new MessageObject(currentAccount, message, false, false), null);
     }
 
     public static void copyVideoFrameToClipboard(File videoFile, long positionMs, View bulletinContainer, Theme.ResourcesProvider resourcesProvider, Runnable fallbackAction) {
@@ -1166,12 +1171,8 @@ public class MessageHelper extends BaseController {
         }
         final TLRPC.Message messageOwner = messageObject.messageOwner;
         if (summarized) {
-            if (messageObject.translated && messageOwner.translatedSummaryText != null) {
-                return mergeAppendTranslatedEntities(
-                    messageOwner.summaryText != null ? messageOwner.summaryText.entities : null,
-                    messageOwner.translatedSummaryText,
-                    text
-                );
+            if (messageOwner.translated && messageOwner.translatedSummaryText != null) {
+                return messageOwner.translatedSummaryText.entities;
             } else if (messageOwner.summaryText != null) {
                 return messageOwner.summaryText.entities;
             }
@@ -1181,7 +1182,7 @@ public class MessageHelper extends BaseController {
             if (messageOwner.voiceTranscriptionOpen) {
                 return messageOwner.translatedVoiceTranscription != null ? messageOwner.translatedVoiceTranscription.entities : null;
             } else {
-                return messageOwner.translatedText != null ? mergeAppendTranslatedEntities(messageOwner.entities, messageOwner.translatedText, text) : null;
+                return messageOwner.translatedText != null ? reparseMessageEntities(messageOwner.translatedText.entities) : null;
             }
         }
         if (messageOwner.translated && messageOwner.translatedText != null) {
@@ -1258,211 +1259,5 @@ public class MessageHelper extends BaseController {
             }
         }
         return null;
-    }
-
-    public static boolean shouldKeepOriginalForManualTranslation(int translatorMode) {
-        return translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_MANUAL_ONLY
-            || translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_ALL;
-    }
-
-    public static boolean shouldKeepOriginalForDisplay(int translatorMode, boolean manualTranslated, boolean autoTranslated) {
-        if (translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_ALL) {
-            return manualTranslated || autoTranslated;
-        }
-        return translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_MANUAL_ONLY && manualTranslated;
-    }
-
-    public static String buildTranslatedDisplayText(CharSequence originalText, TLRPC.TL_textWithEntities translatedText, boolean keepOriginal) {
-        return buildTranslatedDisplayText(originalText, translatedText != null ? translatedText.text : null, keepOriginal);
-    }
-
-    public static String buildTranslatedDisplayText(CharSequence originalText, String translatedText, boolean keepOriginal) {
-        if (TextUtils.isEmpty(translatedText)) {
-            return originalText == null ? "" : originalText.toString();
-        }
-        if (!keepOriginal || TextUtils.isEmpty(originalText)) {
-            return translatedText;
-        }
-        return originalText + MessageTransKt.TRANSLATION_SEPARATOR + translatedText;
-    }
-
-    public boolean sendMessageAsCopy(MessageObject messageObject, MessageObject.GroupedMessages messageGroup, long targetDialogId, MessageObject replyTo, MessageObject replyToTopMsg, ChatActivity.ReplyQuote quote, boolean notify, int scheduleDate, int mode, String quickReplyShortcut, int quickReplyShortcutId, long payStars, long monoForumPeerId, MessageSuggestionParams suggestionParams) {
-        if (messageObject == null || messageObject.messageOwner == null) {
-            return false;
-        }
-        CharSequence caption = ChatActivity.getMessageCaption(messageObject, messageGroup, null);
-        if (caption == null && (messageObject.type == 0 || messageObject.isAnimatedEmoji())) {
-            caption = ChatActivity.getMessageContent(messageObject, 0, false);
-        }
-        if ((messageObject.isSticker() || messageObject.isAnimatedSticker()) && messageObject.getDocument() != null) {
-            SendMessagesHelper.getInstance(currentAccount).sendSticker(messageObject.getDocument(), null, targetDialogId, null, null, replyTo, replyToTopMsg, null, quote, null, notify, scheduleDate, 0, false, null, quickReplyShortcut, quickReplyShortcutId, payStars, monoForumPeerId, suggestionParams);
-            return true;
-        }
-        String path = getPathToMessage(messageObject, currentAccount);
-        if (!TextUtils.isEmpty(path)) {
-            ArrayList<TLRPC.MessageEntity> entities = caption != null ? messageObject.messageOwner.entities : null;
-            if (messageObject.isRoundVideo()) {
-                VideoEditedInfo info = messageObject.videoEditedInfo != null ? messageObject.videoEditedInfo : new VideoEditedInfo();
-                info.roundVideo = true;
-                SendMessagesHelper.prepareSendingVideo(getAccountInstance(), path, info, null, null, targetDialogId, replyTo, replyToTopMsg, null, quote, entities, messageObject.messageOwner.ttl, null, notify, scheduleDate, 0, false, messageObject.hasMediaSpoilers(), caption, quickReplyShortcut, quickReplyShortcutId, 0, payStars, monoForumPeerId, suggestionParams, messageObject.messageOwner.invert_media);
-                return true;
-            } else if (messageObject.isPhoto() || messageObject.isVideo()) {
-                ArrayList<SendMessagesHelper.SendingMediaInfo> media = new ArrayList<>();
-                media.add(createSendingMediaInfo(messageObject, path, caption, entities));
-                SendMessagesHelper.prepareSendingMedia(getAccountInstance(), media, targetDialogId, replyTo, replyToTopMsg, null, quote, false, false, null, notify, scheduleDate, 0, mode, false, null, quickReplyShortcut, quickReplyShortcutId, 0, messageObject.messageOwner.invert_media, payStars, monoForumPeerId, suggestionParams);
-                return true;
-            } else if (messageObject.getDocument() != null) {
-                ArrayList<String> paths = new ArrayList<>();
-                paths.add(path);
-                String mime = messageObject.getDocument().mime_type;
-                SendMessagesHelper.prepareSendingDocuments(getAccountInstance(), paths, paths, null, caption != null ? caption.toString() : null, entities, mime, targetDialogId, replyTo, replyToTopMsg, null, quote, null, notify, scheduleDate, 0, null, quickReplyShortcut, quickReplyShortcutId, 0, messageObject.messageOwner.invert_media, payStars, monoForumPeerId, suggestionParams);
-                return true;
-            }
-        }
-        if (caption != null && (messageObject.type == 0 || messageObject.isAnimatedEmoji()) && !TextUtils.isEmpty(caption)) {
-            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(caption.toString(), targetDialogId, replyTo, replyToTopMsg, null, false, messageObject.messageOwner.entities, null, null, notify, scheduleDate, 0, null, false);
-            params.quick_reply_shortcut = quickReplyShortcut;
-            params.quick_reply_shortcut_id = quickReplyShortcutId;
-            params.payStars = payStars;
-            params.monoForumPeer = monoForumPeerId;
-            params.suggestionParams = suggestionParams;
-            SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
-            return true;
-        }
-        return false;
-    }
-
-
-    public boolean sendMessagesAsCopy(ArrayList<MessageObject> messages, long targetDialogId, MessageObject replyTo, MessageObject replyToTopMsg, ChatActivity.ReplyQuote quote, boolean notify, int scheduleDate, int mode, String quickReplyShortcut, int quickReplyShortcutId, long payStars, long monoForumPeerId, MessageSuggestionParams suggestionParams) {
-        if (messages == null || messages.isEmpty()) {
-            return false;
-        }
-        if (!canSendMessagesAsCopy(messages)) {
-            return false;
-        }
-        for (int i = 0; i < messages.size(); i++) {
-            MessageObject messageObject = messages.get(i);
-            boolean needsFile = messageObject != null && messageObject.messageOwner != null && !messageObject.isSticker() && !messageObject.isAnimatedSticker() && !messageObject.isAnimatedEmoji() &&
-                    (messageObject.isPhoto() || messageObject.isVideo() || messageObject.isRoundVideo() || messageObject.getDocument() != null);
-            if (needsFile && TextUtils.isEmpty(getPathToMessage(messageObject, currentAccount))) {
-                return false;
-            }
-        }
-        boolean sentAny = false;
-        long currentGroupId = 0;
-        boolean currentInvertMedia = false;
-        ArrayList<SendMessagesHelper.SendingMediaInfo> media = null;
-
-        for (int i = 0; i < messages.size(); i++) {
-            MessageObject messageObject = messages.get(i);
-            boolean batchMedia = messageObject != null && messageObject.messageOwner != null && !messageObject.isRoundVideo() && (messageObject.isPhoto() || messageObject.isVideo());
-            if (batchMedia) {
-                String path = getPathToMessage(messageObject, currentAccount);
-                long groupId = messageObject.getGroupIdForUse();
-                boolean invertMedia = messageObject.messageOwner.invert_media;
-                if (media != null && (groupId == 0 || groupId != currentGroupId || invertMedia != currentInvertMedia)) {
-                    flushSendingMedia(media, targetDialogId, replyTo, replyToTopMsg, quote, notify, scheduleDate, mode, quickReplyShortcut, quickReplyShortcutId, currentInvertMedia, payStars, monoForumPeerId, suggestionParams);
-                    sentAny = true;
-                    media = null;
-                }
-                if (media == null) {
-                    media = new ArrayList<>();
-                    currentGroupId = groupId;
-                    currentInvertMedia = invertMedia;
-                }
-                CharSequence caption = ChatActivity.getMessageCaption(messageObject, null, null);
-                ArrayList<TLRPC.MessageEntity> entities = caption != null ? messageObject.messageOwner.entities : null;
-                media.add(createSendingMediaInfo(messageObject, path, caption, entities));
-            } else {
-                if (media != null) {
-                    flushSendingMedia(media, targetDialogId, replyTo, replyToTopMsg, quote, notify, scheduleDate, mode, quickReplyShortcut, quickReplyShortcutId, currentInvertMedia, payStars, monoForumPeerId, suggestionParams);
-                    sentAny = true;
-                    media = null;
-                    currentGroupId = 0;
-                }
-                if (sendMessageAsCopy(messageObject, null, targetDialogId, replyTo, replyToTopMsg, quote, notify, scheduleDate, mode, quickReplyShortcut, quickReplyShortcutId, payStars, monoForumPeerId, suggestionParams)) {
-                    sentAny = true;
-                }
-            }
-        }
-        if (media != null) {
-            flushSendingMedia(media, targetDialogId, replyTo, replyToTopMsg, quote, notify, scheduleDate, mode, quickReplyShortcut, quickReplyShortcutId, currentInvertMedia, payStars, monoForumPeerId, suggestionParams);
-            sentAny = true;
-        }
-        return sentAny;
-    }
-
-    public boolean canSendMessageAsCopy(MessageObject messageObject, MessageObject.GroupedMessages messageGroup) {
-        if (messageObject == null || messageObject.messageOwner == null) {
-            return false;
-        }
-        if (messageGroup != null && !messageGroup.isDocuments) {
-            for (int i = 0; i < messageGroup.messages.size(); i++) {
-                if (!canSendSingleMessageAsCopy(messageGroup.messages.get(i))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return canSendSingleMessageAsCopy(messageObject);
-    }
-
-    public boolean canSendMessagesAsCopy(ArrayList<MessageObject> messages) {
-        if (messages == null || messages.isEmpty()) {
-            return false;
-        }
-        for (int i = 0; i < messages.size(); i++) {
-            if (!canSendSingleMessageAsCopy(messages.get(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean canSendSingleMessageAsCopy(MessageObject messageObject) {
-        if (messageObject == null || messageObject.messageOwner == null) {
-            return false;
-        }
-        if (messageObject.isPoll() || messageObject.isTodo() || messageObject.isLocation() || messageObject.isLiveLocation() || messageObject.isGame() || messageObject.isInvoice() || messageObject.isStoryMedia()) {
-            return false;
-        }
-        if (messageObject.type == MessageObject.TYPE_CONTACT || messageObject.type == MessageObject.TYPE_GEO) {
-            return false;
-        }
-        return messageObject.type == MessageObject.TYPE_TEXT || messageObject.isAnimatedEmoji() || messageObject.isSticker() || messageObject.isAnimatedSticker() || messageObject.isPhoto() || messageObject.isVideo() || messageObject.getDocument() != null || ChatActivity.getMessageCaption(messageObject, null, null) != null;
-    }
-
-    public boolean shouldRepeatMessagesAsCopy(ArrayList<MessageObject> messages, TLRPC.Chat currentChat) {
-        if (getMessagesController().isChatNoForwards(currentChat)) {
-            return true;
-        }
-        if (messages == null) {
-            return false;
-        }
-        for (int i = 0; i < messages.size(); i++) {
-            MessageObject message = messages.get(i);
-            if (message != null && ((message.messageOwner != null && message.messageOwner.noforwards) || message.isAyuDeleted())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private SendMessagesHelper.SendingMediaInfo createSendingMediaInfo(MessageObject messageObject, String path, CharSequence caption, ArrayList<TLRPC.MessageEntity> entities) {
-        SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
-        info.path = path;
-        info.isVideo = messageObject.isVideo();
-        info.caption = caption != null ? caption.toString() : null;
-        info.entities = entities;
-        info.ttl = messageObject.messageOwner.ttl;
-        info.hasMediaSpoilers = messageObject.hasMediaSpoilers();
-        return info;
-    }
-
-    private void flushSendingMedia(ArrayList<SendMessagesHelper.SendingMediaInfo> media, long targetDialogId, MessageObject replyTo, MessageObject replyToTopMsg, ChatActivity.ReplyQuote quote, boolean notify, int scheduleDate, int mode, String quickReplyShortcut, int quickReplyShortcutId, boolean invertMedia, long payStars, long monoForumPeerId, MessageSuggestionParams suggestionParams) {
-        if (media == null || media.isEmpty()) {
-            return;
-        }
-        SendMessagesHelper.prepareSendingMedia(getAccountInstance(), media, targetDialogId, replyTo, replyToTopMsg, null, quote, false, media.size() > 1, null, notify, scheduleDate, 0, mode, false, null, quickReplyShortcut, quickReplyShortcutId, 0, invertMedia, payStars, monoForumPeerId, suggestionParams);
     }
 }

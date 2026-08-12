@@ -53,6 +53,16 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
 public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, FactorAnimator.Target {
+    public void setIcon(int iconRes) {
+        if (imageView != null) {
+            imageView.setImageResource(iconRes);
+        }
+    }
+    public void setTitleVisible(boolean visible) {
+        if (textView != null) {
+            textView.setVisibility(visible ? VISIBLE : GONE);
+        }
+    }
     private final TextView textView;
     private final RLottieImageView imageView;
     private BackupImageView backupImageView;

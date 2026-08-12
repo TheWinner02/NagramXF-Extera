@@ -44,6 +44,11 @@ import java.util.TimeZone;
 
 public class Weather {
 
+    public static boolean isLocationPermissionGranted() { return false; }
+    public static boolean isLocationEnabled() { return false; }
+    public static void clearCache() {}
+    public static void fetchExtera(Utilities.Callback<State> callback) {}
+
 //    public static String[] emojis = new String[] {
 //        "☀", // Clear sky
 //        "🌤", // Mainly clear

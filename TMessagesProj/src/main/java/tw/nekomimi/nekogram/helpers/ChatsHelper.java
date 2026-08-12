@@ -88,6 +88,10 @@ public class ChatsHelper extends BaseController {
         return getLeftButtonText(getLeftButtonAction(chatActivity, noForwards));
     }
 
+    public static String getLeftButtonText(boolean noForwards) {
+        return getLeftButtonText(noForwards ? LEFT_BUTTON_NOQUOTE : LEFT_BUTTON_REPLY);
+    }
+
     public static String getLeftButtonText(int action) {
         return switch (action) {
             case LEFT_BUTTON_REPLY -> getString(R.string.Reply);
@@ -101,6 +105,10 @@ public class ChatsHelper extends BaseController {
 
     public static int getLeftButtonDrawable(ChatActivity chatActivity, boolean noForwards) {
         return getLeftButtonDrawable(getLeftButtonAction(chatActivity, noForwards));
+    }
+
+    public static int getLeftButtonDrawable(boolean noForwards) {
+        return getLeftButtonDrawable(noForwards ? LEFT_BUTTON_NOQUOTE : LEFT_BUTTON_REPLY);
     }
 
     public static int getLeftButtonDrawable(int action) {

@@ -177,6 +177,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private View[] shadow = new View[2];
     private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     protected LongSparseArray<TLRPC.Dialog> selectedDialogs = new LongSparseArray<>();
+    public int getSelectedDialogsCount() { return selectedDialogs.size(); }
     protected Map<TLRPC.Dialog, TLRPC.TL_forumTopic> selectedDialogTopics = new HashMap<>();
     private SwitchView switchView;
     private int containerViewTop = -1;

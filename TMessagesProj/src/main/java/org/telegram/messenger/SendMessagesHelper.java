@@ -137,6 +137,10 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class SendMessagesHelper extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
+    public ArrayList<Integer> getSendingMessageIds(long dialogId) {
+        return new ArrayList<>();
+    }
+
     public static final int MEDIA_TYPE_DICE = 11;
     public static final int MEDIA_TYPE_STORY = 12;
     public static final int MEDIA_TYPE_RICH = 13;

@@ -36,7 +36,7 @@ public class FiltersChatCell extends FrameLayout {
         super(context);
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
         textView = new TextView(context);
@@ -74,19 +74,30 @@ public class FiltersChatCell extends FrameLayout {
     }
 
     public void setDialog(long dialogId, int filterCount) {
+        setDialog(dialogId, filterCount, 0);
+    }
+
+    public void setDialog(long dialogId, int filterCount, int excludedSharedCount) {
         needDivider = true;
         String title = "";
-        String subtitle = filterCount + " " + getString(R.string.RegexFiltersHeader);
-        if (filterCount == 1) {
-            subtitle = subtitle.replace("s", "");
+        StringBuilder subtitleBuilder = new StringBuilder();
+        if (filterCount > 0) {
+            subtitleBuilder.append(getString(R.string.RegexFiltersHeader)).append(": ").append(filterCount);
         }
+        if (excludedSharedCount > 0) {
+            if (subtitleBuilder.length() > 0) {
+                subtitleBuilder.append(" · ");
+            }
+            subtitleBuilder.append(getString(R.string.RegexFiltersExcluded)).append(": ").append(excludedSharedCount);
+        }
+        String subtitle = subtitleBuilder.toString();
         if (dialogId > 0) {
             TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialogId);
             if (user != null) {
                 title = ContactsController.formatName(user.first_name, user.last_name);
                 AvatarDrawable avatar = new AvatarDrawable();
                 avatar.setInfo(user);
-                imageView.setRoundRadius(dp(20));
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
                 imageView.setForUserOrChat(user, avatar);
             } else {
                 imageView.setImageDrawable(null);
@@ -97,7 +108,7 @@ public class FiltersChatCell extends FrameLayout {
                 title = chat.title;
                 AvatarDrawable avatar = new AvatarDrawable();
                 avatar.setInfo(chat);
-                imageView.setRoundRadius(ChatObject.isForum(chat) ? dp(16) : dp(21));
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
                 imageView.setForUserOrChat(chat, avatar);
             } else {
                 imageView.setImageDrawable(null);
@@ -105,14 +116,14 @@ public class FiltersChatCell extends FrameLayout {
         }
 
         textView.setText(title);
-        subtitleView.setVisibility(VISIBLE);
+        subtitleView.setVisibility(TextUtils.isEmpty(subtitle) ? GONE : VISIBLE);
         subtitleView.setText(subtitle);
         setWillNotDraw(!needDivider);
     }
 
     public void setUserFilter(long userId, String title, String subtitle, boolean divider) {
         needDivider = divider;
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
 
         TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(userId);
         AvatarDrawable avatar = new AvatarDrawable();
@@ -131,6 +142,51 @@ public class FiltersChatCell extends FrameLayout {
             title = String.valueOf(userId);
         }
         textView.setText(title);
+        subtitleView.setVisibility(TextUtils.isEmpty(subtitle) ? GONE : VISIBLE);
+        subtitleView.setText(subtitle);
+        setWillNotDraw(!needDivider);
+    }
+
+    public void setShadowBannedPeer(long dialogId, String title, String subtitle, boolean divider) {
+        needDivider = divider;
+        String resolvedTitle = title;
+        if (dialogId > 0) {
+            TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialogId);
+            if (user != null) {
+                if (TextUtils.isEmpty(resolvedTitle)) {
+                    resolvedTitle = ContactsController.formatName(user.first_name, user.last_name);
+                }
+                AvatarDrawable avatar = new AvatarDrawable();
+                avatar.setInfo(user);
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
+                imageView.setForUserOrChat(user, avatar);
+            } else {
+                AvatarDrawable avatar = new AvatarDrawable();
+                avatar.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
+                imageView.setImageDrawable(avatar);
+            }
+        } else {
+            TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-dialogId);
+            if (chat != null) {
+                if (TextUtils.isEmpty(resolvedTitle)) {
+                    resolvedTitle = chat.title;
+                }
+                AvatarDrawable avatar = new AvatarDrawable();
+                avatar.setInfo(chat);
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
+                imageView.setForUserOrChat(chat, avatar);
+            } else {
+                AvatarDrawable avatar = new AvatarDrawable();
+                avatar.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
+                imageView.setImageDrawable(avatar);
+            }
+        }
+        if (TextUtils.isEmpty(resolvedTitle)) {
+            resolvedTitle = String.valueOf(dialogId);
+        }
+        textView.setText(resolvedTitle);
         subtitleView.setVisibility(TextUtils.isEmpty(subtitle) ? GONE : VISIBLE);
         subtitleView.setText(subtitle);
         setWillNotDraw(!needDivider);

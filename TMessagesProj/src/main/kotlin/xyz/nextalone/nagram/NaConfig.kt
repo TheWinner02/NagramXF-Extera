@@ -1,14 +1,11 @@
 package xyz.nextalone.nagram
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.content.edit
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.ApplicationLoader
 import org.telegram.messenger.BuildVars
-import org.telegram.messenger.FileLog
-import org.telegram.messenger.SharedConfig
 import tw.nekomimi.nekogram.NekoConfig
 import tw.nekomimi.nekogram.config.ConfigItem
 import tw.nekomimi.nekogram.config.ConfigItemKeyLinked
@@ -22,6 +19,11 @@ object NaConfig {
     private var initialized = false
 
     @JvmStatic
+    fun getConfigTypes(): HashMap<String, ConfigItem> {
+        return HashMap()
+    }
+
+    @JvmStatic
     fun getPreferences(): SharedPreferences {
         return NekoConfig.getPreferences()
     }
@@ -32,6 +34,18 @@ object NaConfig {
         synchronized(sync) {
             if (initialized) return
             if (ApplicationLoader.applicationContext == null) return
+
+            if (getPreferences().contains("IgnoreUnreadCount")) {
+                try {
+                    getPreferences().getBoolean("IgnoreUnreadCount", false)
+                } catch (_: Exception) {
+                    val legacyInt = getPreferences().getInt("IgnoreUnreadCount", 0)
+                    getPreferences().edit {
+                        remove("IgnoreUnreadCount")
+                        putBoolean("IgnoreUnreadCount", legacyInt == NekoConfig.DIALOG_FILTER_EXCLUDE_ALL)
+                    }
+                }
+            }
 
             loadConfig(false)
             updatePreferredTranslateTargetLangList()
@@ -162,6 +176,12 @@ object NaConfig {
             ConfigItem.configTypeInt,
             8
         )
+    val doubleTapSeekDuration =
+        addConfig(
+            "doubleTapSeekDuration",
+            ConfigItem.configTypeInt,
+            1
+        )
     val showCopyPhoto =
         addConfig(
             "CopyPhoto",
@@ -178,7 +198,7 @@ object NaConfig {
         addConfig(
             "CustomTitle",
             ConfigItem.configTypeString,
-            "Nagram X"
+            "Nagram Extera"
         )
     val dateOfForwardedMsg =
         addConfig(
@@ -240,6 +260,30 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val nowPlayingServiceType =
+        addConfig(
+            "NowPlayingServiceType",
+            ConfigItem.configTypeInt,
+            0
+        )
+    val nowPlayingLastFmUsername =
+        addConfig(
+            "NowPlayingLastFmUsername",
+            ConfigItem.configTypeString,
+            ""
+        )
+    val nowPlayingLastFmApiKey =
+        addConfig(
+            "NowPlayingLastFmApiKey",
+            ConfigItem.configTypeString,
+            ""
+        )
+    val replaceBlockedMyInfo =
+        addConfig(
+            "ReplaceBlockedMyInfo",
+            ConfigItem.configTypeBool,
+            false
+        )
     val showFullAbout =
         addConfig(
             "ShowFullAbout",
@@ -269,6 +313,12 @@ object NaConfig {
             "ChatDecoration",
             ConfigItem.configTypeInt,
             0
+        )
+    val forceSnowfall =
+        addConfig(
+            "ForceSnowfall",
+            ConfigItem.configTypeBool,
+            false
         )
     val doNotUnarchiveBySwipe =
         addConfig(
@@ -340,48 +390,6 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
-    val disableClickCommandToSend =
-        addConfig(
-            "DisableClickCommandToSend",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val disableDialogsFloatingButton =
-        addConfig(
-            "DisableDialogsFloatingButton",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val centerActionBarTitle =
-        addConfig(
-            "CenterActionBarTitle",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val showQuickReplyInBotCommands =
-        addConfig(
-            "ShowQuickReplyInBotCommands",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val pushServiceType =
-        addConfig(
-            "PushServiceType",
-            ConfigItem.configTypeInt,
-            1
-        )
-    val pushServiceTypeInAppDialog =
-        addConfig(
-            "PushServiceTypeInAppDialog",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val pushServiceTypeUnifiedGateway =
-        addConfig(
-            "PushServiceTypeUnifiedGateway",
-            ConfigItem.configTypeString,
-            ""
-        )
     val pushServiceTypeUnifiedSimple =
         addConfig(
             "PushServiceTypeUnifiedSimple",
@@ -403,6 +411,72 @@ object NaConfig {
     val pushServiceTypeUnifiedWebPushAuthSecret =
         addConfig(
             "PushServiceTypeUnifiedWebPushAuthSecret",
+            ConfigItem.configTypeString,
+            ""
+        )
+    val defaultScheduledTime =
+        addConfig(
+            "DefaultScheduledTime",
+            ConfigItem.configTypeInt,
+            10
+        )
+    val disableClickCommandToSend =
+        addConfig(
+            "DisableClickCommandToSend",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val disableDialogsFloatingButton =
+        addConfig(
+            "DisableDialogsFloatingButton",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val squareFloatingButton =
+        addConfig(
+            "SquareFloatingButton",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideHomeSearchField =
+        addConfig(
+            "HideHomeSearchField",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val centerActionBarTitle =
+        addConfig(
+            "CenterActionBarTitle",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val showQuickReplyInBotCommands =
+        addConfig(
+            "ShowQuickReplyInBotCommands",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val showRecentChatsSidebar =
+        addConfig(
+            "ShowRecentChatsSidebar",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val pushServiceType =
+        addConfig(
+            "PushServiceType",
+            ConfigItem.configTypeInt,
+            1
+        )
+    val pushServiceTypeInAppDialog =
+        addConfig(
+            "PushServiceTypeInAppDialog",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val pushServiceTypeUnifiedGateway =
+        addConfig(
+            "PushServiceTypeUnifiedGateway",
             ConfigItem.configTypeString,
             ""
         )
@@ -442,6 +516,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val regexFiltersMaskMessages =
+        addConfig(
+            "RegexFiltersMaskMessages",
+            ConfigItem.configTypeBool,
+            false
+        )
     val regexChatFiltersData =
         addConfig(
             "RegexChatFiltersData",
@@ -451,6 +531,12 @@ object NaConfig {
     val regexFiltersExcludedDialogs =
         addConfig(
             "RegexFiltersExcludedDialogs",
+            ConfigItem.configTypeString,
+            "[]"
+        )
+    val regexFiltersExcludedEntriesData =
+        addConfig(
+            "RegexFiltersExcludedEntriesData",
             ConfigItem.configTypeString,
             "[]"
         )
@@ -466,9 +552,27 @@ object NaConfig {
             ConfigItem.configTypeString,
             "[]"
         )
+    val regexFiltersLastImportLink =
+        addConfig(
+            "RegexFiltersLastImportLink",
+            ConfigItem.configTypeString,
+            ""
+        )
     val showTimeHint =
         addConfig(
             "ShowTimeHint",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val avatarCorners =
+        addConfig(
+            "avatarCorners",
+            ConfigItem.configTypeFloat,
+            28.0f
+        )
+    val singleCornerRadius =
+        addConfig(
+            "singleCornerRadius",
             ConfigItem.configTypeBool,
             false
         )
@@ -502,15 +606,39 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val userAvatarsInMessagePreview =
+        addConfig(
+            "UserAvatarsInMessagePreview",
+            ConfigItem.configTypeBool,
+            false
+        )
     val customTitleUserName =
         addConfig(
             "CustomTitleUserName",
             ConfigItem.configTypeBool,
-            false
+            true
         )
     val enhancedVideoBitrate =
         addConfig(
             "EnhancedVideoBitrate",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val useSystemAiService =
+        addConfig(
+            "UseSystemAiService",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideAiEditor =
+        addConfig(
+            "HideAiEditor",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideAiSummary =
+        addConfig(
+            "HideAiSummary",
             ConfigItem.configTypeBool,
             false
         )
@@ -606,6 +734,30 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    val saveMediaOnCellularDataLimit =
+        addConfig(
+            "SaveMediaOnCellularDataLimit",
+            ConfigItem.configTypeLong,
+            16L * 1024L * 1024L
+        )
+    val saveMediaOnWiFiLimit =
+        addConfig(
+            "SaveMediaOnWiFiLimit",
+            ConfigItem.configTypeLong,
+            64L * 1024L * 1024L
+        )
+    val attachmentFolderSizeLimitPreset =
+        addConfig(
+            "AttachmentFolderSizeLimitPreset",
+            ConfigItem.configTypeInt,
+            3
+        )
+    val attachmentFolderPath =
+        addConfig(
+            "AttachmentFolderPath",
+            ConfigItem.configTypeString,
+            ""
+        )
     val saveDeletedMessageForBot =
         addConfig(
             "SaveDeletedMessageForBot", // save in bot chats
@@ -623,6 +775,18 @@ object NaConfig {
             "CustomDeletedMark",
             ConfigItem.configTypeString,
             ""
+        )
+    val deletedIconStyle =
+        addConfig(
+            "DeletedIconStyle",
+            ConfigItem.configTypeInt,
+            -1
+        )
+    val deletedIconColor =
+        addConfig(
+            "DeletedIconColor",
+            ConfigItem.configTypeInt,
+            0
         )
     val hidePremiumSection =
         addConfig(
@@ -844,7 +1008,7 @@ object NaConfig {
         addConfig(
             "PreferredTranslateTargetLang",
             ConfigItem.configTypeString,
-            ""
+            "ja, zh"
         )
     val telegramUIAutoTranslate =
         addConfig(
@@ -856,19 +1020,109 @@ object NaConfig {
         addConfig(
             "TranslatorMode",
             ConfigItem.configTypeInt,
-            0 // 0: off; 1: manual only; 2: all
-        )
-    val translatorModeWithOriginalMigrated =
-        addConfig(
-            "TranslatorModeWithOriginalMigrated",
-            ConfigItem.configTypeBool,
-            false
+            1 // 0: append; 1: replace
         )
     val centerActionBarTitleType =
         addConfig(
             "CenterActionBarTitleType",
             ConfigItem.configTypeInt,
             1 // 0: off; 1: always on; 2: settings only; 3: chats only
+        )
+    val sectionsSeparatedHeaders =
+        addConfig(
+            "sectionsSeparatedHeaders",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemMyProfile =
+        addConfig(
+            "DrawerItemMyProfile",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemSetEmojiStatus =
+        addConfig(
+            "DrawerItemSetEmojiStatus",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemNewGroup =
+        addConfig(
+            "DrawerItemNewGroup",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemNewChannel =
+        addConfig(
+            "DrawerItemNewChannel",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val drawerItemContacts =
+        addConfig(
+            "DrawerItemContacts",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemCalls =
+        addConfig(
+            "DrawerItemCalls",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemRecentChats =
+        addConfig(
+            "DrawerItemRecentChats",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemSaved =
+        addConfig(
+            "DrawerItemSaved",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemSettings =
+        addConfig(
+            "DrawerItemSettings",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemNSettings =
+        addConfig(
+            "DrawerItemNSettings",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val drawerItemQrLogin =
+        addConfig(
+            "DrawerItemQrLogin",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val drawerItemArchivedChats =
+        addConfig(
+            "DrawerItemArchivedChats",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val drawerItemRestartApp =
+        addConfig(
+            "DrawerItemRestartApp",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val drawerItemBrowser =
+        addConfig(
+            "DrawerItemBrowser",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val drawerItemSessions =
+        addConfig(
+            "DrawerItemSessions",
+            ConfigItem.configTypeBool,
+            false
         )
     val hideArchive =
         addConfig(
@@ -912,6 +1166,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val foldersAtBottom =
+        addConfig(
+            "FoldersAtBottom",
+            ConfigItem.configTypeBool,
+            false
+        )
     val translatorKeepMarkdown =
         addConfig(
             "TranslatorKeepMarkdown",
@@ -941,6 +1201,12 @@ object NaConfig {
             "MessageColoredBackground",
             ConfigItem.configTypeBool,
             true
+        )
+    val removeMessageTail =
+        addConfig(
+            "RemoveMessageTail",
+            ConfigItem.configTypeBool,
+            false
         )
     val chatMenuItemBoostGroup =
         addConfig(
@@ -1108,7 +1374,7 @@ object NaConfig {
         addConfig(
             "IconReplacements",
             ConfigItem.configTypeInt,
-            0
+            1
         )
     val showCopyAsSticker =
         addConfig(
@@ -1144,7 +1410,7 @@ object NaConfig {
         addConfig(
             "EventLog",
             ConfigItem.configTypeBool,
-            true
+            false
         )
     val shortcutsStatistics =
         addConfig(
@@ -1170,6 +1436,30 @@ object NaConfig {
             ConfigItem.configTypeInt,
             0
         )
+    val mainTabsOrder =
+        addConfig(
+            "MainTabsOrder",
+            ConfigItem.configTypeString,
+            "CHATS,CONTACTS,CALLS_SETTINGS,PROFILE"
+        )
+    val mainTabsShowTitles =
+        addConfig(
+            "MainTabsShowTitles",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val mainTabsDisplayMode =
+        addConfig(
+            "MainTabsDisplayMode",
+            ConfigItem.configTypeInt,
+            0
+        )
+    val mainTabsShowSearchButton =
+        addConfig(
+            "MainTabsShowSearchButton",
+            ConfigItem.configTypeBool,
+            false
+        )
     val showTextMonoCode =
         addConfig(
             "TextMonoCode",
@@ -1188,6 +1478,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    val sendHighQualityPhoto =
+        addConfig(
+            "alwaysSendInHD",
+            ConfigItem.configTypeBool,
+            true
+        )
     val groupedMessageMenu =
         addConfig(
             "GroupedMessageMenu",
@@ -1199,6 +1495,12 @@ object NaConfig {
             "AutoUpdateChannel",
             ConfigItem.configTypeInt,
             1 // 0: off; 1: release; 2: beta
+        )
+    val sendLockedCustomEmojiAsSticker =
+        addConfig(
+            "SendLockedCustomEmojiAsSticker",
+            ConfigItem.configTypeBool,
+            false
         )
     val premiumItemEmojiStatus =
         addConfig(
@@ -1252,31 +1554,25 @@ object NaConfig {
         addConfig(
             "SwitchStyle",
             ConfigItem.configTypeInt,
-            0 // 0: default; 1: Modern; 2: MD3
+            1 // 0: default; 1: MD3; 2: OneUI
         )
     val sliderStyle =
         addConfig(
             "SliderStyle",
             ConfigItem.configTypeInt,
-            0 // 0: default; 1: Modern; 2: MD3
+            2 // 0: default; 1: Modern; 2: MD3
         )
     val ignoreUnreadCount =
         addConfig(
             "IgnoreUnreadCount",
-            ConfigItem.configTypeInt,
-            getIgnoreMutedCountLegacy()
+            ConfigItem.configTypeBool,
+            false
         )
     val markdownParser =
         addConfig(
             "MarkdownParser",
             ConfigItem.configTypeInt,
             NekoConfig.MARKDOWN_PARSER_NEKO
-        )
-    val defaultScheduledTime =
-        addConfig(
-            "DefaultScheduledTime",
-            ConfigItem.configTypeInt,
-            10
         )
     val keepTranslatorPreferences =
         addConfig(
@@ -1352,9 +1648,39 @@ object NaConfig {
         )
     val cameraInVideoMessages =
         addConfig(
-            "CameraInVideoMessages",
+            "videoMessagesCamera",
             ConfigItem.configTypeInt,
-            1 // 0: front; 1: rear; 2: ask
+            0 // 0: front; 1: rear; 2: ask
+        )
+    val extendedFramesPerSecond =
+        addConfig(
+            "extendedFramesPerSecond",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val cameraStabilization =
+        addConfig(
+            "cameraStabilization",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val rememberLastUsedCamera =
+        addConfig(
+            "rememberLastUsedCamera",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val staticZoom =
+        addConfig(
+            "staticZoom",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hidePhotoCounter =
+        addConfig(
+            "hidePhotoCounter",
+            ConfigItem.configTypeBool,
+            true
         )
     val showCopyFrame =
         addConfig(
@@ -1434,38 +1760,14 @@ object NaConfig {
         }, 1000)
     }
 
-    private fun getIgnoreMutedCountLegacy(): Int {
-        return when {
-            getPreferences().getBoolean(
-                "IgnoreFolderCount", false
-            ) -> NekoConfig.DIALOG_FILTER_EXCLUDE_ALL
 
-            getPreferences().getBoolean(
-                "IgnoreMutedCount", true
-            ) -> NekoConfig.DIALOG_FILTER_EXCLUDE_MUTED
-
-            else -> NekoConfig.DIALOG_FILTER_EXCLUDE_NONE
-        }
-    }
 
     private fun fixConfig() {
         if (ApplicationLoader.applicationContext == null) {
             return
         }
-        if (!translatorModeWithOriginalMigrated.Bool()) {
-            if (getPreferences().contains(translatorMode.key)) {
-                translatorMode.setConfigInt(
-                    when (translatorMode.Int()) {
-                        0 -> 1
-                        1 -> 0
-                        else -> 0
-                    }
-                )
-            }
-            translatorModeWithOriginalMigrated.setConfigBool(true)
-        }
-        if (translatorMode.Int() !in 0..2) {
-            translatorMode.setConfigInt(0)
+        if (translatorMode.Int() > 1) {
+            translatorMode.setConfigInt(1)
         }
         if (!getPreferences().contains(idDcType.key) && !getPreferences().getBoolean(
                 "ShowIdAndDc", true
@@ -1474,9 +1776,16 @@ object NaConfig {
             idDcType.setConfigInt(0)
         }
         if (!getPreferences().contains(cameraInVideoMessages.key)) {
+            val legacyNagramValue = getPreferences().takeIf { it.contains("CameraInVideoMessages") }
+                ?.getInt("CameraInVideoMessages", 0)
             val legacyRear = getPreferences().getBoolean("RearVideoMessages", false)
-            cameraInVideoMessages.setConfigInt(if (legacyRear) 1 else 0)
+            cameraInVideoMessages.setConfigInt(legacyNagramValue ?: if (legacyRear) 1 else 0)
         }
+        migrateBoolConfig("SendHighQualityPhoto", sendHighQualityPhoto)
+        migrateBoolConfig("CameraStabilization", cameraStabilization)
+        migrateBoolConfig("RememberLastUsedCamera", rememberLastUsedCamera)
+        migrateBoolConfig("StaticZoom", staticZoom)
+        migrateBoolConfig("HidePhotoCounter", hidePhotoCounter)
         if (!getPreferences().contains(backAnimationStyle.key) &&
             getPreferences().contains("SpringAnimation")
         ) {
@@ -1486,17 +1795,24 @@ object NaConfig {
             }
             getPreferences().edit { remove("SpringAnimation") }
         }
-        if (!getPreferences().contains(strokeOnViews.key)) {
-            strokeOnViews.changed(SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW)
+        if (!getPreferences().contains(mainTabsDisplayMode.key) &&
+            (getPreferences().contains("MainTabsHideBottomBar") || getPreferences().contains("MainTabsHideOnScroll"))
+        ) {
+            val legacyHideBottomBar = getPreferences().getBoolean("MainTabsHideBottomBar", false)
+            val legacyHideOnScroll = getPreferences().getBoolean("MainTabsHideOnScroll", false)
+            mainTabsDisplayMode.setConfigInt(
+                when {
+                    legacyHideBottomBar -> 1
+                    legacyHideOnScroll -> 2
+                    else -> 0
+                }
+            )
         }
-
-        val mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Context.MODE_PRIVATE)
-        if (!mainPreferences.contains("photoHighQualityDefault") && getPreferences().contains("SendHighQualityPhoto")) {
-            val highQuality = getPreferences().getBoolean("SendHighQualityPhoto", true)
-            mainPreferences.edit {
-                putBoolean("photoHighQualityDefault", highQuality)
+        if (getPreferences().contains("MainTabsHideBottomBar") || getPreferences().contains("MainTabsHideOnScroll")) {
+            getPreferences().edit {
+                remove("MainTabsHideBottomBar")
+                remove("MainTabsHideOnScroll")
             }
-            SharedConfig.photoHighQualityDefault = highQuality
         }
 
         val currentLlmApiUrl = llmApiUrl.String()
@@ -1504,13 +1820,16 @@ object NaConfig {
         if (normalizedLlmApiUrl != currentLlmApiUrl) {
             llmApiUrl.setConfigString(normalizedLlmApiUrl)
         }
-    }
 
-    private fun resetInvalidConfig(o: ConfigItem, e: RuntimeException) {
-        val key = if (o is ConfigItemKeyLinked) o.keyLinked.key else o.key
-        FileLog.e("Invalid config value for $key", e)
-        o.value = o.defaultValue
-        getPreferences().edit { remove(key) }
+        // Modern switch style was removed; remap legacy indices: 1->0, 2->1, 3->2.
+        if (!getPreferences().getBoolean("SwitchStyleModernRemoved", false)) {
+            when (switchStyle.Int()) {
+                1 -> switchStyle.setConfigInt(0)
+                2 -> switchStyle.setConfigInt(1)
+                3 -> switchStyle.setConfigInt(2)
+            }
+            getPreferences().edit { putBoolean("SwitchStyleModernRemoved", true) }
+        }
     }
 
     private fun addConfig(
@@ -1555,88 +1874,101 @@ object NaConfig {
             }
             for (i in configs.indices) {
                 val o = configs[i]
-                try {
-                    if (o.type == ConfigItem.configTypeBool) {
-                        o.value = getPreferences().getBoolean(
-                            o.key, o.defaultValue as Boolean
+                if (o.type == ConfigItem.configTypeBool) {
+                    o.value = getPreferences().getBoolean(
+                        o.key, o.defaultValue as Boolean
+                    )
+                }
+                if (o.type == ConfigItem.configTypeInt) {
+                    o.value = getPreferences().getInt(
+                        o.key, o.defaultValue as Int
+                    )
+                }
+                if (o.type == ConfigItem.configTypeLong) {
+                    o.value = getPreferences().getLong(
+                        o.key, (o.defaultValue as Long)
+                    )
+                }
+                if (o.type == ConfigItem.configTypeFloat) {
+                    o.value = getPreferences().getFloat(
+                        o.key, (o.defaultValue as Float)
+                    )
+                }
+                if (o.type == ConfigItem.configTypeString) {
+                    o.value = getPreferences().getString(
+                        o.key, o.defaultValue as String
+                    )
+                }
+                if (o.type == ConfigItem.configTypeSetInt) {
+                    val ss = getPreferences().getStringSet(
+                        o.key, HashSet()
+                    )
+                    val si = HashSet<Int>()
+                    for (s in ss!!) {
+                        si.add(
+                            s.toInt()
                         )
                     }
-                    if (o.type == ConfigItem.configTypeInt) {
-                        o.value = getPreferences().getInt(
-                            o.key, o.defaultValue as Int
-                        )
-                    }
-                    if (o.type == ConfigItem.configTypeLong) {
-                        o.value = getPreferences().getLong(
-                            o.key, (o.defaultValue as Long)
-                        )
-                    }
-                    if (o.type == ConfigItem.configTypeFloat) {
-                        o.value = getPreferences().getFloat(
-                            o.key, (o.defaultValue as Float)
-                        )
-                    }
-                    if (o.type == ConfigItem.configTypeString) {
-                        o.value = getPreferences().getString(
-                            o.key, o.defaultValue as String
-                        )
-                    }
-                    if (o.type == ConfigItem.configTypeSetInt) {
-                        val ss = getPreferences().getStringSet(
-                            o.key, HashSet()
-                        )
-                        val si = HashSet<Int>()
-                        for (s in ss!!) {
-                            si.add(
-                                s.toInt()
+                    o.value = si
+                }
+                if (o.type == ConfigItem.configTypeMapIntInt) {
+                    val cv = getPreferences().getString(
+                        o.key, ""
+                    )
+                    // Log.e("NC", String.format("Getting pref %s val %s", o.key, cv));
+                    if (cv!!.isEmpty()) {
+                        o.value = HashMap<Int, Int>()
+                    } else {
+                        try {
+                            val data = Base64.decode(
+                                cv, Base64.DEFAULT
                             )
-                        }
-                        o.value = si
-                    }
-                    if (o.type == ConfigItem.configTypeMapIntInt) {
-                        val cv = getPreferences().getString(
-                            o.key, ""
-                        )
-                        // Log.e("NC", String.format("Getting pref %s val %s", o.key, cv));
-                        if (cv!!.isEmpty()) {
-                            o.value = HashMap<Int, Int>()
-                        } else {
-                            try {
-                                val data = Base64.decode(
-                                    cv, Base64.DEFAULT
+                            val ois = ObjectInputStream(
+                                ByteArrayInputStream(
+                                    data
                                 )
-                                val ois = ObjectInputStream(
-                                    ByteArrayInputStream(
-                                        data
-                                    )
-                                )
-                                o.value = ois.readObject() as HashMap<*, *>
-                                if (o.value == null) {
-                                    o.value = HashMap<Int, Int>()
-                                }
-                                ois.close()
-                            } catch (_: Exception) {
+                            )
+                            o.value = ois.readObject() as HashMap<*, *>
+                            if (o.value == null) {
                                 o.value = HashMap<Int, Int>()
                             }
+                            ois.close()
+                        } catch (_: Exception) {
+                            o.value = HashMap<Int, Int>()
                         }
                     }
-                    if (o.type == ConfigItem.configTypeBoolLinkInt) {
-                        o as ConfigItemKeyLinked
-                        o.changedFromKeyLinked(getPreferences().getInt(o.keyLinked.key, 0))
-                    }
-                } catch (e: ClassCastException) {
-                    resetInvalidConfig(o, e)
-                } catch (e: NumberFormatException) {
-                    resetInvalidConfig(o, e)
+                }
+                if (o.type == ConfigItem.configTypeBoolLinkInt) {
+                    o as ConfigItemKeyLinked
+                    o.changedFromKeyLinked(getPreferences().getInt(o.keyLinked.key, 0))
                 }
             }
             configLoaded = true
         }
     }
 
-    fun getConfigTypes(): Map<String, Int> {
+    fun getAllKeys(): Set<String> {
         synchronized(sync) {
-            return configs.associate { it.key to it.type }
+            return configs.map { it.key }.toSet()
+        }
+    }
+
+    private fun migrateBoolConfig(
+        legacyKey: String,
+        config: ConfigItem
+    ) {
+        if (!getPreferences().contains(config.key) && getPreferences().contains(legacyKey)) {
+            config.setConfigBool(getPreferences().getBoolean(legacyKey, config.defaultValue as Boolean))
+        }
+    }
+
+    @JvmStatic
+    fun getDoubleTapSeekDurationMs(): Int {
+        val value = doubleTapSeekDuration.Int()
+        return if (value in 0..2) {
+            (value + 1) * 5000
+        } else {
+            30000
         }
     }
 

@@ -248,6 +248,7 @@ public class MessageObject {
     public ArrayList<Integer> pollMediaMapping;
     public boolean shouldRemoveVideoEditedInfo;
     public boolean viewsReloaded;
+    public boolean skipAyuFiltering;
     public boolean pollVisibleOnScreen;
     public long pollLastCheckTime;
     public int wantedBotKeyboardWidth;

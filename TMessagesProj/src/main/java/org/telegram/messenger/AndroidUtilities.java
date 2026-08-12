@@ -248,6 +248,7 @@ import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import xyz.nextalone.nagram.NaConfig;
 
 public class AndroidUtilities {
+    public static final int DARK_STATUS_BAR_OVERLAY = 0x26000000;
     public final static int REPLACING_TAG_TYPE_LINK = 0;
     public final static int REPLACING_TAG_TYPE_BOLD = 1;
     public final static int REPLACING_TAG_TYPE_LINKBOLD = 2;

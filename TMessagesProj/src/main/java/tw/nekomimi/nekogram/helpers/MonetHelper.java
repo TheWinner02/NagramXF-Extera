@@ -122,6 +122,24 @@ public class MonetHelper {
     public static int getColor(String color) {
         try {
             String rawColor = color == null ? "" : color.trim();
+
+            // Optional alpha override syntax: "colorname (a=N)" with N in [0,255].
+            Integer alphaOverride = null;
+            int parenIdx = rawColor.indexOf('(');
+            if (parenIdx > 0 && rawColor.endsWith(")")) {
+                String tag = rawColor.substring(parenIdx + 1, rawColor.length() - 1).trim();
+                if (tag.startsWith("a=")) {
+                    String alphaStr = tag.substring(2).trim();
+                    if (isDigitsOnly(alphaStr)) {
+                        int v = Integer.parseInt(alphaStr);
+                        if (v >= 0 && v <= 255) {
+                            alphaOverride = v;
+                            rawColor = rawColor.substring(0, parenIdx).trim();
+                        }
+                    }
+                }
+            }
+
             String baseColor = rawColor;
             String darkenPercentValue = null;
 
@@ -138,6 +156,9 @@ public class MonetHelper {
             int resolvedColor = resolveColor(baseColor);
             if (darkenPercentValue != null) {
                 resolvedColor = darkenByPercent(resolvedColor, Integer.parseInt(darkenPercentValue));
+            }
+            if (alphaOverride != null) {
+                resolvedColor = ColorUtils.setAlphaComponent(resolvedColor, alphaOverride);
             }
             return resolvedColor;
         } catch (Exception e) {

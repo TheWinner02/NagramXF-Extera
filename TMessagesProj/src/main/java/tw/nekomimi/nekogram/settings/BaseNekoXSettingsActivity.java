@@ -25,11 +25,14 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
@@ -238,6 +241,10 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
     protected void addDefaultLongClickOptions(ItemOptions options, String prefix, int position) {
         String key = getRowKey(position);
         String value = getRowValue(position);
+        addDefaultLongClickOptions(options, prefix, key, value);
+    }
+
+    protected void addDefaultLongClickOptions(ItemOptions options, String prefix, String key, String value) {
         options.add(R.drawable.msg_link2, getString(R.string.CopyLink), () -> {
             AndroidUtilities.addToClipboard(String.format(Locale.getDefault(), "https://%s/nasettings/%s?r=%s", getMessagesController().linkPrefix, prefix, key));
             BulletinFactory.of(this).createCopyLinkBulletin().show();
@@ -377,6 +384,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         return rowMapReverse;
     }
 
+    protected void styleTextInfoPrivacyCell(TextInfoPrivacyCell cell) {
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
@@ -486,6 +496,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
             if (view == null) {
                 view = createDefaultViewByType(viewType);
             }
+            if (viewType == CellGroup.ITEM_TYPE_TEXT && view instanceof TextInfoPrivacyCell textInfoPrivacyCell) {
+                styleTextInfoPrivacyCell(textInfoPrivacyCell);
+            }
             // noinspection ConstantConditions
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
@@ -518,6 +531,19 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
                     break;
                 case CellGroup.ITEM_TYPE_TEXT_CHECK_ICON:
                     view = new TextCell(mContext);
+                    break;
+                case CellGroup.ITEM_TYPE_CHECK2:
+                    view = new TextCheckCell2(mContext);
+                    break;
+                case CellGroup.ITEM_TYPE_CHECK_BOX:
+                    CheckBoxCell checkBoxCell = new CheckBoxCell(mContext, CheckBoxCell.TYPE_CHECK_BOX_ROUND, 21, getResourceProvider());
+                    checkBoxCell.getCheckBoxRound().setDrawBackgroundAsArc(14);
+                    checkBoxCell.getCheckBoxRound().setColor(Theme.key_switch2TrackChecked, Theme.key_radioBackground, Theme.key_checkboxCheck);
+                    checkBoxCell.setEnabled(true);
+                    view = checkBoxCell;
+                    break;
+                case CellGroup.ITEM_TYPE_TEXT_DETAIL_ICON:
+                    view = new TextDetailSettingsCell(mContext);
                     break;
             }
             return view;
@@ -589,5 +615,45 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         builder.setPositiveButton(getString(R.string.OK), null);
         builder.setView(linearLayout);
         return builder.create();
+    }
+
+    public interface RunnableInt {
+        void run(int index);
+    }
+
+    public AlertDialog showSingleChoiceDialog(Context context, int titleResId, String[] items, int selectedIndex, Theme.ResourcesProvider resourcesProvider, RunnableInt onSelected) {
+        return showSingleChoiceDialog(context, getString(titleResId), items, selectedIndex, resourcesProvider, onSelected);
+    }
+
+    public AlertDialog showSingleChoiceDialog(Context context, String title, String[] items, int selectedIndex, Theme.ResourcesProvider resourcesProvider, RunnableInt onSelected) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
+        builder.setTitle(title);
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        builder.setView(linearLayout);
+
+        for (int i = 0; i < items.length; i++) {
+            RadioColorCell cell = new RadioColorCell(context, resourcesProvider);
+            cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+            cell.setTag(i);
+            cell.setCheckColor(
+                    Theme.getColor(Theme.key_radioBackground, resourcesProvider),
+                    Theme.getColor(Theme.key_dialogRadioBackgroundChecked, resourcesProvider)
+            );
+            cell.setTextAndValue(items[i], i == selectedIndex);
+            cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 2));
+            linearLayout.addView(cell);
+            cell.setOnClickListener(v -> {
+                int index = (Integer) v.getTag();
+                onSelected.run(index);
+                builder.getDismissRunnable().run();
+            });
+        }
+
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        showDialog(dialog);
+        return dialog;
     }
 }

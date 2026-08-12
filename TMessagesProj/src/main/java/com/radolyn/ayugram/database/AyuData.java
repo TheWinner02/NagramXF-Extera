@@ -9,14 +9,6 @@
 
 package com.radolyn.ayugram.database;
 
-import static org.telegram.messenger.LocaleController.getString;
-
-import android.content.Context;
-import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.system.Os;
-
 import androidx.room.Room;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
@@ -30,28 +22,31 @@ import com.radolyn.ayugram.messages.AyuMessagesController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.LaunchActivity;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
-import tw.nekomimi.nekogram.helpers.AppRestartHelper;
-import tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity;
 import tw.nekomimi.nekogram.utils.AndroidUtil;
+import tw.nekomimi.nekogram.utils.FileUtil;
 
 public class AyuData {
-    private static final String IMPORT_DATABASE = AyuConstants.AYU_DATABASE + "-import";
-
+    public static void importAyuDatabase(Object activity, File file) {}
     public static long dbSize, attachmentsSize, totalSize;
     private static AyuDatabase database;
     private static EditedMessageDao editedMessageDao;
     private static DeletedMessageDao deletedMessageDao;
     private static LastSeenDao lastSeenDao;
+    private static final int IO_BUFFER_SIZE = 16 * 1024;
 
     private static final Migration MIGRATION_21_22 = new Migration(21, 22) {
         @Override
@@ -112,20 +107,30 @@ public class AyuData {
         create();
     }
 
+    private static AyuDatabase buildDatabase(boolean allowDestructiveMigrationOnDowngrade) {
+        if (allowDestructiveMigrationOnDowngrade) {
+            return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
+                    .allowMainThreadQueries()
+                    .fallbackToDestructiveMigrationOnDowngrade()
+                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
+                    .build();
+        }
+        return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
+                .allowMainThreadQueries()
+                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
+                .build();
+    }
+
     public static synchronized void create() {
-        database = createDatabase(AyuConstants.AYU_DATABASE);
+        if (database != null) {
+            return;
+        }
+        database = buildDatabase(true);
 
         editedMessageDao = database.editedMessageDao();
         deletedMessageDao = database.deletedMessageDao();
         lastSeenDao = database.lastSeenDao();
-    }
-
-    private static AyuDatabase createDatabase(String name) {
-        return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, name)
-                .allowMainThreadQueries()
-                .fallbackToDestructiveMigrationOnDowngrade()
-                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
-                .build();
+        AyuMessagesController.refreshAfterDatabaseChange();
     }
 
     public static AyuDatabase getDatabase() {
@@ -144,138 +149,268 @@ public class AyuData {
         return lastSeenDao;
     }
 
-    public static synchronized void clean() {
+    private static File getDatabaseFile() {
+        return ApplicationLoader.applicationContext.getDatabasePath(AyuConstants.AYU_DATABASE);
+    }
+
+    private static File getWalFile(File dbFile) {
+        return new File(dbFile.getAbsolutePath() + "-wal");
+    }
+
+    private static File getShmFile(File dbFile) {
+        return new File(dbFile.getAbsolutePath() + "-shm");
+    }
+
+    private static void closeDatabase() {
         if (database != null) {
+            try {
+                database.getOpenHelper().getWritableDatabase().execSQL("PRAGMA wal_checkpoint(TRUNCATE)");
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
             try {
                 database.close();
             } catch (Exception e) {
                 FileLog.e(e);
             }
         }
-        clearReferences();
-        ApplicationLoader.applicationContext.deleteDatabase(AyuConstants.AYU_DATABASE);
-    }
 
-    private static void clearReferences() {
         database = null;
         editedMessageDao = null;
         deletedMessageDao = null;
         lastSeenDao = null;
     }
 
-    public static void importAyuDatabase(BaseFragment fragment, File importFile) {
-        if (fragment.getParentActivity() == null) {
-            return;
-        }
-        AlertDialog progressDialog = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER, fragment.getResourceProvider());
-        progressDialog.setCanCancel(false);
-        progressDialog.show();
-        Utilities.globalQueue.postRunnable(() -> {
-            try {
-                importDatabase(importFile);
-                AndroidUtilities.runOnUIThread(() -> {
-                    Context context = ApplicationLoader.applicationContext;
-                    AppRestartHelper.triggerRebirth(context, new Intent(context, LaunchActivity.class));
-                });
-            } catch (Exception e) {
-                FileLog.e(e);
-                AndroidUtilities.runOnUIThread(() -> {
-                    progressDialog.dismiss();
-                    if (fragment.getParentActivity() != null) {
-                        BulletinFactory.of(fragment).createSimpleBulletin(R.raw.error, getString(R.string.ErrorOccurred)).show();
-                    }
-                });
-            }
-        });
+    public static synchronized void clean() {
+        closeDatabase();
+
+        ApplicationLoader.applicationContext.deleteDatabase(AyuConstants.AYU_DATABASE);
     }
 
-    private static synchronized void importDatabase(File sourceFile) throws Exception {
-        if (!sourceFile.isFile()) {
-            throw new IOException("Ayu database import file does not exist");
+    public static synchronized void exportDatabase(OutputStream outputStream) throws IOException {
+        if (outputStream == null) {
+            throw new IOException("Database export stream is null");
         }
 
-        Context context = ApplicationLoader.applicationContext;
-        File importFile = context.getDatabasePath(IMPORT_DATABASE);
-        File databaseFile = context.getDatabasePath(AyuConstants.AYU_DATABASE);
+        closeDatabase();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(outputStream))) {
+            File dbFile = getDatabaseFile();
+            addFileToZip(zipOutputStream, dbFile);
+            addFileToZip(zipOutputStream, getWalFile(dbFile));
+            addFileToZip(zipOutputStream, getShmFile(dbFile));
+        } finally {
+            create();
+        }
+    }
 
-        context.deleteDatabase(IMPORT_DATABASE);
+    public static synchronized void importDatabase(InputStream inputStream) throws IOException {
+        if (inputStream == null) {
+            throw new IOException("Database import stream is null");
+        }
+
+        File cacheDir = AndroidUtilities.getCacheDir();
+        File importDir = new File(cacheDir, "ayu_database_import");
+        File backupDir = new File(cacheDir, "ayu_database_backup");
+        if (importDir.exists()) {
+            FileUtil.deleteDirectory(importDir);
+        }
+        if (backupDir.exists()) {
+            FileUtil.deleteDirectory(backupDir);
+        }
+        if (!importDir.exists() && !importDir.mkdirs()) {
+            throw new IOException("Unable to create temporary import directory");
+        }
+        if (!backupDir.exists() && !backupDir.mkdirs()) {
+            throw new IOException("Unable to create temporary backup directory");
+        }
+
+        File dbFile = getDatabaseFile();
+        File importDbFile = new File(importDir, dbFile.getName());
+        File importWalFile = new File(importDir, dbFile.getName() + "-wal");
+        File importShmFile = new File(importDir, dbFile.getName() + "-shm");
 
         try {
-            if (!AndroidUtilities.copyFile(sourceFile, importFile)) {
-                throw new IOException("Failed to stage Ayu database");
-            }
-            validateImportDatabase(importFile);
-
-            AyuDatabase importDatabase = createDatabase(IMPORT_DATABASE);
-            try {
-                SupportSQLiteDatabase imported = importDatabase.getOpenHelper().getWritableDatabase();
-                try (Cursor cursor = imported.query("PRAGMA wal_checkpoint(FULL)")) {
-                    if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
-                        throw new IOException("Ayu database checkpoint is busy");
-                    }
-                }
-            } finally {
-                importDatabase.close();
+            BufferedInputStream bufferedInputStream = inputStream instanceof BufferedInputStream
+                    ? (BufferedInputStream) inputStream
+                    : new BufferedInputStream(inputStream);
+            if (isZipStream(bufferedInputStream)) {
+                extractDatabaseBackup(bufferedInputStream, importDir, dbFile.getName());
+            } else {
+                copyStreamToFile(bufferedInputStream, importDbFile);
             }
 
-            checkpointDatabase();
+            if (!importDbFile.exists() || importDbFile.length() == 0L) {
+                throw new IOException("Imported backup does not contain a valid database file");
+            }
+
+            closeDatabase();
+            backupCurrentDatabaseFiles(backupDir, dbFile);
             try {
-                database.close();
-            } finally {
-                clearReferences();
+                replaceCurrentDatabaseFiles(importDbFile, importWalFile, importShmFile, dbFile);
+                validateImportedDatabaseFiles();
+            } catch (IOException e) {
+                restoreCurrentDatabaseFiles(backupDir, dbFile);
+                throw e;
             }
-            deleteSidecars(databaseFile);
-            Os.rename(importFile.getAbsolutePath(), databaseFile.getAbsolutePath());
-        } catch (Exception e) {
-            if (database == null) {
-                try {
-                    create();
-                    database.getOpenHelper().getWritableDatabase();
-                    AyuMessagesController.getInstance().refreshDaos();
-                } catch (Exception restoreError) {
-                    e.addSuppressed(restoreError);
-                }
-            }
-            throw e;
         } finally {
-            context.deleteDatabase(IMPORT_DATABASE);
-        }
-    }
-
-    private static void validateImportDatabase(File importFile) throws IOException {
-        try (SQLiteDatabase imported = SQLiteDatabase.openDatabase(importFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY)) {
-            if (!imported.isDatabaseIntegrityOk()) {
-                throw new IOException("Ayu database integrity check failed");
+            create();
+            if (importDir.exists()) {
+                FileUtil.deleteDirectory(importDir);
             }
-            int version = imported.getVersion();
-            if (version < AyuDatabase.MIN_SUPPORTED_VERSION || version > AyuDatabase.VERSION) {
-                throw new IOException("Unsupported Ayu database version: " + version);
+            if (backupDir.exists()) {
+                FileUtil.deleteDirectory(backupDir);
             }
         }
     }
 
-    private static void deleteSidecars(File databaseFile) throws IOException {
-        String[] suffixes = {"-journal", "-shm", "-wal"};
-        for (String suffix : suffixes) {
-            File sidecar = new File(databaseFile.getAbsolutePath() + suffix);
-            if (sidecar.exists() && !sidecar.delete()) {
-                throw new IOException("Failed to delete Ayu database sidecar");
+    private static void addFileToZip(ZipOutputStream zipOutputStream, File sourceFile) throws IOException {
+        if (sourceFile == null || !sourceFile.exists() || !sourceFile.isFile()) {
+            return;
+        }
+        zipOutputStream.putNextEntry(new ZipEntry(sourceFile.getName()));
+        try (FileInputStream fileInputStream = new FileInputStream(sourceFile)) {
+            copyStream(fileInputStream, zipOutputStream);
+        }
+        zipOutputStream.closeEntry();
+    }
+
+    private static boolean isZipStream(BufferedInputStream inputStream) throws IOException {
+        inputStream.mark(4);
+        int first = inputStream.read();
+        int second = inputStream.read();
+        int third = inputStream.read();
+        int fourth = inputStream.read();
+        inputStream.reset();
+        return first == 0x50 && second == 0x4b && third == 0x03 && fourth == 0x04;
+    }
+
+    private static void extractDatabaseBackup(InputStream inputStream, File targetDir, String databaseName) throws IOException {
+        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String entryName = new File(entry.getName()).getName();
+                if (!databaseName.equals(entryName)
+                        && !(databaseName + "-wal").equals(entryName)
+                        && !(databaseName + "-shm").equals(entryName)) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                File outFile = new File(targetDir, entryName);
+                copyStreamToFile(zipInputStream, outFile);
+                zipInputStream.closeEntry();
             }
         }
     }
 
-    public static synchronized void checkpointDatabase() throws IOException {
-        try (Cursor cursor = database.getOpenHelper().getWritableDatabase().query("PRAGMA wal_checkpoint(FULL)")) {
-            if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
-                throw new IOException("Ayu database checkpoint is busy");
+    private static void backupCurrentDatabaseFiles(File backupDir, File dbFile) throws IOException {
+        backupIfExists(dbFile, new File(backupDir, dbFile.getName()));
+        backupIfExists(getWalFile(dbFile), new File(backupDir, dbFile.getName() + "-wal"));
+        backupIfExists(getShmFile(dbFile), new File(backupDir, dbFile.getName() + "-shm"));
+    }
+
+    private static void backupIfExists(File sourceFile, File backupFile) throws IOException {
+        if (sourceFile.exists()) {
+            copyFile(sourceFile, backupFile);
+        }
+    }
+
+    private static void replaceCurrentDatabaseFiles(File importDbFile, File importWalFile, File importShmFile, File dbFile) throws IOException {
+        deleteIfExists(dbFile);
+        deleteIfExists(getWalFile(dbFile));
+        deleteIfExists(getShmFile(dbFile));
+
+        copyFile(importDbFile, dbFile);
+        if (importWalFile.exists()) {
+            copyFile(importWalFile, getWalFile(dbFile));
+        }
+        if (importShmFile.exists()) {
+            copyFile(importShmFile, getShmFile(dbFile));
+        }
+    }
+
+    private static void restoreCurrentDatabaseFiles(File backupDir, File dbFile) {
+        try {
+            deleteIfExists(dbFile);
+            deleteIfExists(getWalFile(dbFile));
+            deleteIfExists(getShmFile(dbFile));
+
+            File backupDbFile = new File(backupDir, dbFile.getName());
+            File backupWalFile = new File(backupDir, dbFile.getName() + "-wal");
+            File backupShmFile = new File(backupDir, dbFile.getName() + "-shm");
+
+            if (backupDbFile.exists()) {
+                copyFile(backupDbFile, dbFile);
             }
+            if (backupWalFile.exists()) {
+                copyFile(backupWalFile, getWalFile(dbFile));
+            }
+            if (backupShmFile.exists()) {
+                copyFile(backupShmFile, getShmFile(dbFile));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static void validateImportedDatabaseFiles() throws IOException {
+        AyuDatabase validationDatabase = null;
+        try {
+            validationDatabase = buildDatabase(false);
+            validationDatabase.getOpenHelper().getWritableDatabase().query("SELECT name FROM sqlite_master LIMIT 1").close();
+        } catch (Exception e) {
+            throw new IOException("Imported backup is not a compatible Ayu database", e);
+        } finally {
+            if (validationDatabase != null) {
+                try {
+                    validationDatabase.close();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        }
+    }
+
+    private static void copyStreamToFile(InputStream inputStream, File targetFile) throws IOException {
+        File parent = targetFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("Unable to create directory " + parent.getAbsolutePath());
+        }
+        try (BufferedOutputStream fileOutputStream = new BufferedOutputStream(new FileOutputStream(targetFile))) {
+            copyStream(inputStream, fileOutputStream);
+        }
+    }
+
+    private static void copyFile(File sourceFile, File targetFile) throws IOException {
+        try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(sourceFile))) {
+            copyStreamToFile(inputStream, targetFile);
+        }
+    }
+
+    private static void copyStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+        byte[] buffer = new byte[IO_BUFFER_SIZE];
+        int read;
+        while ((read = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, read);
+        }
+        outputStream.flush();
+    }
+
+    private static void deleteIfExists(File file) throws IOException {
+        if (file.exists() && !file.delete()) {
+            throw new IOException("Unable to delete " + file.getAbsolutePath());
         }
     }
 
     public static long getDatabaseSize() {
         long size = 0;
         try {
-            File dbFile = ApplicationLoader.applicationContext.getDatabasePath(AyuConstants.AYU_DATABASE);
+            File dbFile = getDatabaseFile();
             File shmCacheFile = new File(dbFile.getAbsolutePath() + "-shm");
             File walCacheFile = new File(dbFile.getAbsolutePath() + "-wal");
             if (dbFile.exists()) {
@@ -293,9 +428,14 @@ public class AyuData {
         return size;
     }
 
+    public static long getAyuDatabaseSize() {
+        return getDatabaseSize();
+    }
+
     public static long getAttachmentsDirSize() {
         long size = 0;
         try {
+            AyuMessagesController.syncAttachmentsPathWithConfig();
             if (AyuMessagesController.attachmentsPath.exists()) {
                 size = AndroidUtil.getDirectorySize(AyuMessagesController.attachmentsPath);
             }
@@ -305,12 +445,14 @@ public class AyuData {
         return size;
     }
 
-    public static void loadSizes(NekoExperimentalSettingsActivity bf) {
+    public static void loadSizes(Runnable callback) {
         Utilities.globalQueue.postRunnable(() -> {
             dbSize = getDatabaseSize();
             attachmentsSize = getAttachmentsDirSize();
             totalSize = dbSize + attachmentsSize;
-            AndroidUtilities.runOnUIThread(bf::refreshAyuDataSize, 500);
+            if (callback != null) {
+                AndroidUtilities.runOnUIThread(callback, 500);
+            }
         });
     }
 }

@@ -130,6 +130,9 @@ public final class SettingsBackupHelper {
         spToJSON("mainconfig", configJson, mainconfig::contains);
         if (!isCloud) spToJSON("themeconfig", configJson, null);
         spToJSON("nkmrcfg", configJson, null, includeApiKeys);
+        spToJSON("nekox_config", configJson, null, includeApiKeys);
+        spToJSON("pillstackconfig", configJson, null, includeApiKeys);
+        spToJSON("aichatconfig", configJson, includeApiKeys ? null : key -> !"services".equals(key), true);
 
         return configJson.toString(indentSpaces);
     }
@@ -188,7 +191,7 @@ public final class SettingsBackupHelper {
 
     @SuppressLint("ApplySharedPref")
     public static void importSettings(JsonObject configJson) throws JSONException {
-        Map<String, Integer> configTypes = new HashMap<>();
+        Map<String, tw.nekomimi.nekogram.config.ConfigItem> configTypes = new HashMap<>();
         try {
             configTypes.putAll(NekoConfig.getConfigTypes());
             configTypes.putAll(NaConfig.INSTANCE.getConfigTypes());
@@ -234,7 +237,8 @@ public final class SettingsBackupHelper {
                         } else if (key.endsWith("_float")) {
                             actualKey = StringsKt.substringBeforeLast(key, "_float", key);
                         }
-                        Integer type = configTypes.get(actualKey);
+                        tw.nekomimi.nekogram.config.ConfigItem item = configTypes.get(actualKey);
+                        Integer type = item != null ? item.type : null;
                         shouldSkip = type == null || !isCompatibleConfigValue(key, value, type);
                     }
                     if (shouldSkip) {

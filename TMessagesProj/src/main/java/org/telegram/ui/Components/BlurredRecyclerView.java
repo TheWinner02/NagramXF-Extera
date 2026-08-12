@@ -10,6 +10,8 @@ import org.telegram.messenger.SharedConfig;
 
 public class BlurredRecyclerView extends RecyclerListView {
 
+    public void setDraggingChild(View v) {}
+
     public int blurTopPadding;
     public int topPadding;
     public int bottomPadding;

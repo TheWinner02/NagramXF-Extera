@@ -197,6 +197,12 @@ public class NotificationCenter {
     public static final int groupCallUpdated = totalEvents++;
     public static final int storyGroupCallUpdated = totalEvents++;
     public static final int groupCallSpeakingUsersUpdated = totalEvents++;
+    public static final int pillStackLayoutChanged = totalEvents++;
+    public static final int servicesUpdated = totalEvents++;
+    public static final int pillStackSettingsChanged = totalEvents++;
+    public static final int proxyPingUpdated = totalEvents++;
+    public static final int regexFiltersUpdated = totalEvents++;
+    public static final int mainTabsLayoutChanged = totalEvents++;
     public static final int groupCallScreencastStateChanged = totalEvents++;
     public static final int activeGroupCallsUpdated = totalEvents++;
     public static final int applyGroupCallVisibleParticipants = totalEvents++;

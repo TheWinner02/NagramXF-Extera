@@ -88,7 +88,7 @@ android {
 
         if (properties != null) {
             appId = properties.getProperty('TELEGRAM_APP_ID') ?: System.getenv('TELEGRAM_APP_ID') ?: appId
-            appHash = properties.getProperty('TELEGRAM_APP_HASH') ?: System.getenv('TELEGRAM_APP_HASH') ?: appHash
+            appHash = properties.getProperty('TELEGRAM_APP_HASH') ?: properties.getProperty('TELEGRAM_APP_ASH') ?: System.getenv('TELEGRAM_APP_HASH') ?: appHash
         }
 
         buildConfigField 'String', 'BUILD_VERSION_STRING', '"' + verName + '"'

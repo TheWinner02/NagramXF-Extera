@@ -17,7 +17,6 @@ import android.util.Pair;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
 
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
@@ -26,7 +25,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import tw.nekomimi.nekogram.config.ConfigItem;
@@ -35,6 +33,13 @@ import tw.nekomimi.nekogram.helpers.CloudSettingsHelper;
 @SuppressLint("ApplySharedPref")
 @SuppressWarnings("unused")
 public class NekoConfig {
+
+    public static final ConfigItem useOSMDroidMap = new ConfigItem("useOSMDroidMap", ConfigItem.configTypeBool, false);
+    public static final ConfigItem useOpenFreeMap = new ConfigItem("useOpenFreeMap", ConfigItem.configTypeBool, false);
+    public static final ConfigItem disableInstantCamera = new ConfigItem("disableInstantCamera", ConfigItem.configTypeBool, false);
+    public static final ConfigItem disableSwipeToNextTopic = new ConfigItem("disableSwipeToNextTopic", ConfigItem.configTypeBool, false);
+    public static HashMap<String, ConfigItem> getConfigTypes() { return new HashMap<>(); }
+    public static boolean fixDriftingForGoogleMaps() { return false; }
 
     public static final int TABLET_AUTO = 0;
     public static final int TABLET_ENABLE = 1;
@@ -79,7 +84,6 @@ public class NekoConfig {
     public static ConfigItem unreadBadgeOnBackButton = addConfig("unreadBadgeOnBackButton", configTypeBool, false);
     public static ConfigItem useCustomEmoji = addConfig("useCustomEmoji", configTypeBool, false);
     public static ConfigItem repeatConfirm = addConfig("repeatConfirm", configTypeBool, true);
-    public static ConfigItem disableInstantCamera = addConfig("DisableInstantCamera", configTypeBool, true);
     public static ConfigItem showSeconds = addConfig("showSeconds", configTypeBool, false);
 
     // From NekoConfig
@@ -91,6 +95,9 @@ public class NekoConfig {
     public static ConfigItem typeface = addConfig("TypefaceUseDefault", configTypeBool, false);
     public static ConfigItem nameOrder = addConfig("NameOrder", configTypeInt, 1);
     public static ConfigItem mapPreviewProvider = addConfig("MapPreviewProvider", configTypeInt, 0);
+    public static ConfigItem forceBlurInChat = addConfig("forceBlurInChat", configTypeBool, false);
+    public static ConfigItem chatBlueAlphaValue = addConfig("forceBlurInChatAlphaValue", configTypeInt, 200);
+    public static ConfigItem hideProxySponsorChannel = addConfig("HideProxySponsorChannel", configTypeBool, false);
     public static ConfigItem showAddToSavedMessages = addConfig("showAddToSavedMessages", configTypeBool, true);
     public static ConfigItem showReport = addConfig("showReport", configTypeBool, false);
     public static ConfigItem showViewHistory = addConfig("showViewHistory", configTypeBool, true);
@@ -149,6 +156,7 @@ public class NekoConfig {
 
     public static ConfigItem ignoreContentRestrictions = addConfig("ignoreContentRestrictions", configTypeBool, true);
     public static ConfigItem useChatAttachMediaMenu = addConfig("UseChatAttachEnterMenu", configTypeBool, true);
+    public static ConfigItem moveAttachCameraToBottom = addConfig("MoveAttachCameraToBottom", configTypeBool, true);
     public static ConfigItem disableLinkPreviewByDefault = addConfig("DisableLinkPreviewByDefault", configTypeBool, false);
     public static ConfigItem sendCommentAfterForward = addConfig("SendCommentAfterForward", configTypeBool, true);
     public static ConfigItem disableTrending = addConfig("DisableTrending", configTypeBool, true);
@@ -157,9 +165,9 @@ public class NekoConfig {
     public static ConfigItem takeGIFasVideo = addConfig("TakeGIFasVideo", configTypeBool, false);
     public static ConfigItem maxRecentStickerCount = addConfig("maxRecentStickerCount", configTypeInt, 20);
     public static ConfigItem disableSwipeToNext = addConfig("disableSwipeToNextChannel", configTypeBool, false);
-    public static ConfigItem disableSwipeToNextTopic = addConfig("disableSwipeToNextTopic", configTypeBool, false);
     public static ConfigItem disableChoosingSticker = addConfig("disableChoosingSticker", configTypeBool, false);
     public static ConfigItem hideGroupSticker = addConfig("hideGroupSticker", configTypeBool, false);
+    public static ConfigItem hideSponsoredMessage = addConfig("hideSponsoredMessage", configTypeBool, false);
     public static ConfigItem rememberAllBackMessages = addConfig("rememberAllBackMessages", configTypeBool, false);
     public static ConfigItem hideSendAsChannel = addConfig("hideSendAsChannel", configTypeBool, false);
     public static ConfigItem showSpoilersDirectly = addConfig("showSpoilersDirectly", configTypeBool, false);
@@ -170,8 +178,6 @@ public class NekoConfig {
     public static ConfigItem customAudioBitrate = addConfig("customAudioBitrate", configTypeInt, 32);
     public static ConfigItem enhancedFileLoader = addConfig("enhancedFileLoader", configTypeBool, false);
     public static ConfigItem uploadBoost = addConfig("uploadBoost", configTypeBool, false);
-    public static ConfigItem useOSMDroidMap = addConfig("useOSMDroidMap", configTypeBool, false);
-    public static ConfigItem mapDriftingFixForGoogleMaps = addConfig("mapDriftingFixForGoogleMaps", configTypeBool, true);
 
     public static ConfigItem localPremium = addConfig("localPremium", configTypeBool, false);
 
@@ -187,8 +193,10 @@ public class NekoConfig {
     public static ConfigItem sendUploadProgress = addConfig("sendUploadProgress", configTypeBool, true);
     public static ConfigItem sendOfflinePacketAfterOnline = addConfig("sendOfflinePacketAfterOnline", configTypeBool, false);
     public static ConfigItem markReadAfterSend = addConfig("markReadAfterSend", configTypeBool, true);
+    public static ConfigItem useScheduledMessages = addConfig("useScheduledMessages", configTypeBool, false);
     public static ConfigItem showGhostInDrawer = addConfig("showGhostInDrawer", configTypeBool, false);
     public static ConfigItem showGhostModeStatus = addConfig("showGhostModeStatus", configTypeBool, false);
+    public static ConfigItem navigationDrawerEnabled = addConfig("navigationDrawerEnabled", configTypeBool, false);
 
     // --- Locked Status ---
     public static ConfigItem sendReadMessagePacketsLocked = addConfig("sendReadMessagePacketsLocked", configTypeBool, false);
@@ -223,53 +231,47 @@ public class NekoConfig {
             for (int i = 0; i < configs.size(); i++) {
                 ConfigItem o = configs.get(i);
 
-                try {
-                    if (o.type == configTypeBool) {
-                        o.value = getPreferences().getBoolean(o.key, (boolean) o.defaultValue);
+                if (o.type == configTypeBool) {
+                    o.value = getPreferences().getBoolean(o.key, (boolean) o.defaultValue);
+                }
+                if (o.type == configTypeInt) {
+                    o.value = getPreferences().getInt(o.key, (int) o.defaultValue);
+                }
+                if (o.type == configTypeLong) {
+                    o.value = getPreferences().getLong(o.key, (Long) o.defaultValue);
+                }
+                if (o.type == configTypeFloat) {
+                    o.value = getPreferences().getFloat(o.key, (Float) o.defaultValue);
+                }
+                if (o.type == configTypeString) {
+                    o.value = getPreferences().getString(o.key, (String) o.defaultValue);
+                }
+                if (o.type == configTypeSetInt) {
+                    Set<String> ss = getPreferences().getStringSet(o.key, new HashSet<>());
+                    HashSet<Integer> si = new HashSet<>();
+                    for (String s : ss) {
+                        si.add(Integer.parseInt(s));
                     }
-                    if (o.type == configTypeInt) {
-                        o.value = getPreferences().getInt(o.key, (int) o.defaultValue);
-                    }
-                    if (o.type == configTypeLong) {
-                        o.value = getPreferences().getLong(o.key, (Long) o.defaultValue);
-                    }
-                    if (o.type == configTypeFloat) {
-                        o.value = getPreferences().getFloat(o.key, (Float) o.defaultValue);
-                    }
-                    if (o.type == configTypeString) {
-                        o.value = getPreferences().getString(o.key, (String) o.defaultValue);
-                    }
-                    if (o.type == configTypeSetInt) {
-                        Set<String> ss = getPreferences().getStringSet(o.key, new HashSet<>());
-                        HashSet<Integer> si = new HashSet<>();
-                        for (String s : ss) {
-                            si.add(Integer.parseInt(s));
-                        }
-                        o.value = si;
-                    }
-                    if (o.type == configTypeMapIntInt) {
-                        String cv = getPreferences().getString(o.key, "");
-                        if (cv.isEmpty()) {
-                            o.value = new HashMap<Integer, Integer>();
-                        } else {
-                            try {
-                                byte[] data = Base64.decode(cv, Base64.DEFAULT);
-                                ObjectInputStream ois = new ObjectInputStream(
-                                        new ByteArrayInputStream(data));
-                                o.value = ois.readObject();
-                                if (o.value == null) {
-                                    o.value = new HashMap<Integer, Integer>();
-                                }
-                                ois.close();
-                            } catch (Exception e) {
+                    o.value = si;
+                }
+                if (o.type == configTypeMapIntInt) {
+                    String cv = getPreferences().getString(o.key, "");
+                    if (cv.isEmpty()) {
+                        o.value = new HashMap<Integer, Integer>();
+                    } else {
+                        try {
+                            byte[] data = Base64.decode(cv, Base64.DEFAULT);
+                            ObjectInputStream ois = new ObjectInputStream(
+                                    new ByteArrayInputStream(data));
+                            o.value = ois.readObject();
+                            if (o.value == null) {
                                 o.value = new HashMap<Integer, Integer>();
                             }
+                            ois.close();
+                        } catch (Exception e) {
+                            o.value = new HashMap<Integer, Integer>();
                         }
                     }
-                } catch (ClassCastException | NumberFormatException e) {
-                    FileLog.e("Invalid config value for " + o.key, e);
-                    o.value = o.defaultValue;
-                    getPreferences().edit().remove(o.key).apply();
                 }
             }
             if (!configLoaded)
@@ -294,10 +296,6 @@ public class NekoConfig {
         public DatacenterInfo(int i) {
             id = i;
         }
-    }
-
-    public static boolean fixDriftingForGoogleMaps() {
-        return !useOSMDroidMap.Bool() && mapDriftingFixForGoogleMaps.Bool();
     }
 
     // --- Ghost Mode ---
@@ -345,13 +343,13 @@ public class NekoConfig {
     );
     // --- Ghost Mode ---
 
-    public static Map<String, Integer> getConfigTypes() {
+    public static Set<String> getAllKeys() {
         synchronized (sync) {
-            Map<String, Integer> types = new HashMap<>();
+            Set<String> keys = new HashSet<>();
             for (ConfigItem o : configs) {
-                types.put(o.getKey(), o.type);
+                keys.add(o.getKey());
             }
-            return types;
+            return keys;
         }
     }
 }

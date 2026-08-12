@@ -39,6 +39,17 @@ public class DrawerLayoutContainer extends FrameLayout {
         setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
 
+    public INavigationLayout getParentActionBarLayout() {
+        return parentActionBarLayout;
+    }
+
+    public boolean presentFragment(BaseFragment fragment) {
+        if (parentActionBarLayout != null) {
+            return parentActionBarLayout.presentFragment(fragment);
+        }
+        return false;
+    }
+
     public void setParentActionBarLayout(INavigationLayout layout) {
         parentActionBarLayout = layout;
     }

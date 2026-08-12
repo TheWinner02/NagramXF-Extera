@@ -1,17 +1,18 @@
 package tw.nekomimi.nekogram.filters;
 
+import android.text.Spannable;
+import android.text.Spanned;
 import android.text.TextUtils;
-
-import androidx.collection.LruCache;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
-import org.telegram.messenger.Emoji;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -21,7 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import tw.nekomimi.nekogram.NekoConfig;
@@ -30,11 +31,11 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class AyuFilter {
     private static final Object cacheLock = new Object();
-    private static final int PER_DIALOG_CACHE_LIMIT = 1000;
-    private static final ConcurrentHashMap<Long, LruCache<Integer, Boolean>> filteredCache = new ConcurrentHashMap<>();
     private static volatile ArrayList<FilterModel> filterModels;
     private static volatile ArrayList<ChatFilterEntry> chatFilterEntries;
     private static volatile HashSet<Long> excludedDialogs;
+    private static volatile ArrayList<ExcludedFilterEntry> excludedFilterEntries;
+    private static volatile HashMap<Long, HashSet<String>> excludedSharedFilterIdsByDialog;
     private static volatile HashSet<Long> blockedChannels;
     private static volatile HashSet<Long> customFilteredUsers;
     private static volatile HashMap<Long, CustomFilteredUser> customFilteredUsersData;
@@ -49,6 +50,9 @@ public class AyuFilter {
                         filterModels = new ArrayList<>(Arrays.asList(arr));
                         boolean migrated = false;
                         for (var filter : filterModels) {
+                            if (filter.ensureId()) {
+                                migrated = true;
+                            }
                             if (filter.migrateFromLegacy(0L)) {
                                 migrated = true;
                             }
@@ -67,16 +71,25 @@ public class AyuFilter {
     }
 
     public static void addFilter(String text, boolean caseInsensitive) {
+        addFilter(text, caseInsensitive, false);
+    }
+
+    public static void addFilter(String text, boolean caseInsensitive, boolean reversed) {
         var list = new ArrayList<>(getRegexFilters());
         FilterModel filterModel = new FilterModel();
         filterModel.regex = text;
         filterModel.caseInsensitive = caseInsensitive;
+        filterModel.reversed = reversed;
         filterModel.enabled = true;
         list.add(0, filterModel);
         saveFilter(list);
     }
 
     public static void editFilter(int filterIdx, String text, boolean caseInsensitive) {
+        editFilter(filterIdx, text, caseInsensitive, false);
+    }
+
+    public static void editFilter(int filterIdx, String text, boolean caseInsensitive, boolean reversed) {
         var list = new ArrayList<>(getRegexFilters());
         if (filterIdx < 0 || filterIdx >= list.size()) {
             return;
@@ -84,6 +97,7 @@ public class AyuFilter {
         FilterModel filterModel = list.get(filterIdx);
         filterModel.regex = text;
         filterModel.caseInsensitive = caseInsensitive;
+        filterModel.reversed = reversed;
         saveFilter(list);
     }
 
@@ -98,7 +112,10 @@ public class AyuFilter {
         if (filterIdx < 0 || filterIdx >= list.size()) {
             return;
         }
-        list.remove(filterIdx);
+        FilterModel removed = list.remove(filterIdx);
+        if (removed != null && !TextUtils.isEmpty(removed.id)) {
+            removeExcludedSharedFilterEntries(removed.id);
+        }
         saveFilter(list);
     }
 
@@ -106,50 +123,16 @@ public class AyuFilter {
         if (selectedObject == null) {
             return null;
         }
-        CharSequence messageText = null;
-        if (selectedObject.type != MessageObject.TYPE_EMOJIS && selectedObject.type != MessageObject.TYPE_ANIMATED_STICKER && selectedObject.type != MessageObject.TYPE_STICKER) {
-            messageText = MessageHelper.getMessagePlainTextFull(selectedObject, selectedObjectGroup);
-            if (TextUtils.isEmpty(messageText) || Emoji.fullyConsistsOfEmojis(messageText)) {
-                messageText = null;
-            }
-            if (selectedObject.translated || selectedObject.isRestrictedMessage) {
-                messageText = null;
-            }
-        }
-        CharSequence buttonsText = getInlineKeyboardText(selectedObject.messageOwner);
+        // Follow ayuGram behavior: do not skip stickers/emoji; getMessageFilterMatchText always
+        // appends a <type>N</type> tag so reversed expressions can still invert the "no-match" result.
+        CharSequence messageText = MessageHelper.getMessageFilterMatchText(selectedObject, selectedObjectGroup);
         if (TextUtils.isEmpty(messageText)) {
-            return buttonsText;
+            messageText = null;
         }
-        if (TextUtils.isEmpty(buttonsText)) {
-            return messageText;
+        if (selectedObject.translated || selectedObject.isRestrictedMessage) {
+            messageText = null;
         }
-        return new StringBuilder(messageText).append('\n').append(buttonsText);
-    }
-
-    private static CharSequence getInlineKeyboardText(TLRPC.Message message) {
-        if (message == null || message.reply_markup == null || message.reply_markup.rows == null) {
-            return null;
-        }
-        StringBuilder builder = null;
-        for (int i = 0, size = message.reply_markup.rows.size(); i < size; i++) {
-            TLRPC.TL_keyboardButtonRow row = message.reply_markup.rows.get(i);
-            if (row == null || row.buttons == null) {
-                continue;
-            }
-            for (int j = 0, buttonsSize = row.buttons.size(); j < buttonsSize; j++) {
-                TLRPC.KeyboardButton button = row.buttons.get(j);
-                if (button == null || TextUtils.isEmpty(button.text)) {
-                    continue;
-                }
-                if (builder == null) {
-                    builder = new StringBuilder();
-                } else {
-                    builder.append('\n');
-                }
-                builder.append(button.text);
-            }
-        }
-        return builder;
+        return messageText;
     }
 
     public static void rebuildCache() {
@@ -157,14 +140,27 @@ public class AyuFilter {
             filterModels = null;
             chatFilterEntries = null;
             excludedDialogs = null;
-            filteredCache.clear();
+            excludedFilterEntries = null;
+            excludedSharedFilterIdsByDialog = null;
+            AyuFilterCache.clearAll();
         }
+        AndroidUtilities.runOnUIThread(() -> {
+            NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.regexFiltersUpdated);
+        });
     }
 
     public static void invalidateFilteredCache() {
         synchronized (cacheLock) {
-            filteredCache.clear();
+            AyuFilterCache.clearAll();
         }
+    }
+
+    private static boolean isFilterMatch(FilterModel filter, CharSequence text) {
+        if (filter == null || !filter.enabled || filter.pattern == null || TextUtils.isEmpty(text)) {
+            return false;
+        }
+        boolean matched = filter.pattern.matcher(text).find();
+        return filter.reversed ? !matched : matched;
     }
 
     private static boolean isFilteredInternal(CharSequence text, long dialogId) {
@@ -173,10 +169,7 @@ public class AyuFilter {
                 if (entry.dialogId == dialogId) {
                     if (entry.filters != null) {
                         for (var pattern : entry.filters) {
-                            if (!pattern.enabled) {
-                                continue;
-                            }
-                            if (pattern.pattern != null && pattern.pattern.matcher(text).find()) {
+                            if (isFilterMatch(pattern, text)) {
                                 return true;
                             }
                         }
@@ -192,11 +185,12 @@ public class AyuFilter {
         }
 
         if (filterModels != null) {
+            HashSet<String> excludedFilterIds = getExcludedSharedFilterIds(dialogId);
             for (var pattern : filterModels) {
-                if (!pattern.enabled) {
+                if (!TextUtils.isEmpty(pattern.id) && excludedFilterIds.contains(pattern.id)) {
                     continue;
                 }
-                if (pattern.pattern != null && pattern.pattern.matcher(text).find()) {
+                if (isFilterMatch(pattern, text)) {
                     return true;
                 }
             }
@@ -210,8 +204,26 @@ public class AyuFilter {
             return false;
         }
 
-        if (msg == null || msg.isOutOwner()) {
+        if (msg == null || msg.isOutOwner() || msg.isOut()) {
+            // Align with ayuGram: also skip channel posts the user authored (out=true, post=true)
+            // which pass isOutOwner()==false but shouldn't be filtered as incoming content.
             return false;
+        }
+
+        // Per-session bypass toggled via ChatActivity's "show filtered" action. Checked BEFORE
+        // the cache so the cache keeps the real filter verdict and survives toggling back.
+        if (msg.skipAyuFiltering) {
+            return false;
+        }
+
+        long dialogId = msg.getDialogId();
+        if (isDialogExcluded(dialogId)) {
+            return false;
+        }
+
+        Boolean cached = AyuFilterCache.get(dialogId, msg, group);
+        if (cached != null) {
+            return cached;
         }
 
         var text = getMessageText(msg, group);
@@ -226,34 +238,134 @@ public class AyuFilter {
             getChatFilterEntries();
         }
 
-        long dialogId = msg.getDialogId();
-        if (isDialogExcluded(dialogId)) {
-            return false;
-        }
-
-        LruCache<Integer, Boolean> dialogCache = filteredCache.computeIfAbsent(dialogId, k -> new LruCache<>(PER_DIALOG_CACHE_LIMIT));
-        Boolean result;
-
-        synchronized (dialogCache) {
-            result = dialogCache.get(msg.getId());
-        }
-
-        if (result != null) {
-            return result;
-        }
-
-        result = isFilteredInternal(text, dialogId);
-
-        synchronized (dialogCache) {
-            dialogCache.put(msg.getId(), result);
-            if (group != null && group.messages != null && !group.messages.isEmpty()) {
-                for (var m : group.messages) {
-                    dialogCache.put(m.getId(), result);
-                }
-            }
+        boolean result = isFilteredInternal(text, dialogId);
+        // Only cache when we have full context. For grouped messages checked without
+        // group context (e.g. from DialogCell), skip caching to prevent stale per-message
+        // entries from overriding the correct group-aware result in ChatActivity.
+        if (group != null || msg.getGroupId() == 0) {
+            AyuFilterCache.put(dialogId, msg, group, result);
         }
 
         return result;
+    }
+
+    public static boolean shouldMaskFilteredMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool() && NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldHideFilteredMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool() && !NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldMaskIgnoredBlockedMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()
+            && NekoConfig.ignoreBlocked.Bool()
+            && NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldHideIgnoredBlockedMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()
+            && NekoConfig.ignoreBlocked.Bool()
+            && !NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldHideFilteredMessage(MessageObject msg, MessageObject.GroupedMessages group) {
+        return shouldHideFilteredMessages() && isFiltered(msg, group);
+    }
+
+    public static boolean shouldMaskFilteredMessage(MessageObject msg, MessageObject.GroupedMessages group) {
+        return shouldMaskFilteredMessages() && isFiltered(msg, group);
+    }
+
+    public static boolean shouldMaskMessage(MessageObject msg, MessageObject.GroupedMessages group) {
+        return shouldMaskFilteredMessage(msg, group) || (shouldMaskIgnoredBlockedMessages() && isIgnoredBlockedMessage(msg));
+    }
+
+    public static ArrayList<TLRPC.MessageEntity> addSpoilerEntities(MessageObject msg, ArrayList<TLRPC.MessageEntity> original, CharSequence text) {
+        if (msg == null || TextUtils.isEmpty(text) || !shouldMaskMessage(msg, null)) {
+            return original;
+        }
+
+        ArrayList<TLRPC.MessageEntity> result = original != null ? new ArrayList<>(original) : new ArrayList<>();
+        for (int i = 0, size = result.size(); i < size; i++) {
+            TLRPC.MessageEntity entity = result.get(i);
+            if (entity instanceof TLRPC.TL_messageEntitySpoiler && entity.offset == 0 && entity.length >= text.length()) {
+                return result;
+            }
+        }
+        TLRPC.TL_messageEntitySpoiler spoiler = new TLRPC.TL_messageEntitySpoiler();
+        spoiler.offset = 0;
+        spoiler.length = text.length();
+        result.add(spoiler);
+        return result;
+    }
+
+    public static void syncMaskedSpoilerRevealState(MessageObject msg, MessageObject.GroupedMessages group) {
+        if (msg != null && shouldMaskMessage(msg, group)) {
+            msg.isSpoilersRevealed = false;
+        }
+    }
+
+    public static void syncMaskMarkerSpan(Spannable text, MessageObject msg, MessageObject.GroupedMessages group) {
+        if (text == null) {
+            return;
+        }
+        FilterMaskSpan[] spans = text.getSpans(0, text.length(), FilterMaskSpan.class);
+        for (int i = 0; i < spans.length; i++) {
+            text.removeSpan(spans[i]);
+        }
+        if (shouldMaskMessage(msg, group) && text.length() > 0) {
+            text.setSpan(new FilterMaskSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    public static boolean hasMaskedFilterSpan(CharSequence text) {
+        if (!(text instanceof Spanned spanned) || spanned.length() == 0) {
+            return false;
+        }
+        return spanned.getSpans(0, spanned.length(), FilterMaskSpan.class).length > 0;
+    }
+
+    // Rebuild the FilterMaskSpan on a message's cached text buffers. Called when toggling
+    // "Show Filtered" in ChatActivity so that already-rendered messages (and their cached
+    // reply previews on adjacent non-filtered messages) drop the spoiler placeholder and
+    // repaint with the real underlying text, instead of staying "ghosted".
+    public static void refreshMaskStateForMessage(MessageObject msg) {
+        if (msg == null) {
+            return;
+        }
+        if (msg.messageText instanceof Spannable) {
+            syncMaskMarkerSpan((Spannable) msg.messageText, msg, null);
+        }
+        if (msg.messageTextForReply instanceof Spannable) {
+            syncMaskMarkerSpan((Spannable) msg.messageTextForReply, msg, null);
+        }
+        if (msg.caption instanceof Spannable) {
+            syncMaskMarkerSpan((Spannable) msg.caption, msg, null);
+        }
+        syncMaskedSpoilerRevealState(msg, null);
+    }
+
+    public static boolean isIgnoredBlockedMessage(MessageObject msg) {
+        if (msg == null || msg.isOutOwner() || msg.isOut() || !NekoConfig.ignoreBlocked.Bool()) {
+            return false;
+        }
+        if (isBlockedPeer(msg.currentAccount, msg.getFromChatId())) {
+            return true;
+        }
+        return msg.replyMessageObject != null && isBlockedPeer(msg.currentAccount, msg.replyMessageObject.getFromChatId());
+    }
+
+    private static boolean isBlockedPeer(int currentAccount, long peerId) {
+        if (peerId == 0L) {
+            return false;
+        }
+        return MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(peerId) >= 0
+            || isCustomFilteredPeer(peerId)
+            || isBlockedChannel(peerId);
+    }
+
+    private static class FilterMaskSpan {
     }
 
     public static ArrayList<ChatFilterEntry> getChatFilterEntries() {
@@ -269,6 +381,9 @@ public class AyuFilter {
                             for (var entry : chatFilterEntries) {
                                 if (entry.filters == null) continue;
                                 for (var f : entry.filters) {
+                                    if (f.ensureId()) {
+                                        migrated = true;
+                                    }
                                     if (f.migrateFromLegacy(entry.dialogId)) {
                                         migrated = true;
                                     }
@@ -308,6 +423,10 @@ public class AyuFilter {
     }
 
     public static void addChatFilter(long dialogId, String text, boolean caseInsensitive) {
+        addChatFilter(dialogId, text, caseInsensitive, false);
+    }
+
+    public static void addChatFilter(long dialogId, String text, boolean caseInsensitive, boolean reversed) {
         var entries = new ArrayList<>(getChatFilterEntries());
         ChatFilterEntry target = null;
         for (var e : entries) {
@@ -325,6 +444,7 @@ public class AyuFilter {
         FilterModel filterModel = new FilterModel();
         filterModel.regex = text;
         filterModel.caseInsensitive = caseInsensitive;
+        filterModel.reversed = reversed;
         filterModel.enabled = true;
         if (target.filters == null) {
             target.filters = new ArrayList<>();
@@ -335,6 +455,10 @@ public class AyuFilter {
     }
 
     public static void editChatFilter(long dialogId, int filterIdx, String text, boolean caseInsensitive) {
+        editChatFilter(dialogId, filterIdx, text, caseInsensitive, false);
+    }
+
+    public static void editChatFilter(long dialogId, int filterIdx, String text, boolean caseInsensitive, boolean reversed) {
         var entries = new ArrayList<>(getChatFilterEntries());
         for (var e : entries) {
             if (e.dialogId == dialogId) {
@@ -342,6 +466,7 @@ public class AyuFilter {
                     var fm = e.filters.get(filterIdx);
                     fm.regex = text;
                     fm.caseInsensitive = caseInsensitive;
+                    fm.reversed = reversed;
                     saveChatFilterEntries(entries);
                 }
                 return;
@@ -390,6 +515,143 @@ public class AyuFilter {
         return getExcludedDialogs().contains(dialogId);
     }
 
+    public static ArrayList<ExcludedFilterEntry> getExcludedFilterEntries() {
+        if (excludedFilterEntries == null) {
+            synchronized (cacheLock) {
+                if (excludedFilterEntries == null) {
+                    try {
+                        String str = NaConfig.INSTANCE.getRegexFiltersExcludedEntriesData().String();
+                        ExcludedFilterEntry[] arr = new Gson().fromJson(str, ExcludedFilterEntry[].class);
+                        excludedFilterEntries = arr != null ? new ArrayList<>(Arrays.asList(arr)) : new ArrayList<>();
+                    } catch (Exception e) {
+                        excludedFilterEntries = new ArrayList<>();
+                    }
+                }
+            }
+        }
+        return excludedFilterEntries;
+    }
+
+    private static HashMap<Long, HashSet<String>> buildExcludedSharedFilterIdsMap(ArrayList<ExcludedFilterEntry> entries) {
+        HashMap<Long, HashSet<String>> result = new HashMap<>();
+        if (entries == null) {
+            return result;
+        }
+        for (var entry : entries) {
+            if (entry == null || entry.dialogId == 0L || TextUtils.isEmpty(entry.filterId)) {
+                continue;
+            }
+            result.computeIfAbsent(entry.dialogId, k -> new HashSet<>()).add(entry.filterId);
+        }
+        return result;
+    }
+
+    private static HashMap<Long, HashSet<String>> getExcludedSharedFilterIdsByDialog() {
+        if (excludedSharedFilterIdsByDialog == null) {
+            synchronized (cacheLock) {
+                if (excludedSharedFilterIdsByDialog == null) {
+                    excludedSharedFilterIdsByDialog = buildExcludedSharedFilterIdsMap(getExcludedFilterEntries());
+                }
+            }
+        }
+        return excludedSharedFilterIdsByDialog;
+    }
+
+    public static HashSet<String> getExcludedSharedFilterIds(long dialogId) {
+        HashSet<String> ids = getExcludedSharedFilterIdsByDialog().get(dialogId);
+        return ids != null ? new HashSet<>(ids) : new HashSet<>();
+    }
+
+    public static boolean isSharedFilterExcluded(long dialogId, String filterId) {
+        return !TextUtils.isEmpty(filterId) && getExcludedSharedFilterIds(dialogId).contains(filterId);
+    }
+
+    public static ArrayList<FilterModel> getExcludedSharedFiltersForDialog(long dialogId) {
+        ArrayList<FilterModel> filters = new ArrayList<>();
+        HashSet<String> excludedIds = getExcludedSharedFilterIds(dialogId);
+        if (excludedIds.isEmpty()) {
+            return filters;
+        }
+        for (var filter : getRegexFilters()) {
+            if (filter != null && !TextUtils.isEmpty(filter.id) && excludedIds.contains(filter.id)) {
+                filters.add(filter);
+            }
+        }
+        return filters;
+    }
+
+    public static int getExcludedSharedFiltersCountForDialog(long dialogId) {
+        return getExcludedSharedFiltersForDialog(dialogId).size();
+    }
+
+    public static String getFilterDisplayText(FilterModel filter) {
+        if (filter == null) {
+            return "";
+        }
+        String regex = filter.regex != null ? filter.regex : "";
+        return filter.reversed ? "!= " + regex : regex;
+    }
+
+    private static void saveExcludedFilterEntries(ArrayList<ExcludedFilterEntry> entries) {
+        String str = new Gson().toJson(entries != null ? entries : new ArrayList<>());
+        NaConfig.INSTANCE.getRegexFiltersExcludedEntriesData().setConfigString(str);
+        synchronized (cacheLock) {
+            excludedFilterEntries = entries != null ? entries : new ArrayList<>();
+            excludedSharedFilterIdsByDialog = buildExcludedSharedFilterIdsMap(excludedFilterEntries);
+            AyuFilterCache.clearAll();
+        }
+    }
+
+    public static void setSharedFilterExcluded(long dialogId, String filterId, boolean excluded) {
+        if (dialogId == 0L || TextUtils.isEmpty(filterId)) {
+            return;
+        }
+        if (excluded) {
+            addSharedFilterExclusion(dialogId, filterId);
+        } else {
+            removeSharedFilterExclusion(dialogId, filterId);
+        }
+    }
+
+    private static void addSharedFilterExclusion(long dialogId, String filterId) {
+        HashSet<String> existing = getExcludedSharedFilterIdsByDialog().get(dialogId);
+        if (existing != null && existing.contains(filterId)) {
+            return;
+        }
+        ArrayList<ExcludedFilterEntry> entries = new ArrayList<>(getExcludedFilterEntries());
+        ExcludedFilterEntry entry = new ExcludedFilterEntry();
+        entry.dialogId = dialogId;
+        entry.filterId = filterId;
+        entries.add(entry);
+        saveExcludedFilterEntries(entries);
+    }
+
+    private static void removeSharedFilterExclusion(long dialogId, String filterId) {
+        ArrayList<ExcludedFilterEntry> entries = new ArrayList<>(getExcludedFilterEntries());
+        boolean removed = entries.removeIf(e -> e != null && e.dialogId == dialogId && TextUtils.equals(e.filterId, filterId));
+        if (removed) {
+            saveExcludedFilterEntries(entries);
+        }
+    }
+
+    private static void removeExcludedSharedFilterEntries(String filterId) {
+        if (TextUtils.isEmpty(filterId)) {
+            return;
+        }
+        ArrayList<ExcludedFilterEntry> entries = new ArrayList<>(getExcludedFilterEntries());
+        boolean changed = false;
+        for (int i = entries.size() - 1; i >= 0; i--) {
+            ExcludedFilterEntry entry = entries.get(i);
+            if (entry != null && TextUtils.equals(entry.filterId, filterId)) {
+                entries.remove(i);
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveExcludedFilterEntries(entries);
+        }
+    }
+
     public static void setDialogExcluded(long dialogId, boolean excluded) {
         HashSet<Long> set = new HashSet<>(getExcludedDialogs());
         boolean changed;
@@ -405,7 +667,7 @@ public class AyuFilter {
             synchronized (cacheLock) {
                 excludedDialogs = set;
             }
-            filteredCache.remove(dialogId);
+            AyuFilterCache.clearDialog(dialogId);
         }
     }
 
@@ -413,6 +675,7 @@ public class AyuFilter {
         NaConfig.INSTANCE.getRegexFiltersData().setConfigString("[]");
         NaConfig.INSTANCE.getRegexChatFiltersData().setConfigString("[]");
         NaConfig.INSTANCE.getRegexFiltersExcludedDialogs().setConfigString("[]");
+        NaConfig.INSTANCE.getRegexFiltersExcludedEntriesData().setConfigString("[]");
         NaConfig.INSTANCE.getCustomFilteredUsersData().setConfigString("[]");
         synchronized (cacheLock) {
             customFilteredUsers = new HashSet<>();
@@ -441,23 +704,6 @@ public class AyuFilter {
         return blockedChannels;
     }
 
-    private static void saveBlockedChannels(HashSet<Long> ids) {
-        ArrayList<Long> sorted = new ArrayList<>();
-        if (ids != null) {
-            for (Long id : ids) {
-                if (id != null && id < 0L) {
-                    sorted.add(id);
-                }
-            }
-        }
-        Collections.sort(sorted);
-        String str = new Gson().toJson(sorted.toArray(new Long[0]));
-        NaConfig.INSTANCE.getBlockedChannelsData().setConfigString(str);
-        synchronized (cacheLock) {
-            blockedChannels = new HashSet<>(sorted);
-        }
-    }
-
     public static boolean isBlockedChannel(long dialogId) {
         return NekoConfig.ignoreBlocked.Bool() && getBlockedChannels().contains(dialogId);
     }
@@ -469,14 +715,24 @@ public class AyuFilter {
     public static void blockPeer(long dialogId) {
         HashSet<Long> set = new HashSet<>(getBlockedChannels());
         if (set.add(dialogId)) {
-            saveBlockedChannels(set);
+            Long[] arr = set.toArray(new Long[0]);
+            String str = new Gson().toJson(arr);
+            NaConfig.INSTANCE.getBlockedChannelsData().setConfigString(str);
+            synchronized (cacheLock) {
+                blockedChannels = set;
+            }
         }
     }
 
     public static void unblockPeer(long dialogId) {
         HashSet<Long> set = new HashSet<>(getBlockedChannels());
         if (set.remove(dialogId)) {
-            saveBlockedChannels(set);
+            Long[] arr = set.toArray(new Long[0]);
+            String str = new Gson().toJson(arr);
+            NaConfig.INSTANCE.getBlockedChannelsData().setConfigString(str);
+            synchronized (cacheLock) {
+                blockedChannels = set;
+            }
         }
     }
 
@@ -484,30 +740,15 @@ public class AyuFilter {
         return checkBlockedChannels(getBlockedChannels());
     }
 
-    public static ArrayList<Long> getAllBlockedChannelsList() {
-        ArrayList<Long> list = new ArrayList<>(getBlockedChannels());
-        Collections.sort(list);
-        return list;
-    }
-
     public static int getBlockedChannelsCount() {
         return getBlockedChannels().size();
     }
 
     public static void clearBlockedChannels() {
-        saveBlockedChannels(new HashSet<>());
-    }
-
-    public static void setBlockedChannels(ArrayList<Long> dialogIds) {
-        HashSet<Long> set = new HashSet<>();
-        if (dialogIds != null) {
-            for (Long dialogId : dialogIds) {
-                if (dialogId != null && dialogId < 0L) {
-                    set.add(dialogId);
-                }
-            }
+        NaConfig.INSTANCE.getBlockedChannelsData().setConfigString("[]");
+        synchronized (cacheLock) {
+            blockedChannels = new HashSet<>();
         }
-        saveBlockedChannels(set);
     }
 
     public static ArrayList<Long> checkBlockedChannels(HashSet<Long> blockedChannels) {
@@ -536,12 +777,7 @@ public class AyuFilter {
     }
 
     public static void onMessageEdited(int msgId, long dialogId) {
-        var dialogCache = filteredCache.get(dialogId);
-        if (dialogCache != null) {
-            synchronized (dialogCache) {
-                dialogCache.remove(msgId);
-            }
-        }
+        AyuFilterCache.invalidate(dialogId, msgId);
     }
 
     private static void ensureCustomFilteredUsersLoaded() {
@@ -706,16 +942,28 @@ public class AyuFilter {
 
     public static class FilterModel {
         @Expose
+        public String id = UUID.randomUUID().toString();
+        @Expose
         public String regex;
         @Expose
         public boolean caseInsensitive;
         @Expose
         public boolean enabled = true;
+        @Expose
+        public boolean reversed;
         public Pattern pattern;
 
         // Legacy fields for deserialization migration only
         public ArrayList<Long> enabledGroups;
         public ArrayList<Long> disabledGroups;
+
+        public boolean ensureId() {
+            if (!TextUtils.isEmpty(id)) {
+                return false;
+            }
+            id = UUID.randomUUID().toString();
+            return true;
+        }
 
         public void buildPattern() {
             var flags = Pattern.MULTILINE;
@@ -751,6 +999,13 @@ public class AyuFilter {
         public long dialogId;
         @Expose
         public ArrayList<FilterModel> filters;
+    }
+
+    public static class ExcludedFilterEntry {
+        @Expose
+        public long dialogId;
+        @Expose
+        public String filterId;
     }
 
     public static class CustomFilteredUser {

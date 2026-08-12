@@ -35,6 +35,7 @@ import me.vkryl.android.util.ClickHelper;
 
 @SuppressLint("ViewConstructor")
 public class MainTabsLayout extends AnimatedLinearLayout {
+    public void setEqualWidthWhenTitlesVisible(boolean equal) {}
 
     private final Theme.ResourcesProvider resourcesProvider;
 
