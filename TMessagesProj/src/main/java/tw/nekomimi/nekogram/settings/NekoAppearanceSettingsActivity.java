@@ -77,10 +77,9 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell hidePremiumSectionRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHidePremiumSection()));
     private final AbstractConfigCell hideHelpSectionRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideHelpSection()));
     private final AbstractConfigCell disableAvatarBlurRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDisableAvatarBlur()));
-    private final AbstractConfigCell iconReplacementsRow = cellGroup.appendCell(new ConfigCellSelectBox("IconReplacements", NaConfig.INSTANCE.getIconReplacements(), new String[]{
-            getString(R.string.Default),
-            getString(R.string.IconReplacementSolar),
-    }, null));
+    private final AbstractConfigCell iconReplacementsRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "IconReplacements", getString(R.string.IconReplacements), R.drawable.msg_theme, false, () ->
+            presentFragment(new com.exteragram.messenger.icons.ui.IconPacksActivity())
+    ));
     private final AbstractConfigCell switchStyleRow = cellGroup.appendCell(new ConfigCellSelectBox("SwitchStyle", NaConfig.INSTANCE.getSwitchStyle(), new String[]{
             getString(R.string.Default),
             getString(R.string.StyleMaterialDesign3),
@@ -170,10 +169,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell mainTabsCustomizeRow = cellGroup.appendCell(
             new ConfigCellTextCheckIcon(null, "MainTabsCustomize", getString(R.string.MainTabsCustomize), R.drawable.tabs_reorder, false, () ->
                     presentFragment(new MainTabsCustomizeActivity()))
-    );
-    private final AbstractConfigCell pillStackRow = cellGroup.appendCell(
-            new ConfigCellTextCheckIcon(null, "PillStack", getString(R.string.PillStackPills), R.drawable.ic_ab_search, false, () ->
-                    presentFragment(new com.exteragram.messenger.pillstack.ui.PillStackPreferencesActivity()))
     );
     private final AbstractConfigCell dividerFolder = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerBlurOptions = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.BlurOptions)));

@@ -1,36 +1,84 @@
-/*
- * This is the source code of AyuGram for Android.
- *
- * We do not and cannot prevent the use of our code,
- * but be respectful and credit the original author.
- *
- * Copyright @Radolyn, 2023
- */
-
 package com.radolyn.ayugram;
 
-import tw.nekomimi.nekogram.NekoConfig;
+import java.util.ArrayList;
+import java.util.Set;
 
-public class AyuConstants {
+/* JADX INFO: loaded from: classes.dex */
+public abstract class AyuConstants {
+    public static final int FILTERS_UPDATED;
+    public static final int FIX_FORWARD;
+    public static final int FORCE_MESSAGES_UPDATE;
+    public static final int HISTORY_FLUSHED_NOTIFICATION;
+    public static final int LAST_SEEN_PILL_FETCH;
+    public static final int LAST_SEEN_PILL_UPDATE;
+    public static final int MESSAGES_DELETED_NOTIFICATION;
+    private static int OPTIONS;
+    public static final int OPTION_DEBUG_SEND_SCREENSHOT;
+    public static final int OPTION_DELETED_HISTORY;
+    public static final int OPTION_GHOST_READ_EXCLUSION;
+    public static final int OPTION_GHOST_TYPING_EXCLUSION;
+    public static final int OPTION_SWITCH_FILTERING;
+    public static final int OPTION_VIEW_FILTERS;
+    public static final int PEEK_ONLINE_ITEM;
+    public static final int PEER_RESOLVED_NOTIFICATION;
+    public static final int SHADOW_BAN_ITEM;
+    public static final int UPDATE_CHAT_RESTRICTION;
+    private static int notificationId;
+    public static final String DEFAULT_JUMPSCARES_CHANNEL = "default";
+    public static final String AYU_DATABASE = "ayugram.db";
+    public static final String AYU_DATABASE_EXPORT = "ayugram.db";
+    public static final int DELETED_MEDIA_LOADED_NOTIFICATION = 29481;
+    public static String APP_NAME = "NagramX";
+    public static final String UPDATES_CHANNEL_USERNAME = "default";
+    public static final int OPTION_CLEAR_DELETED = 80;
+    public static String BUILD_STORE_PACKAGE = "default";
+    public static int MAX_CACHE_SIZE_300_MB = -10;
+    public static final ArrayList DEFAULT_JUMPSCARES_KEYS = new ArrayList() { // from class: com.radolyn.ayugram.AyuConstants.1
+        {
+            add("default");
+            add("default");
+            add("default");
+            add("default");
+            add("default");
+            add("default");
+            add("default");
+        }
+    };
+    public static final ArrayList DEFAULT_JUMPSCARES_VALUES = new ArrayList() { // from class: com.radolyn.ayugram.AyuConstants.2
+        {
+            add(String.valueOf(5));
+            add(String.valueOf(6));
+            add(String.valueOf(7));
+            add(String.valueOf(8));
+            add(String.valueOf(9));
+            add(String.valueOf(10));
+            add(String.valueOf(11));
+        }
+    };
+    public static final Set ALLOWED_PASTE_SERVICES = new java.util.HashSet();
+    public static final int FIX_SCHEDULED_BAR = 6969;
 
-    public static final int DOCUMENT_TYPE_NONE = 0;
-    public static final int DOCUMENT_TYPE_PHOTO = 1;
-    public static final int DOCUMENT_TYPE_STICKER = 2;
-    public static final int DOCUMENT_TYPE_FILE = 3;
-    public static final int DOCUMENT_TYPE_WEBPAGE = 4;
-    public static final int DOCUMENT_TYPE_STORY = 5;
-
-    public static final int OPTION_HISTORY = 1338_01;
-    public static final int OPTION_TTL = 1338_02;
-    public static final int OPTION_READ_MESSAGE = 1338_03;
-    public static final int OPTION_TTL_SAVE = 1338_04;
-
-    public static final int MESSAGE_EDITED_NOTIFICATION = 6968;
-    public static final int MESSAGES_DELETED_NOTIFICATION = 6969;
-    public static final int DELETED_MEDIA_LOADED_NOTIFICATION = 6970;
-
-    public static final String AYU_DATABASE = "ayu-data";
-    public static final String AYU_DATABASE_EXPORT = AYU_DATABASE + ".db";
-
-    public static String APP_NAME = NekoConfig.customSavePath.String();
+    static {
+        int i = 80 + 1;
+        OPTION_VIEW_FILTERS = i;
+        OPTION_SWITCH_FILTERING = i + 1;
+        PEEK_ONLINE_ITEM = i + 2;
+        SHADOW_BAN_ITEM = i + 3;
+        OPTION_DELETED_HISTORY = i + 4;
+        OPTION_GHOST_READ_EXCLUSION = i + 5;
+        OPTION_GHOST_TYPING_EXCLUSION = i + 6;
+        OPTIONS = i + 8;
+        OPTION_DEBUG_SEND_SCREENSHOT = i + 7;
+        int i2 = 6969 + 1;
+        FIX_FORWARD = i2;
+        MESSAGES_DELETED_NOTIFICATION = i2 + 1;
+        HISTORY_FLUSHED_NOTIFICATION = i2 + 2;
+        PEER_RESOLVED_NOTIFICATION = i2 + 3;
+        UPDATE_CHAT_RESTRICTION = i2 + 4;
+        FORCE_MESSAGES_UPDATE = i2 + 5;
+        LAST_SEEN_PILL_UPDATE = i2 + 6;
+        LAST_SEEN_PILL_FETCH = i2 + 7;
+        notificationId = i2 + 9;
+        FILTERS_UPDATED = i2 + 8;
+    }
 }

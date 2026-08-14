@@ -32,7 +32,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.radolyn.ayugram.database.entities.DeletedMessageFull;
-import com.radolyn.ayugram.messages.AyuMessagesController;
+import com.radolyn.ayugram.controllers.AyuMessagesController;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
 
 import org.telegram.messenger.AndroidUtilities;

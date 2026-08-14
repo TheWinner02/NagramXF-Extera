@@ -1,33 +1,13 @@
-/*
- * This is the source code of AyuGram for Android.
- *
- * We do not and cannot prevent the use of our code,
- * but be respectful and credit the original author.
- *
- * Copyright @Radolyn, 2023
- */
-
 package com.radolyn.ayugram.database.entities;
 
-import androidx.room.Entity;
-import androidx.room.Index;
-import androidx.room.PrimaryKey;
-
-@Entity(
-        indices = {
-                @Index(value = {"deletedMessageId"})
-        }
-)
+/* JADX INFO: loaded from: classes.dex */
 public class DeletedMessageReaction {
-    @PrimaryKey(autoGenerate = true)
-    public long fakeReactionId;
-
-    public long deletedMessageId;
-
-    public String emoticon;
-    public long documentId;
-    public boolean isCustom;
-
     public int count;
+    public long deletedMessageId;
+    public long documentId;
+    public String emoticon;
+    public long fakeReactionId;
+    public boolean isCustom;
+    public boolean isPaid;
     public boolean selfSelected;
 }

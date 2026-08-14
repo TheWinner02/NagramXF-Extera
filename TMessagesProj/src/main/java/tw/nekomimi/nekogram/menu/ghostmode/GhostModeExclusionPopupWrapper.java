@@ -1,8 +1,9 @@
 package tw.nekomimi.nekogram.menu.ghostmode;
+import com.radolyn.ayugram.AyuGhostPreferences;
 
 import static org.telegram.messenger.LocaleController.getString;
 
-import com.radolyn.ayugram.utils.AyuGhostPreferences;
+import com.radolyn.ayugram.AyuGhostPreferences;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;

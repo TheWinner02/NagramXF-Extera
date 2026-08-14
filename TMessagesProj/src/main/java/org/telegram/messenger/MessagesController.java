@@ -150,9 +150,9 @@ import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.helper.LocalPremiumStatusHelper;
 
 import com.radolyn.ayugram.AyuConstants;
-import com.radolyn.ayugram.messages.AyuSavePreferences;
-import com.radolyn.ayugram.messages.AyuMessagesController;
-import com.radolyn.ayugram.utils.AyuState;
+import com.radolyn.ayugram.controllers.AyuSavePreferences;
+import com.radolyn.ayugram.controllers.AyuMessagesController;
+import com.radolyn.ayugram.AyuState;
 import com.radolyn.ayugram.utils.LastSeenHelper;
 
 public class MessagesController extends BaseController implements NotificationCenter.NotificationCenterDelegate {

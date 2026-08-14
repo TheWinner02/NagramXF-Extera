@@ -7,6 +7,7 @@
  */
 
 package org.telegram.messenger;
+import com.radolyn.ayugram.AyuGhostPreferences;
 
 import android.annotation.SuppressLint;
 import android.content.ClipDescription;
@@ -51,9 +52,9 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 
-import com.radolyn.ayugram.utils.AyuGhostPreferences;
+import com.radolyn.ayugram.AyuGhostPreferences;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
-import com.radolyn.ayugram.utils.AyuState;
+import com.radolyn.ayugram.AyuState;
 
 import org.json.JSONObject;
 import org.telegram.messenger.audioinfo.AudioInfo;

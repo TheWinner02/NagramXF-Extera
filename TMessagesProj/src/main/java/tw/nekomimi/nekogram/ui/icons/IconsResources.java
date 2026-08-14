@@ -6,13 +6,14 @@ import android.graphics.drawable.Drawable;
 
 import androidx.annotation.Nullable;
 
+import com.exteragram.messenger.icons.BaseIconPacks;
 import xyz.nextalone.nagram.NaConfig;
 
 @SuppressLint("UseCompatLoadingForDrawables")
 public class IconsResources extends Resources {
 
     public static final int ICON_REPLACE_SOLAR = 1;
-    private int _iconsType = -1;
+    public static final int ICON_REPLACE_REMIX = 2;
 
     public IconsResources(Resources resources) {
         super(resources.getAssets(), resources.getDisplayMetrics(), resources.getConfiguration());
@@ -45,14 +46,12 @@ public class IconsResources extends Resources {
     }
 
     private int getConversion(int icon, int forcedIconsType) {
-        if (_iconsType == -1) {
-            _iconsType = NaConfig.INSTANCE.getIconReplacements().Int();
-        }
-
-        int consideredIconsType = forcedIconsType == -1 ? _iconsType : forcedIconsType;
+        int consideredIconsType = forcedIconsType == -1 ? NaConfig.INSTANCE.getIconReplacements().Int() : forcedIconsType;
 
         if (consideredIconsType == ICON_REPLACE_SOLAR) {
             return SolarIcons.Companion.getConversion(icon);
+        } else if (consideredIconsType == ICON_REPLACE_REMIX) {
+            return BaseIconPacks.INSTANCE.getConversionRemix(this, icon);
         }
 
         return icon;

@@ -248,6 +248,7 @@ public class NotificationCenter {
     public static final int groupRestrictionsUnlockedByBoosts = totalEvents++;
     public static final int chatWasBoostedByUser = totalEvents++;
     public static final int groupPackUpdated = totalEvents++;
+    public static final int iconPackUpdated = totalEvents++;
     public static final int timezonesUpdated = totalEvents++;
     public static final int customStickerCreated = totalEvents++;
     public static final int premiumFloodWaitReceived = totalEvents++;

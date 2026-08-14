@@ -30,7 +30,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 
 import com.radolyn.ayugram.utils.AyuMessageUtils;
-import com.radolyn.ayugram.utils.AyuState;
+import com.radolyn.ayugram.AyuState;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteException;

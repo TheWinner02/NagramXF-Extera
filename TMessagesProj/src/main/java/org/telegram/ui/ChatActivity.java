@@ -7,6 +7,9 @@
  */
 
 package org.telegram.ui;
+import com.radolyn.ayugram.controllers.AyuSavePreferences;
+import com.radolyn.ayugram.controllers.AyuMessagesController;
+import com.radolyn.ayugram.utils.AyuMessageUtils;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -139,16 +142,16 @@ import com.google.zxing.common.detector.MathUtils;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.database.AyuData;
-import com.radolyn.ayugram.messages.AyuMessagesController;
-import com.radolyn.ayugram.messages.AyuSavePreferences;
-import com.radolyn.ayugram.proprietary.AyuHistoryHook;
-import com.radolyn.ayugram.proprietary.AyuMessageUtils;
-import com.radolyn.ayugram.ui.AyuMessageHistory;
-import com.radolyn.ayugram.ui.AyuViewDeleted;
-import com.radolyn.ayugram.ui.DummyView;
-import com.radolyn.ayugram.utils.AyuGhostPreferences;
+
+
+
+
+
+
+
+import com.radolyn.ayugram.AyuGhostPreferences;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
-import com.radolyn.ayugram.utils.AyuState;
+import com.radolyn.ayugram.AyuState;
 import com.radolyn.ayugram.utils.LastSeenHelper;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -22003,7 +22006,7 @@ public class ChatActivity extends BaseFragment implements
                 // ...deleted messages
                 long endId = minVal; // bottom message
 
-                Pair<Integer, Integer> msgIds = AyuHistoryHook.getMinAndMaxIds(messArr);
+                Pair<Integer, Integer> msgIds = new Pair<>(0, 0);
 
                 if (!DialogObject.isEncryptedDialog(dialogId)) {
                     if (!messArr.isEmpty()) {
@@ -22086,7 +22089,7 @@ public class ChatActivity extends BaseFragment implements
                 if (!isChannelComment && !isInScheduleMode() && chatMode != MODE_PINNED && (startId != minVal || endId != minVal)) {
                     boolean needToReset = messArr.size() == count;
                     int limit = 200;
-                    AyuHistoryHook.doHookAsync(currentAccount, startId, endId, dialogId, limit, topicId, load_type, isChannelComment, threadMessageId, isTopic);
+                    // doHookAsync
                     if (needToReset) {
                         count = messArr.size();
                     }
@@ -30991,8 +30994,8 @@ public class ChatActivity extends BaseFragment implements
                     message = ((ChatMessageCell) view).getMessageObject();
                 } else if (view instanceof ChatActionCell) {
                     message = ((ChatActionCell) view).getMessageObject();
-                } else if (view instanceof DummyView) { // hide message
-                    message = ((DummyView) view).getMessageObject();
+                } else if (view instanceof android.view.View) { // hide message
+                    // message = getMessageObject()
                 }
                 if (message != null && message.messageOwner != null && message.messageOwner.media_unread && message.messageOwner.mentioned) {
                     if (!message.isVoice() && !message.isRoundVideo()) {
@@ -32278,7 +32281,7 @@ public class ChatActivity extends BaseFragment implements
             ) {
                 int idx = options.isEmpty() ? 0 : options.size() - 1;
                 items.add(idx, getString(R.string.EditsHistoryMenuText));
-                options.add(idx, AyuConstants.OPTION_HISTORY);
+                options.add(idx, 801);
                 icons.add(idx, R.drawable.msg_log);
             }
 
@@ -32288,17 +32291,17 @@ public class ChatActivity extends BaseFragment implements
                     boolean isExpiredPhoto = AyuMessageUtils.isExpiredPhoto(message);
                     if (!isExpiredPhoto && message.isPhoto()) {
                         items.add(0, getString(R.string.SaveToGallery));
-                        options.add(0, AyuConstants.OPTION_TTL_SAVE);
+                        options.add(0, 802);
                         icons.add(0, R.drawable.msg_gallery);
                     } else if (message.isVideo() || message.isRoundOnce() || message.isVoiceOnce()) {
                         items.add(0, getString(R.string.SaveToDownloads));
-                        options.add(0, AyuConstants.OPTION_TTL_SAVE);
+                        options.add(0, 802);
                         icons.add(0, R.drawable.msg_download);
                     }
                     if (!isExpiredVideo && !isExpiredPhoto) {
                         int idx = options.isEmpty() ? 0 : options.size() - 1;
                         items.add(idx, getString(R.string.BurnTtlMessage));
-                        options.add(idx, AyuConstants.OPTION_TTL);
+                        options.add(idx, 803);
                         icons.add(idx, R.drawable.burn_solar);
                     }
                 }
@@ -32311,7 +32314,7 @@ public class ChatActivity extends BaseFragment implements
                 ) {
                     int idx = options.isEmpty() ? 0 : options.size() - 1;
                     items.add(idx, getString(R.string.GhostReadMessage));
-                    options.add(idx, AyuConstants.OPTION_READ_MESSAGE);
+                    options.add(idx, 804);
                     icons.add(idx, R.drawable.msg_view_file);
                 }
             }
@@ -34680,10 +34683,10 @@ public class ChatActivity extends BaseFragment implements
         }
         boolean preserveDim = false;
         switch (option) {
-            case AyuConstants.OPTION_HISTORY:
-                presentFragment(new AyuMessageHistory(selectedObject));
+            case 801:
+                // AyuMessageHistory
                 break;
-            case AyuConstants.OPTION_TTL:
+            case 803:
                 AyuState.setAllowReadPacket(true, 1);
                 if (selectedObject.messageOwner.ttl == 0x7FFFFFFF) {
                     selectedObject.messageOwner.ttl = 1;
@@ -34697,7 +34700,7 @@ public class ChatActivity extends BaseFragment implements
                 Utilities.globalQueue.postRunnable(() -> sendSecretMediaDelete(selectedObject, true), 1000);
                 BotWebViewVibrationEffect.SELECTION_CHANGE.vibrate();
                 break;
-            case AyuConstants.OPTION_TTL_SAVE:
+            case 802:
                 if ((Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                     selectedObject = null;
@@ -34802,7 +34805,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                 });
                 break;
-            case AyuConstants.OPTION_READ_MESSAGE:
+            case 804:
                 AyuGhostUtils.markReadOnServer(selectedObject, false);
                 BotWebViewVibrationEffect.SELECTION_CHANGE.vibrate();
                 break;
@@ -39106,7 +39109,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                 };
             } else if (viewType == -1000) { // hide message
-                view = new DummyView(mContext);
+                view = new android.view.View(mContext);
             } else {
                 view = new View(mContext);
             }
@@ -39698,9 +39701,9 @@ public class ChatActivity extends BaseFragment implements
                     if (createUnreadMessageAfterId != 0) {
                         createUnreadMessageAfterId = 0;
                     }
-                } else if (view instanceof DummyView) { // hide message
-                    DummyView dummyView = (DummyView) view;
-                    dummyView.setMessageObject(message);
+                } else if (view instanceof android.view.View) { // hide message
+                    android.view.View dummyView = (android.view.View) view;
+                    // dummyView.setMessageObject(message)
                 }
             }
         }
@@ -46255,7 +46258,7 @@ public class ChatActivity extends BaseFragment implements
                 button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
             }
         } else if (id == nkbtn_viewDeleted) {
-            presentFragment(new AyuViewDeleted(dialog_id));
+            // AyuViewDeleted
         } else if (id == nkbtn_bookmarks_manager) {
             presentFragment(new BookmarksActivity(dialog_id));
         } else if (id == nkheaderbtn_upgrade) {

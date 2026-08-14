@@ -84,9 +84,9 @@ import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import xyz.nextalone.nagram.NaConfig;
 import com.radolyn.ayugram.AyuConstants;
-import com.radolyn.ayugram.messages.AyuMessagesController;
-import com.radolyn.ayugram.messages.AyuSavePreferences;
-import com.radolyn.ayugram.proprietary.AyuMessageUtils;
+import com.radolyn.ayugram.controllers.AyuMessagesController;
+import com.radolyn.ayugram.controllers.AyuSavePreferences;
+import com.radolyn.ayugram.utils.AyuMessageUtils;
 
 public class MessagesStorage extends BaseController {
 

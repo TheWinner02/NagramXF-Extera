@@ -1,4 +1,5 @@
 package tw.nekomimi.nekogram.helpers;
+import com.radolyn.ayugram.AyuGhostPreferences;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
@@ -13,8 +14,8 @@ import android.widget.LinearLayout;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.radolyn.ayugram.messages.AyuSavePreferences;
-import com.radolyn.ayugram.utils.AyuGhostPreferences;
+import com.radolyn.ayugram.controllers.AyuSavePreferences;
+import com.radolyn.ayugram.AyuGhostPreferences;
 
 import org.json.JSONException;
 import org.json.JSONObject;

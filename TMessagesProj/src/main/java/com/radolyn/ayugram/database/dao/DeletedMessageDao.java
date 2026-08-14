@@ -1,97 +1,44 @@
-/*
- * This is the source code of AyuGram for Android.
- *
- * We do not and cannot prevent the use of our code,
- * but be respectful and credit the original author.
- *
- * Copyright @Radolyn, 2023
- */
-
 package com.radolyn.ayugram.database.dao;
 
-import androidx.room.Dao;
-import androidx.room.Insert;
-import androidx.room.Query;
-import androidx.room.Transaction;
 import com.radolyn.ayugram.database.entities.DeletedMessage;
 import com.radolyn.ayugram.database.entities.DeletedMessageFull;
 import com.radolyn.ayugram.database.entities.DeletedMessageReaction;
-
+import com.radolyn.ayugram.database.other.CleanUpUnion;
 import java.util.List;
 
-@Dao
+/* JADX INFO: loaded from: classes.dex */
 public interface DeletedMessageDao {
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId = :messageId")
-    DeletedMessageFull getMessage(long userId, long dialogId, int messageId);
+    void clearForDialog(long j, long j2, Long l);
 
-    @Query("SELECT mediaPath FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId = :messageId LIMIT 1")
-    String getMediaPath(long userId, long dialogId, int messageId);
+    void delete(long j, long j2, int i);
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND :startId <= messageId AND messageId <= :endId ORDER BY messageId LIMIT :limit")
-    List<DeletedMessageFull> getMessages(long userId, long dialogId, long startId, long endId, int limit);
+    void deleteAll();
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND topicId = :topicId AND :startId <= messageId AND messageId <= :endId ORDER BY messageId LIMIT :limit")
-    List<DeletedMessageFull> getTopicMessages(long userId, long dialogId, long topicId, long startId, long endId, int limit);
+    void deleteMedia(long j);
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND replyMessageId = :threadMessageId AND :startId <= messageId AND messageId <= :endId ORDER BY messageId LIMIT :limit")
-    List<DeletedMessageFull> getThreadMessages(long userId, long dialogId, long threadMessageId, long startId, long endId, int limit);
+    boolean exists(long j, long j2, long j3, int i);
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND groupedId = :groupedId ORDER BY messageId")
-    List<DeletedMessageFull> getMessagesGrouped(long userId, long dialogId, long groupedId);
+    boolean existsWithoutMedia(long j, long j2, int i);
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND groupedId IN (:groupedIds) ORDER BY messageId")
-    List<DeletedMessageFull> getMessagesGroupedIn(long userId, long dialogId, List<Long> groupedIds);
+    int getDeletedCount();
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE dialogId = :dialogId")
-    List<DeletedMessageFull> getMessagesByDialog(long dialogId);
+    int getDeletedCount(long j, long j2, long j3, String str);
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId ORDER BY messageId DESC LIMIT :limit")
-    List<DeletedMessageFull> getLatestMessages(long userId, long dialogId, int limit);
+    List<DeletedMessageFull> getLastMessages(long j);
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId < :before ORDER BY messageId DESC LIMIT :limit")
-    List<DeletedMessageFull> getOlderMessagesBefore(long userId, long dialogId, int before, int limit);
+    DeletedMessageFull getMessage(long j, long j2, int i);
 
-    @Transaction
-    @Query("SELECT messageId FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId IN (:messageIds)")
-    List<Integer> getExistingMessageIds(long userId, long dialogId, List<Integer> messageIds);
+    List<CleanUpUnion> getMessagesForCleanUp();
 
-    @Transaction
-    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId IN (:messageIds)")
-    List<DeletedMessageFull> getMessagesByIds(long userId, long dialogId, List<Integer> messageIds);
+    List<DeletedMessageFull> getMessagesForScroll(long j, long j2, long j3, String str, int i, int i2);
 
-    @Insert
-    long insert(DeletedMessage msg);
+    List<DeletedMessageFull> getMessagesForTopic(long j, long j2, long j3, int i, int i2);
 
-    @Insert
-    void insertReaction(DeletedMessageReaction reaction);
+    List<DeletedMessageFull> getMessagesTopicless(long j, long j2, int i, int i2);
 
-    @Query("SELECT COUNT(*) FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId")
-    int countByDialog(long userId, long dialogId);
+    long insert(DeletedMessage deletedMessage);
 
-    @Query("SELECT EXISTS(SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND topicId = :topicId AND messageId = :msgId)")
-    boolean exists(long userId, long dialogId, long topicId, int msgId);
+    void insertReaction(DeletedMessageReaction deletedMessageReaction);
 
-    @Query("DELETE FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId = :msgId")
-    void delete(long userId, long dialogId, int msgId);
-
-    @Query("DELETE FROM deletedmessage WHERE dialogId = :dialogId")
-    void delete(long dialogId);
-
-    @Query("DELETE FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId IN (:messageIds)")
-    void deleteMessages(long userId, long dialogId, List<Integer> messageIds);
-
-    @Query("UPDATE deletedmessage SET mediaPath = :newPath WHERE userId = :userId AND dialogId = :dialogId AND messageId = :messageId AND (mediaPath IS NULL OR mediaPath = '')")
-    void updateMediaPathIfEmpty(long userId, long dialogId, int messageId, String newPath);
-
-    @Query("UPDATE deletedmessage SET mediaPath = NULL WHERE mediaPath = :mediaPath")
-    void clearMediaPath(String mediaPath);
+    void updateMediaPath(long j, long j2, long j3, String str);
 }

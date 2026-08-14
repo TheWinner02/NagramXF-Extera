@@ -38,8 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import xyz.nextalone.nagram.NaConfig;
 import com.radolyn.ayugram.AyuConstants;
-import com.radolyn.ayugram.messages.AyuMessagesController;
-import com.radolyn.ayugram.messages.AyuSavePreferences;
+import com.radolyn.ayugram.controllers.AyuMessagesController;
+import com.radolyn.ayugram.controllers.AyuSavePreferences;
 
 public class SecretChatHelper extends BaseController {
 

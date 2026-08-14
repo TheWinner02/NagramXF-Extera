@@ -2,7 +2,7 @@ package tw.nekomimi.nekogram.menu.saveDeleted;
 
 import static org.telegram.messenger.LocaleController.getString;
 
-import com.radolyn.ayugram.messages.AyuSavePreferences;
+import com.radolyn.ayugram.controllers.AyuSavePreferences;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
