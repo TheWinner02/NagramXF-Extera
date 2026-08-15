@@ -73,6 +73,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private int appearanceRow;
     private int ayuMomentsRow;
     private int translatorRow;
+    private int pluginsRow;
     private int chatRow;
     private int passcodeRow;
     private int experimentRow;
@@ -95,6 +96,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         appearanceRow = addRow();
         ayuMomentsRow = addRow();
         translatorRow = addRow();
+        pluginsRow = addRow();
         chatRow = addRow();
         if (!PasscodeHelper.isSettingsHidden()) {
             passcodeRow = addRow();
@@ -349,6 +351,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new NekoExperimentalSettingsActivity());
         } else if (position == translatorRow) {
             presentFragment(new NekoTranslatorSettingsActivity());
+        } else if (position == pluginsRow) {
+            presentFragment(new com.exteragram.messenger.plugins.ui.PluginsActivity());
         } else if (position == exteraInfoRow) {
             presentFragment(new NagramExteraAboutActivity());
         } else if (position == importSettingsRow) {
@@ -412,6 +416,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndIcon(getString(R.string.AyuMoments), R.drawable.heart_angle_solar, true);
                     } else if (position == translatorRow) {
                         textCell.setTextAndIcon(getString(R.string.TranslatorSettings), R.drawable.ic_translate, true);
+                    } else if (position == pluginsRow) {
+                        textCell.setTextAndIcon("Plugin & Add-on (Python)", R.drawable.plugins_filled_remix, true);
                     } else if (position == passcodeRow) {
                         textCell.setTextAndIcon(getString(R.string.PasscodeNeko), R.drawable.msg_permissions, true);
                     } else if (position == experimentRow) {
@@ -437,7 +443,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         public int getItemViewType(int position) {
             if (position == categoriesEndRow || position == nSettingsEndRow) {
                 return TYPE_SHADOW;
-            } else if (position == chatRow || position == generalRow || position == appearanceRow || position == ayuMomentsRow || position == passcodeRow || position == experimentRow || position == translatorRow ||
+            } else if (position == chatRow || position == generalRow || position == appearanceRow || position == ayuMomentsRow || position == passcodeRow || position == experimentRow || position == translatorRow || position == pluginsRow ||
                     position == importSettingsRow || position == exportSettingsRow || position == resetSettingsRow || position == appRestartRow ||
                     position == exteraInfoRow) {
                 return TYPE_TEXT;
