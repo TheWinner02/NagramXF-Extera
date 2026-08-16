@@ -41,6 +41,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -340,6 +341,11 @@ public final class InstallPluginBottomSheet extends BottomSheet {
     }
 
     public static void $r8$lambda$mhmbFSrf6ODSDx9RaNzu7UYWBis(final InstallPluginBottomSheet installPluginBottomSheet, ButtonWithCounterView buttonWithCounterView, final BaseFragment baseFragment, View view) {
+        String pluginId = installPluginBottomSheet.plugin != null ? installPluginBottomSheet.plugin.getId() : "null";
+        String filePath = installPluginBottomSheet.params != null ? installPluginBottomSheet.params.getFilePath() : "null";
+        org.telegram.messenger.FileLog.d("NAGRAM_PLUGIN_DEBUG: Install button clicked! pluginId=" + pluginId + ", filePath=" + filePath + ", enableAfter=" + installPluginBottomSheet.enableAfterInstallation);
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "Install button clicked! pluginId=" + pluginId + ", filePath=" + filePath);
+
         if (installPluginBottomSheet.installing) {
             if (installPluginBottomSheet.cancellationRequested) {
                 return;
@@ -357,24 +363,38 @@ public final class InstallPluginBottomSheet extends BottomSheet {
         if (runnable != null) {
             AndroidUtilities.cancelRunOnUIThread(runnable);
         }
-        Runnable runnable2 = new Runnable() { // from class: com.exteragram.messenger.plugins.ui.components.InstallPluginBottomSheet$$ExternalSyntheticLambda10
-            @Override // java.lang.Runnable
+        Runnable runnable2 = new Runnable() {
+            @Override
             public final void run() {
                 if (installPluginBottomSheet.button != null) installPluginBottomSheet.button.setLoading(true);
             }
         };
         installPluginBottomSheet.delayedLoadingRunnable = runnable2;
         AndroidUtilities.runOnUIThread(runnable2, 250L);
-        PluginsController.PluginsEngine pluginsEngine = PluginsController.INSTANCE.getEngines().get(Deobfuscator$exteraGramDev$TMessagesProj.getString(-139472489694767L));
+
+        PluginsController.PluginsEngine pluginsEngine = PluginsController.INSTANCE.getEngines().get("python");
+        if (pluginsEngine == null && !PluginsController.INSTANCE.getEngines().isEmpty()) {
+            pluginsEngine = PluginsController.INSTANCE.getEngines().values().iterator().next();
+        }
         PythonPluginsEngine pythonPluginsEngine = pluginsEngine instanceof PythonPluginsEngine ? (PythonPluginsEngine) pluginsEngine : null;
         if (pythonPluginsEngine == null) {
+            org.telegram.messenger.FileLog.e("NAGRAM_PLUGIN_DEBUG: PythonPluginsEngine is NULL!");
+            installPluginBottomSheet.restoreButtonText(true);
+            installPluginBottomSheet.installing = false;
+            installPluginBottomSheet.setCancelable(true);
+            installPluginBottomSheet.setCanDismissWithSwipe(true);
+            installPluginBottomSheet.setCanDismissWithTouchOutside(true);
+            if (baseFragment != null && baseFragment.getParentActivity() != null) {
+                android.widget.Toast.makeText(baseFragment.getParentActivity(), "Python Engine not found", android.widget.Toast.LENGTH_LONG).show();
+            }
             return;
         }
-        pythonPluginsEngine.loadPluginFromFile(installPluginBottomSheet.params.getFilePath(), installPluginBottomSheet.plugin, new Utilities.Callback() { // from class: com.exteragram.messenger.plugins.ui.components.InstallPluginBottomSheet$$ExternalSyntheticLambda11
-            @Override // org.telegram.messenger.Utilities.Callback
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "Calling pythonPluginsEngine.loadPluginFromFile... filePath=" + installPluginBottomSheet.params.getFilePath());
+        pythonPluginsEngine.loadPluginFromFile(installPluginBottomSheet.params.getFilePath(), installPluginBottomSheet.plugin, new Utilities.Callback() {
+            @Override
             public final void run(final Object obj) {
-                AndroidUtilities.runOnUIThread(new Runnable() { // from class: com.exteragram.messenger.plugins.ui.components.InstallPluginBottomSheet$$ExternalSyntheticLambda17
-                    @Override // java.lang.Runnable
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
                     public final void run() {
                         InstallPluginBottomSheet.$r8$lambda$6zxqI9k4hzUm636fgiMNfKCapIU(installPluginBottomSheet, obj != null ? obj.toString() : null, baseFragment);
                     }
@@ -384,12 +404,16 @@ public final class InstallPluginBottomSheet extends BottomSheet {
     }
 
     public static void $r8$lambda$6zxqI9k4hzUm636fgiMNfKCapIU(final InstallPluginBottomSheet installPluginBottomSheet, final String str, final BaseFragment baseFragment) {
+        org.telegram.messenger.FileLog.d("NAGRAM_PLUGIN_DEBUG: loadPluginFromFile callback result: " + str);
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFile callback result: " + str);
         Runnable runnable = installPluginBottomSheet.delayedLoadingRunnable;
         if (runnable != null) {
             AndroidUtilities.cancelRunOnUIThread(runnable);
         }
         installPluginBottomSheet.delayedLoadingRunnable = null;
-        installPluginBottomSheet.button.setLoading(false);
+        if (installPluginBottomSheet.button != null) {
+            installPluginBottomSheet.button.setLoading(false);
+        }
         installPluginBottomSheet.setCancelable(true);
         installPluginBottomSheet.setCanDismissWithSwipe(true);
         installPluginBottomSheet.setCanDismissWithTouchOutside(true);
@@ -400,21 +424,31 @@ public final class InstallPluginBottomSheet extends BottomSheet {
             return;
         }
         if (str != null) {
-            if (str.contains("cancel")) {
-                installPluginBottomSheet.restoreButtonText(true);
-                return;
-            } else {
-                installPluginBottomSheet.restoreButtonText(true);
-                BulletinFactory.of(installPluginBottomSheet.topBulletinContainer, installPluginBottomSheet.resourcesProvider).createSimpleBulletin(R.raw.error, "Failed to install plugin " + installPluginBottomSheet.plugin.getName(), LocaleUtils.createCopySpan(baseFragment), () -> $r8$lambda$2g0LtQ8c5aj3CwgjkXzlSntggOU(str, baseFragment)).show();
-                return;
+            installPluginBottomSheet.restoreButtonText(true);
+            org.telegram.messenger.FileLog.e("NAGRAM_PLUGIN_DEBUG: Installation error: " + str);
+            if (baseFragment != null && baseFragment.getParentActivity() != null) {
+                android.widget.Toast.makeText(baseFragment.getParentActivity(), "Install Error: " + str, android.widget.Toast.LENGTH_LONG).show();
+                AlertDialog.Builder builder = new AlertDialog.Builder(baseFragment.getParentActivity());
+                builder.setTitle("Failed to install " + (installPluginBottomSheet.plugin != null ? installPluginBottomSheet.plugin.getName() : "plugin"));
+                builder.setMessage(str);
+                builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
+                builder.setNegativeButton(LocaleController.getString(R.string.Copy), (dialog, which) -> {
+                    if (AndroidUtilities.addToClipboard(str)) {
+                        BulletinFactory.of(baseFragment).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                    }
+                });
+                builder.show();
             }
+            return;
         }
+        org.telegram.messenger.FileLog.d("NAGRAM_PLUGIN_DEBUG: Plugin installed successfully! Dismissing sheet...");
         installPluginBottomSheet.dismiss();
         if (installPluginBottomSheet.enableAfterInstallation && !ExteraConfig.getPluginsSafeMode()) {
-            PluginsController.INSTANCE.getInstance().setPluginEnabled(installPluginBottomSheet.plugin.getId(), true, new Utilities.Callback() { // from class: com.exteragram.messenger.plugins.ui.components.InstallPluginBottomSheet$$ExternalSyntheticLambda1
-                @Override // org.telegram.messenger.Utilities.Callback
+            org.telegram.messenger.FileLog.d("NAGRAM_PLUGIN_DEBUG: Enabling plugin after installation...");
+            PluginsController.INSTANCE.getInstance().setPluginEnabled(installPluginBottomSheet.plugin.getId(), true, new Utilities.Callback() {
+                @Override
                 public final void run(Object obj) {
-                    InstallPluginBottomSheet.m1354$r8$lambda$XazxihW_JS_X65B2kIJsbNdqQg(null, baseFragment, (String) obj);
+                    InstallPluginBottomSheet.m1354$r8$lambda$XazxihW_JS_X65B2kIJsbNdqQg(installPluginBottomSheet, baseFragment, (String) obj);
                 }
             });
         } else {
@@ -428,18 +462,22 @@ public final class InstallPluginBottomSheet extends BottomSheet {
         }
     }
 
-    /* JADX INFO: renamed from: $r8$lambda$XazxihW_JS_X65B2kIJ-sbNdqQg, reason: not valid java name */
     public static void m1354$r8$lambda$XazxihW_JS_X65B2kIJsbNdqQg(InstallPluginBottomSheet installPluginBottomSheet, final BaseFragment baseFragment, final String str) {
         if (str == null) {
             installPluginBottomSheet.showSuccessBulletin(baseFragment, installPluginBottomSheet.plugin);
         } else {
-            BulletinFactory.of(baseFragment).createSimpleBulletin(R.raw.error, "Plugin installed, but failed to enable " + installPluginBottomSheet.plugin.getName(), LocaleUtils.createCopySpan(baseFragment), () -> $r8$lambda$rBBotAd4KCEuAuU0dxzvUit8T6k(str, baseFragment)).show();
-        }
-    }
-
-    public static void $r8$lambda$rBBotAd4KCEuAuU0dxzvUit8T6k(String str, BaseFragment baseFragment) {
-        if (AndroidUtilities.addToClipboard(str)) {
-            BulletinFactory.of(baseFragment).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+            if (baseFragment != null && baseFragment.getParentActivity() != null) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(baseFragment.getParentActivity());
+                builder.setTitle("Failed to enable " + installPluginBottomSheet.plugin.getName());
+                builder.setMessage(str);
+                builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
+                builder.setNegativeButton(LocaleController.getString(R.string.Copy), (dialog, which) -> {
+                    if (AndroidUtilities.addToClipboard(str)) {
+                        BulletinFactory.of(baseFragment).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                    }
+                });
+                builder.show();
+            }
         }
     }
 
@@ -534,8 +572,11 @@ public final class InstallPluginBottomSheet extends BottomSheet {
     }
 
     private final void restoreButtonText(boolean animated) {
-        if (this.button != null) this.button.setText(this.isUpdate ? "Update Plugin" : "Install Plugin", animated);
-        this.button.setSubText(null, animated);
+        if (this.button != null) {
+            this.button.setLoading(false);
+            this.button.setText(this.isUpdate ? "Update Plugin" : "Install Plugin", animated);
+            this.button.setSubText(null, animated);
+        }
     }
 
     @Override // org.telegram.ui.ActionBar.BottomSheet, android.app.Dialog, android.content.DialogInterface, org.telegram.ui.ActionBar.BaseFragment.AttachedSheet
@@ -605,6 +646,14 @@ public final class InstallPluginBottomSheet extends BottomSheet {
             @JvmStatic
             public final PluginInstallParams of(MessageObject messageObject) {
                 String pathToMessage = ChatUtils.getInstance().getPathToMessage(messageObject);
+                android.util.Log.d("PLUGIN_DEBUG", "PluginInstallParams.of: ChatUtils.getPathToMessage=" + pathToMessage);
+                if ((pathToMessage == null || pathToMessage.length() == 0) && messageObject != null && messageObject.messageOwner != null) {
+                    File f = org.telegram.messenger.FileLoader.getInstance(messageObject.currentAccount).getPathToMessage(messageObject.messageOwner);
+                    if (f != null) {
+                        pathToMessage = f.getAbsolutePath();
+                    }
+                    android.util.Log.d("PLUGIN_DEBUG", "PluginInstallParams.of: FileLoader fallback path=" + pathToMessage);
+                }
                 return new PluginInstallParams(pathToMessage, false);
             }
         }

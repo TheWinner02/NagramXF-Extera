@@ -43101,7 +43101,20 @@ public class ChatActivity extends BaseFragment implements
 
         @Override
         public void didPressImage(ChatMessageCell cell, float x, float y, boolean fullPreview) {
-            MessageObject message = cell.getMessageObject();
+            MessageObject message = cell != null ? cell.getMessageObject() : null;
+            if (message != null) {
+                String docName = message.getDocumentName();
+                boolean isPluginMessage = com.exteragram.messenger.plugins.PluginsController.isPlugin(message);
+                boolean endsWithPlugin = docName != null && (docName.toLowerCase().endsWith(".plugin") || docName.toLowerCase().endsWith(".py"));
+                android.util.Log.d("PLUGIN_DEBUG", "didPressImage: docName=" + docName + ", type=" + message.type + ", isPlugin=" + isPluginMessage + ", endsWithPlugin=" + endsWithPlugin);
+                if (isPluginMessage || endsWithPlugin) {
+                    android.util.Log.d("PLUGIN_DEBUG", "didPressImage: Intercepted plugin click! Calling showInstallDialog...");
+                    com.exteragram.messenger.plugins.PluginsController.INSTANCE.getInstance().showInstallDialog(ChatActivity.this, message);
+                    return;
+                }
+            } else {
+                android.util.Log.d("PLUGIN_DEBUG", "didPressImage: message is NULL!");
+            }
             if (message.type == MessageObject.TYPE_STORY) {
                 if (message.messageOwner.media.storyItem != null && !(message.messageOwner.media.storyItem instanceof TL_stories.TL_storyItemDeleted)) {
                     TL_stories.StoryItem storyItem = message.messageOwner.media.storyItem;
@@ -43350,6 +43363,8 @@ public class ChatActivity extends BaseFragment implements
                 } else if (message.getDocumentName().toLowerCase().endsWith(".nekox-settings.json")) {
                     File finalLocFile = locFile;
                     SettingsBackupHelper.importSettings(getParentActivity(), finalLocFile);
+                } else if (com.exteragram.messenger.plugins.PluginsController.isPlugin(message) || (locFile != null && com.exteragram.messenger.plugins.PluginsController.isPlugin(locFile, message))) {
+                    com.exteragram.messenger.plugins.PluginsController.INSTANCE.getInstance().showInstallDialog(ChatActivity.this, message);
                 } else {
                     boolean handled = false;
                     if (message.canPreviewDocument()) {

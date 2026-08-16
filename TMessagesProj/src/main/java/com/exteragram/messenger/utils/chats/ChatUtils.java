@@ -824,21 +824,20 @@ public class ChatUtils {
                 return str;
             }
         }
-        TLRPC.Message message2 = messageObject.messageOwner;
-        if (message2 != null) {
-            String string = fileLoader.getPathToMessage(message2).toString();
-            if (fileExists(string)) {
-                return string;
+        if (message != null) {
+            File f = fileLoader.getPathToMessage(message);
+            if (f != null && fileExists(f.getAbsolutePath())) {
+                return f.getAbsolutePath();
             }
         }
         if (messageObject.getDocument() != null) {
-            String string2 = fileLoader.getPathToAttach(messageObject.getDocument(), false).toString();
-            if (fileExists(string2)) {
-                return string2;
+            File f2 = fileLoader.getPathToAttach(messageObject.getDocument(), false);
+            if (f2 != null && fileExists(f2.getAbsolutePath())) {
+                return f2.getAbsolutePath();
             }
-            String string3 = fileLoader.getPathToAttach(messageObject.getDocument(), true).toString();
-            if (fileExists(string3)) {
-                return string3;
+            File f3 = fileLoader.getPathToAttach(messageObject.getDocument(), true);
+            if (f3 != null && fileExists(f3.getAbsolutePath())) {
+                return f3.getAbsolutePath();
             }
         }
         VideoPlayer.VideoUri videoUri = messageObject.cachedQuality;
@@ -850,9 +849,15 @@ public class ChatUtils {
         }
         TLRPC.Document document = messageObject.qualityToSave;
         if (document != null) {
-            String string4 = fileLoader.getPathToAttach(document, null, false, true).toString();
-            if (fileExists(string4)) {
-                return string4;
+            File f4 = fileLoader.getPathToAttach(document, null, false, true);
+            if (f4 != null && fileExists(f4.getAbsolutePath())) {
+                return f4.getAbsolutePath();
+            }
+        }
+        if (message != null) {
+            File f = fileLoader.getPathToMessage(message);
+            if (f != null) {
+                return f.getAbsolutePath();
             }
         }
         return null;

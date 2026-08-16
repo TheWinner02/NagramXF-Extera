@@ -100,7 +100,18 @@ public final class PluginsController implements PluginsHooks {
 
     /* JADX INFO: renamed from: Companion, reason: from kotlin metadata */
     public static final Companion INSTANCE = new Companion(null);
-    private static final ConcurrentHashMap<String, PluginsEngine> enginesMap = new ConcurrentHashMap<>(MapsKt.mapOf(TuplesKt.to(Deobfuscator$exteraGramDev$TMessagesProj.getString(-76615643317807L), new PythonPluginsEngine())));
+    private static final ConcurrentHashMap<String, PluginsEngine> enginesMap;
+
+    static {
+        ConcurrentHashMap<String, PluginsEngine> map = new ConcurrentHashMap<>();
+        PythonPluginsEngine engine = new PythonPluginsEngine();
+        map.put("python", engine);
+        map.put(PluginsConstants.PYTHON, engine);
+        try {
+            map.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-76615643317807L), engine);
+        } catch (Throwable ignored) {}
+        enginesMap = map;
+    }
 
     public interface EngineHookCaller<T> {
         HookResult<T> call(PluginsEngine engine, T obj, String pluginId);
@@ -428,15 +439,20 @@ public final class PluginsController implements PluginsHooks {
                 PluginsController.$r8$lambda$6Rk2iqGONVXohJ42e6LwpSycLiM(atomicInteger, PluginsController.this, onDone);
             }
         };
-        for (PluginsEngine pluginsEngine : INSTANCE.getEngines().values()) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-99520703907375L);
-            try {
-                pluginsEngine.init(runnable);
-            } catch (Throwable th) {
-                FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99632373057071L), th);
-                runnable.run();
+        companion.runOnPluginsQueue(new Runnable() {
+            @Override
+            public final void run() {
+                for (PluginsEngine pluginsEngine : INSTANCE.getEngines().values()) {
+                    Deobfuscator$exteraGramDev$TMessagesProj.getString(-99520703907375L);
+                    try {
+                        pluginsEngine.init(runnable);
+                    } catch (Throwable th) {
+                        FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99632373057071L), th);
+                        runnable.run();
+                    }
+                }
             }
-        }
+        });
     }
 
     public static void $r8$lambda$CIw6dHotoGkENlaplpdVEVp8v_U() {
@@ -621,17 +637,32 @@ public final class PluginsController implements PluginsHooks {
     }
 
     public final void setPluginEnabled(final String pluginId, final boolean enabled, final Utilities.Callback<String> callback) {
-        INSTANCE.runOnPluginsQueue(new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda14
-            @Override // java.lang.Runnable
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "PluginsController.setPluginEnabled: pluginId=" + pluginId + ", enabled=" + enabled);
+        new Thread(new Runnable() {
+            @Override
             public final void run() {
                 PluginsController.$r8$lambda$hS703SyhRNV9SkJH3iBjUMIVIvE(PluginsController.this, pluginId, enabled, callback);
             }
-        });
+        }, "PluginEnableThread-" + System.currentTimeMillis()).start();
     }
 
     public static void $r8$lambda$hS703SyhRNV9SkJH3iBjUMIVIvE(PluginsController pluginsController, String str, boolean z, Utilities.Callback callback) {
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "$r8$lambda$hS703SyhRNV9SkJH3iBjUMIVIvE: pluginId=" + str + ", enabled=" + z);
         PluginsEngine pluginEngine = pluginsController.getPluginEngine(str);
+        if (pluginEngine == null) {
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "PluginsController: pluginEngine was null for " + str + ", falling back to PythonPluginsEngine...");
+            pluginEngine = INSTANCE.getEngines().get("python");
+        }
         if (pluginEngine == null || str == null) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "PluginsController: pluginEngine is STILL null!");
+            if (callback != null) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public final void run() {
+                        callback.run("Engine is null");
+                    }
+                });
+            }
             return;
         }
         pluginEngine.setPluginEnabled(str, z, callback);
@@ -670,6 +701,7 @@ public final class PluginsController implements PluginsHooks {
     }
 
     public final void showInstallDialog(BaseFragment fragment, MessageObject messageObject) {
+        android.util.Log.d("PLUGIN_DEBUG", "PluginsController.showInstallDialog(MessageObject): docName=" + (messageObject != null ? messageObject.getDocumentName() : "null"));
         if (messageObject == null) {
             return;
         }
@@ -677,6 +709,7 @@ public final class PluginsController implements PluginsHooks {
     }
 
     public final void showInstallDialog(BaseFragment fragment, String filePath, boolean trusted) {
+        android.util.Log.d("PLUGIN_DEBUG", "PluginsController.showInstallDialog(filePath=" + filePath + ", trusted=" + trusted + ")");
         if (filePath == null || filePath.length() == 0) {
             return;
         }
@@ -684,23 +717,30 @@ public final class PluginsController implements PluginsHooks {
     }
 
     private final void showInstallDialog(final BaseFragment fragment, InstallPluginBottomSheet.PluginInstallParams params) {
+        String filePath = params != null ? params.getFilePath() : null;
+        android.util.Log.d("PLUGIN_DEBUG", "PluginsController.showInstallDialog(params): fragment=" + fragment + ", filePath=" + filePath + ", getPluginsEngine()=" + ExteraConfig.getPluginsEngine());
         if (fragment == null || !AndroidUtilities.isActivityRunning(fragment.getParentActivity())) {
+            android.util.Log.d("PLUGIN_DEBUG", "PluginsController: fragment is null or parentActivity not running!");
             return;
         }
-        String filePath = params != null ? params.getFilePath() : null;
         if (filePath == null || filePath.length() == 0) {
+            android.util.Log.d("PLUGIN_DEBUG", "PluginsController: filePath is empty/null!");
             return;
         }
         File file = new File(params.getFilePath());
         if (!ExteraConfig.getPluginsEngine()) {
+            android.util.Log.d("PLUGIN_DEBUG", "PluginsController: ExteraConfig.getPluginsEngine() is false!");
             BulletinFactory.of(fragment).createSimpleBulletin(R.raw.error, file.getName() + " is not enabled", LocaleController.getString(R.string.Enable), 2750, () -> fragment.presentFragment(new PluginsActivity())).show();
             return;
         }
         PluginsEngine pluginEngine = INSTANCE.getPluginEngine(file);
         if (pluginEngine == null) {
-            return;
+            pluginEngine = INSTANCE.getEngines().get("python");
         }
-        pluginEngine.showInstallDialog(fragment, params);
+        android.util.Log.d("PLUGIN_DEBUG", "PluginsController: resolved pluginEngine=" + pluginEngine + ". Calling engine.showInstallDialog...");
+        if (pluginEngine != null) {
+            pluginEngine.showInstallDialog(fragment, params);
+        }
     }
 
     public final void loadPluginSettings() {
@@ -1650,8 +1690,20 @@ public final class PluginsController implements PluginsHooks {
 
         @JvmStatic
         public final boolean isPlugin(MessageObject messageObject) {
+            if (messageObject == null) {
+                return false;
+            }
+            if (messageObject.getDocumentName() != null) {
+                String docName = messageObject.getDocumentName().toLowerCase(Locale.ROOT);
+                if (docName.endsWith(".plugin") || docName.endsWith(".py")) {
+                    return true;
+                }
+            }
             String pathToMessage = ChatUtils.getInstance().getPathToMessage(messageObject);
-            return (messageObject == null || messageObject.getDocumentName() == null || TextUtils.isEmpty(pathToMessage) || !isPlugin(new File(pathToMessage), messageObject) || !isPluginEngineSupported()) ? false : true;
+            if (!TextUtils.isEmpty(pathToMessage) && isPlugin(new File(pathToMessage), messageObject)) {
+                return true;
+            }
+            return false;
         }
 
         @JvmStatic
@@ -1670,17 +1722,14 @@ public final class PluginsController implements PluginsHooks {
 
         @JvmStatic
         public final PluginsEngine getPluginEngine(File file) {
-            if (file == null) {
-                return null;
-            }
-            for (PluginsEngine pluginsEngine : getEngines().values()) {
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-56180188923439L);
-                PluginsEngine pluginsEngine2 = pluginsEngine;
-                if (pluginsEngine2.isPlugin(file, null)) {
-                    return pluginsEngine2;
+            if (file != null) {
+                for (PluginsEngine pluginsEngine : getEngines().values()) {
+                    if (pluginsEngine != null && pluginsEngine.isPlugin(file, null)) {
+                        return pluginsEngine;
+                    }
                 }
             }
-            return null;
+            return getEngines().get("python");
         }
 
         @JvmStatic

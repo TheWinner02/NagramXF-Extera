@@ -275,6 +275,11 @@ public class ApplicationLoader extends Application {
         SharedConfig.loadConfig();
         NekoConfig.init();
         NaConfig.init();
+        try {
+            com.exteragram.messenger.plugins.PluginsController.INSTANCE.getInstance().init();
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
         SharedPrefsHelper.init(applicationContext);
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(AndroidUtil.shouldEnableCrashlytics());
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account

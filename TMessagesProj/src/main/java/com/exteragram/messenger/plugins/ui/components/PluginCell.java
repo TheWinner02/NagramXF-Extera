@@ -175,8 +175,14 @@ public final class PluginCell extends FrameLayout implements NotificationCenter.
         int i4 = Theme.key_windowBackgroundWhite;
         r3.setColors(i2, i3, i4, i4);
         r3.setFocusable(false);
+        r3.setClickable(true);
         this.checkBox = r3;
         addView(r3, LayoutHelper.createFrame(37, 40.0f, 53, 0.0f, 16.0f, 24.0f, 0.0f));
+        this.headerLayout.setOnClickListener(view2 -> {
+            if (PluginCell.this.pluginCellDelegate != null) {
+                PluginCell.this.pluginCellDelegate.togglePlugin(PluginCell.this);
+            }
+        });
         setCompact(ExteraConfig.getPluginsCompactView());
     }
 
@@ -297,7 +303,11 @@ public final class PluginCell extends FrameLayout implements NotificationCenter.
         } else {
             string = "v";
         }
-        effectsTextView.setText(new SpannableStringBuilder(string).append((CharSequence) plugin.getVersion()).append((CharSequence) " ").append(LocaleUtils.formatWithUsernames(plugin.getAuthor())));
+        String author = plugin.getAuthor();
+        if (TextUtils.isEmpty(author) || "plugin.getAuthor() or \"Unknown\"".equals(author)) {
+            author = "Unknown";
+        }
+        effectsTextView.setText(new SpannableStringBuilder(string).append((CharSequence) plugin.getVersion()).append((CharSequence) " ").append(LocaleUtils.formatWithUsernames(author)));
         if (plugin.getIsNotResponding()) {
             bindNotRespondingState();
         } else if (plugin.hasError()) {
@@ -308,7 +318,12 @@ public final class PluginCell extends FrameLayout implements NotificationCenter.
         this.requirementsLayout.setRequirements(plugin.getRequirements());
         updateLayout();
         this.checkBox.setChecked(plugin.isEnabled(), false);
-        this.checkBox.setOnClickListener(view -> pluginCellDelegate.togglePlugin(PluginCell.this));
+        this.checkBox.setClickable(true);
+        this.checkBox.setOnClickListener(view -> {
+            if (pluginCellDelegate != null) {
+                pluginCellDelegate.togglePlugin(PluginCell.this);
+            }
+        });
         AndroidUtilities.updateViewVisibilityAnimated(this.settingsButton, plugin.isEnabled() && companion.getInstance().hasPluginSettings(plugin.getId()), 0.5f, true, false);
     }
 
@@ -347,7 +362,15 @@ public final class PluginCell extends FrameLayout implements NotificationCenter.
         }
         EffectsTextView effectsTextView = this.descriptionView;
         Throwable error = plugin.getError();
-        effectsTextView.setText(error != null ? error.getLocalizedMessage() : null);
+        String errorMsg = "Unknown error";
+        if (error != null) {
+            if (error.getCause() != null) {
+                errorMsg = error.getClass().getSimpleName() + ": " + error.getMessage() + "\nCause: " + error.getCause().toString();
+            } else {
+                errorMsg = error.getClass().getSimpleName() + ": " + error.getMessage();
+            }
+        }
+        effectsTextView.setText(errorMsg);
         this.descriptionView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
         this.descriptionView.setTypeface(AndroidUtilities.bold());
         this.descriptionView.setTextSize(1, 12.0f);
@@ -565,7 +588,7 @@ public final class PluginCell extends FrameLayout implements NotificationCenter.
                 uItemOfFactory.id = plugin.getId().hashCode();
                 uItemOfFactory.object = plugin;
                 uItemOfFactory.object2 = pluginCellDelegate;
-                uItemOfFactory.intValue = (plugin.getIsNotResponding() ? 1 : 0) | (plugin.isEnabled() ? 2 : 0) | (plugin.hasError() ? 4 : 0);
+                uItemOfFactory.intValue = (plugin.getIsNotResponding() ? 1 : 0) | (plugin.isEnabled() ? 2 : 0) | (plugin.hasError() ? 4 : 0) | (PluginsController.INSTANCE.getInstance().getPluginPath(plugin.getId()) != null ? 8 : 0);
                 Deobfuscator$exteraGramDev$TMessagesProj.getString(-123271873054255L);
                 return uItemOfFactory;
             }

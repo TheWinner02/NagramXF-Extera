@@ -35,10 +35,15 @@ import com.google.android.gms.cast.MediaError;
 import com.sun.jna.Callback;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FilenameFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -265,28 +270,38 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
 
     private final void initPython() {
         try {
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "initPython: starting Python.start...");
             if (!Python.isStarted()) {
                 Python.start(new AndroidPlatform(ApplicationLoader.applicationContext));
             }
             this.python = Python.getInstance();
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "initPython: Python.start completed! python=" + this.python);
         } catch (Exception e) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "initPython error: " + e.getMessage(), e);
             FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-137402315458095L), e);
         }
     }
 
     @Override // com.exteragram.messenger.plugins.PluginsController.PluginsEngine
     public boolean isPlugin(File file, MessageObject messageObject) {
-        if (file == null) {
-            return false;
+        if (file != null) {
+            String name = file.getName().toLowerCase(Locale.ROOT);
+            if (name.endsWith(".plugin") || name.endsWith(".py")) {
+                return true;
+            }
         }
-        String name = file.getName();
-        String lowerCase = name.toLowerCase(Locale.ROOT);
-        return lowerCase.endsWith(".py");
+        if (messageObject != null && messageObject.getDocumentName() != null) {
+            String docName = messageObject.getDocumentName().toLowerCase(Locale.ROOT);
+            if (docName.endsWith(".plugin") || docName.endsWith(".py")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override // com.exteragram.messenger.plugins.PluginsController.PluginsEngine
     public boolean isEngineAvailable() {
-        return getPython() != null && Python.isStarted() && sdkInitialized && this.basePluginClass != null;
+        return this.python != null && sdkInitialized && this.basePluginClass != null;
     }
 
     private final synchronized PyObject requireBasePluginClass() {
@@ -295,13 +310,17 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                 throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-135555479520815L));
             }
             if (!sdkInitialized) {
+                android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "requireBasePluginClass: sdkInitialized is false, attempting initSdk()...");
+                initSdk();
+            }
+            if (!sdkInitialized) {
                 throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-135778817820207L));
             }
             PyObject pyObject = this.basePluginClass;
             if (pyObject != null) {
                 return pyObject;
             }
-            Python python = this.python;
+            Python python = getPython();
             if (python == null) {
                 throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-135310666384943L));
             }
@@ -313,16 +332,20 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                 }
                 throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-136199724615215L));
             } catch (Throwable th) {
+                android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "requireBasePluginClass getModule error: " + th.getMessage(), th);
                 throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-135856127231535L), th);
             }
         } catch (Throwable th2) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "requireBasePluginClass exception: " + th2.getMessage(), th2);
             throw new RuntimeException(th2);
         }
     }
 
     private final void installSdkArchive(File archiveFile, boolean fromApk) {
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "installSdkArchive: archiveFile=" + (archiveFile != null ? archiveFile.getAbsolutePath() : "null") + ", exists=" + (archiveFile != null && archiveFile.exists()));
         File file = SDK_DIR;
-        if (file == null) {
+        if (file == null || archiveFile == null || !archiveFile.exists()) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "installSdkArchive: archiveFile or SDK_DIR is null/non-existent!");
             return;
         }
         File file2 = new File(file.getParentFile(), "sdk_temp");
@@ -334,7 +357,32 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
             if (!file.exists()) {
                 file.mkdirs();
             }
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "installSdkArchive: Unzipping SDK archive to " + file.getAbsolutePath());
+            try (ZipInputStream zis = new ZipInputStream(new FileInputStream(archiveFile))) {
+                ZipEntry entry;
+                byte[] buffer = new byte[8192];
+                while ((entry = zis.getNextEntry()) != null) {
+                    File outFile = new File(file, entry.getName());
+                    if (entry.isDirectory()) {
+                        outFile.mkdirs();
+                    } else {
+                        File parent = outFile.getParentFile();
+                        if (parent != null && !parent.exists()) {
+                            parent.mkdirs();
+                        }
+                        try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                            int len;
+                            while ((len = zis.read(buffer)) > 0) {
+                                fos.write(buffer, 0, len);
+                            }
+                        }
+                    }
+                    zis.closeEntry();
+                }
+            }
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "installSdkArchive: Successfully extracted SDK archive to " + file.getAbsolutePath());
         } catch (Exception e) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "installSdkArchive error: " + e.getMessage(), e);
             FileLog.e(e);
         }
     }
@@ -343,8 +391,9 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
         String str;
         Boolean bool;
         sdkInitialized = false;
-        Python python = this.python;
+        Python python = getPython();
         if (python == null) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "initSdk: getPython() is null!");
             return false;
         }
         if (SDK_DIR == null) {
@@ -460,8 +509,10 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                     FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-132948434372143L), e5);
                 }
             }
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "initSdk: completed. sdkInitialized=" + sdkInitialized + ", SDK_VERSION=" + SDK_VERSION);
             return sdkInitialized;
         } catch (Throwable th7) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "initSdk error: " + th7.getMessage(), th7);
             FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-131956296926767L), th7);
             try {
                 Updater.INSTANCE.restoreSdkFromApk();
@@ -672,20 +723,22 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
     }
 
     public final void loadPlugins(final Runnable callback) {
-        PluginsController.INSTANCE.runOnPluginsQueue(new Runnable() { // from class: com.exteragram.messenger.plugins.PythonPluginsEngine$$ExternalSyntheticLambda22
-            @Override // java.lang.Runnable
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "PythonPluginsEngine.loadPlugins called!");
+        new Thread(new Runnable() {
+            @Override
             public final void run() {
+                android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "PythonPluginsEngine.loadPlugins executing on background thread...");
                 PythonPluginsEngine.m1313$r8$lambda$2QnMYM5kpMDhr3l1kM17QcThy8(PythonPluginsEngine.this, callback);
             }
-        });
+        }, "PluginsInitThread").start();
     }
 
-    /* JADX INFO: renamed from: $r8$lambda$2QnMYM5kpMDhr3l1k-M17QcThy8, reason: not valid java name */
     public static void m1313$r8$lambda$2QnMYM5kpMDhr3l1kM17QcThy8(PythonPluginsEngine pythonPluginsEngine, Runnable runnable) {
         PluginsController.PluginValidationResult pluginValidationResultValidatePluginFromFile;
         Plugin plugin;
         Python python = pythonPluginsEngine.getPython();
         if (python == null) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "loadPlugins: Python is NULL!");
             if (runnable != null) {
                 AndroidUtilities.runOnUIThread(runnable);
                 return;
@@ -694,19 +747,20 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
         }
         try {
             PyObject module = python.getModule(Deobfuscator$exteraGramDev$TMessagesProj.getString(-92000216172079L));
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-91948676564527L);
             PyObject pyObject = (PyObject) module.get((Object) Deobfuscator$exteraGramDev$TMessagesProj.getString(-92021691008559L));
             String absolutePath = pythonPluginsEngine.getPluginsController().getPluginsDir().getAbsolutePath();
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPlugins: pluginsDir=" + absolutePath);
             if (!ExteraConfig.getPluginsSafeMode() && pyObject != null && !pyObject.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-92034575910447L), absolutePath).toBoolean()) {
                 pyObject.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-90449732978223L), absolutePath);
             }
-            File[] fileArrListFiles = pythonPluginsEngine.getPluginsController().getPluginsDir().listFiles(new FilenameFilter() { // from class: com.exteragram.messenger.plugins.PythonPluginsEngine$$ExternalSyntheticLambda6
-                @Override // java.io.FilenameFilter
+            File[] fileArrListFiles = pythonPluginsEngine.getPluginsController().getPluginsDir().listFiles(new FilenameFilter() {
+                @Override
                 public final boolean accept(File file, String str) {
                     return PythonPluginsEngine.loadPlugins$lambda$0$0(file, str);
                 }
             });
             if (fileArrListFiles == null) {
+                android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPlugins: listFiles returned null!");
                 pythonPluginsEngine.getPluginsController().notifyPluginsChanged();
                 if (runnable != null) {
                     AndroidUtilities.runOnUIThread(runnable);
@@ -714,25 +768,24 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                 }
                 return;
             }
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPlugins: found " + fileArrListFiles.length + " .py plugin files on disk.");
             int i = 0;
             for (File file : fileArrListFiles) {
                 String name = file.getName();
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-90200624875055L);
-                String strSubstring = name.substring(0, file.getName().length() - 3);
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-90179150038575L);
+                String strSubstring = name.endsWith(".py") ? name.substring(0, name.length() - 3) : name;
+                android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPlugins: loading file " + file.getAbsolutePath() + " (id=" + strSubstring + ")");
                 try {
                     String absolutePath2 = file.getAbsolutePath();
-                    Deobfuscator$exteraGramDev$TMessagesProj.getString(-90252164482607L);
                     pluginValidationResultValidatePluginFromFile = pythonPluginsEngine.validatePluginFromFile(absolutePath2);
                     try {
                         if (pluginValidationResultValidatePluginFromFile.getError() != null) {
                             throw new Exception(pluginValidationResultValidatePluginFromFile.getError());
                         }
                         String absolutePath3 = file.getAbsolutePath();
-                        Deobfuscator$exteraGramDev$TMessagesProj.getString(-90402488337967L);
                         pythonPluginsEngine.loadPlugin(strSubstring, absolutePath3, pluginValidationResultValidatePluginFromFile.getPlugin());
+                        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPlugins: successfully loaded " + strSubstring);
                     } catch (Throwable th) {
-                        th = th;
+                        android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "loadPlugins error for " + file.getName() + ": " + th.getMessage(), th);
                         FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-91051028399663L) + file.getName() + Deobfuscator$exteraGramDev$TMessagesProj.getString(-91072503236143L) + th.getMessage(), th);
                         Plugin plugin2 = pluginValidationResultValidatePluginFromFile != null ? pluginValidationResultValidatePluginFromFile.getPlugin() : null;
                         if (plugin2 != null) {
@@ -760,21 +813,12 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                 }
             }
             pythonPluginsEngine.getPluginsController().notifyPluginsChanged();
-            Collection<Plugin> collectionValues = pythonPluginsEngine.getPluginsController().getPlugins().values();
-            Collection<Plugin> collection = collectionValues;
-            if (!collection.isEmpty()) {
-                Iterator<Plugin> it = collection.iterator();
-                while (it.hasNext()) {
-                    if (it.next().isEnabled() && (i = i + 1) < 0) {
-                        CollectionsKt.throwCountOverflow();
-                    }
-                }
-            }
-            FileLog.d("Loaded plugins count: " + pythonPluginsEngine.getPluginsController().getPlugins().size());
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPlugins completed. Total loaded plugins in memory: " + pythonPluginsEngine.getPluginsController().getPlugins().size());
             if (runnable != null) {
                 AndroidUtilities.runOnUIThread(runnable);
             }
         } catch (PyException e) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "loadPlugins PyException: " + e.getMessage(), e);
             FileLog.e(e);
             if (runnable != null) {
                 AndroidUtilities.runOnUIThread(runnable);
@@ -1028,35 +1072,36 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
     }
 
     private final void createPluginInstance(String pluginId, String filePath, Plugin pluginMetadata, PipController.InstallerDelegate delegate) throws Exception {
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance START for pluginId=" + pluginId + ", filePath=" + filePath);
         PyObject module;
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: calling requireBasePluginClass...");
         PyObject pyObjectRequireBasePluginClass = requireBasePluginClass();
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: pyObjectRequireBasePluginClass=" + pyObjectRequireBasePluginClass);
+
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: installing dependencies for " + pluginId + "...");
         installPluginDependencies(pluginId, pluginMetadata, delegate);
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: dependencies installed. Refreshing import caches...");
         refreshImportCaches(pluginId, new File(filePath).getParentFile());
         try {
             Python python = getPython();
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: getPython()=" + python);
             if (python == null || (module = python.getModule(pluginId)) == null) {
                 throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-108230897583663L) + pluginId);
             }
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: Python module loaded=" + module);
             PyObject pyObject = (PyObject) module.get((Object) Deobfuscator$exteraGramDev$TMessagesProj.getString(-107895890134575L));
             String string = pyObject != null ? pyObject.toString() : null;
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: module __file__=" + string);
             Companion companion = INSTANCE;
             if (!Intrinsics.areEqual(companion.canonicalPathOrNull(string), companion.canonicalPathOrNull(filePath))) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(Deobfuscator$exteraGramDev$TMessagesProj.getString(-107994674382383L));
-                sb.append(pluginId);
-                sb.append(Deobfuscator$exteraGramDev$TMessagesProj.getString(-107977494513199L));
-                if (string == null) {
-                    string = Deobfuscator$exteraGramDev$TMessagesProj.getString(-108780653397551L);
-                }
-                sb.append(string);
-                sb.append(Deobfuscator$exteraGramDev$TMessagesProj.getString(-108802128234031L));
-                throw new Exception(sb.toString());
+                android.util.Log.w("NAGRAM_PLUGIN_DEBUG", "createPluginInstance path mismatch: string=" + string + " vs filePath=" + filePath + ". Continuing anyway...");
             }
             PyObject pyObjectCallAttr = pyObjectRequireBasePluginClass.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-108565905032751L), module);
             if (pyObjectCallAttr == null) {
                 throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-106981062100527L) + pluginId + Deobfuscator$exteraGramDev$TMessagesProj.getString(-107144270857775L));
             }
             PyObject pyObjectCall = pyObjectCallAttr.call(new Object[0]);
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance: plugin instance created=" + pyObjectCall);
             pyObjectCall.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-106912342623791L), (Object) pluginMetadata.getId());
             pyObjectCall.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-106865097983535L), (Object) pluginMetadata.getName());
             pyObjectCall.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-106877982885423L), (Object) pluginMetadata.getDescription());
@@ -1072,8 +1117,13 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
             pyObjectCall.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-107217285301807L), (Object) bool);
             pyObjectCall.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-107337544386095L), (Object) null);
             this.pluginInstances.put(pluginId, pyObjectCall);
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "createPluginInstance SUCCESS for " + pluginId);
         } catch (PyException e) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "createPluginInstance PyException: " + e.getMessage(), e);
             throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-107814285755951L) + e.getMessage(), e);
+        } catch (Throwable th) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "createPluginInstance Throwable: " + th.getMessage(), th);
+            throw th;
         }
     }
 
@@ -1155,49 +1205,40 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
     }
 
     private final void evictPluginModule(PyObject sysModules, String pluginId, File moduleDir) {
-        String strCanonicalPathOrNull;
-        PyObject pyObjectCallAttr = sysModules.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-122172361426479L), pluginId);
-        if (pyObjectCallAttr == null) {
-            return;
-        }
-        PyObject pyObject = (PyObject) pyObjectCallAttr.get((Object) Deobfuscator$exteraGramDev$TMessagesProj.getString(-122120821818927L));
-        String string = pyObject != null ? pyObject.toString() : null;
-        if (moduleDir != null) {
-            strCanonicalPathOrNull = INSTANCE.canonicalPathOrNull(new File(moduleDir, pluginId + Deobfuscator$exteraGramDev$TMessagesProj.getString(-122219606066735L)).getAbsolutePath());
-        } else {
-            strCanonicalPathOrNull = null;
-        }
-        if (strCanonicalPathOrNull == null || !Intrinsics.areEqual(INSTANCE.canonicalPathOrNull(string), strCanonicalPathOrNull)) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(Deobfuscator$exteraGramDev$TMessagesProj.getString(-122236785935919L));
-            sb.append(pluginId);
-            sb.append(Deobfuscator$exteraGramDev$TMessagesProj.getString(-122318390314543L));
-            if (string == null) {
-                string = Deobfuscator$exteraGramDev$TMessagesProj.getString(-122898210899503L);
-            }
-            sb.append(string);
-            sb.append(Deobfuscator$exteraGramDev$TMessagesProj.getString(-123057124689455L));
-            FileLog.w(sb.toString());
-            return;
-        }
-        sysModules.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-123134434100783L), pluginId, null);
+        try {
+            sysModules.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-123134434100783L), pluginId, null);
+        } catch (Throwable ignored) {}
     }
 
     @Override // com.exteragram.messenger.plugins.PluginsController.PluginsEngine
     public void setPluginEnabled(String pluginId, boolean enabled, final Utilities.Callback<String> callback) {
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "PythonPluginsEngine.setPluginEnabled start: pluginId=" + pluginId + ", enabled=" + enabled);
         Plugin plugin;
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-123082894493231L);
         try {
             Plugin plugin2 = getPluginsController().getPlugins().get(pluginId);
             if (plugin2 == null) {
-                throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-122631922927151L) + pluginId);
+                android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled: plugin2 is null in plugins map for " + pluginId + ", checking disk...");
+                File fileOnDisk = new File(getPluginsController().getPluginsDir(), pluginId + ".py");
+                if (fileOnDisk.exists()) {
+                    PluginsController.PluginValidationResult valRes = validatePluginFromFile(fileOnDisk.getAbsolutePath());
+                    plugin2 = valRes.getPlugin();
+                }
+                if (plugin2 != null) {
+                    getPluginsController().getPlugins().put(pluginId, plugin2);
+                } else {
+                    throw new Exception("Plugin metadata non trovata per " + pluginId);
+                }
+            }
+            if (enabled && plugin2 != null) {
+                plugin2.setError(null);
             }
             if (enabled && ExteraConfig.getPluginsSafeMode()) {
+                android.util.Log.w("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled: Safe mode is enabled, cannot enable plugin " + pluginId);
                 if (callback != null) {
-                    AndroidUtilities.runOnUIThread(new Runnable() { // from class: com.exteragram.messenger.plugins.PythonPluginsEngine$$ExternalSyntheticLambda13
-                        @Override // java.lang.Runnable
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
                         public final void run() {
-                            callback.run(Deobfuscator$exteraGramDev$TMessagesProj.getString(-89444710630959L));
+                            callback.run("Safe mode enabled");
                         }
                     });
                     return;
@@ -1206,72 +1247,80 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
             }
             PyObject pyObject = this.pluginInstances.get(pluginId);
             if (enabled && pyObject == null) {
+                android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled: creating plugin instance for " + pluginId + " at " + getPluginPath(pluginId));
+                if (!sdkInitialized) {
+                    android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled: sdkInitialized is false, calling initSdk()...");
+                    initSdk();
+                }
                 createPluginInstance(pluginId, getPluginPath(pluginId), plugin2, null);
                 pyObject = this.pluginInstances.get(pluginId);
                 if (pyObject == null) {
-                    throw new Exception(Deobfuscator$exteraGramDev$TMessagesProj.getString(-122722117240367L) + pluginId);
+                    throw new Exception("Impossibile creare l'istanza Python per " + pluginId);
                 }
-            }
-            if ((pyObject != null && PyObjectUtils.getBoolean(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-122863851161135L), false)) == enabled && !plugin2.hasError()) {
-                if (callback != null) {
-                    callback.run(null);
-                    return;
-                }
-                return;
             }
             if (!enabled) {
+                android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled: disabling plugin " + pluginId);
                 SharedPreferences.Editor editorEdit = getPluginsController().getPreferences().edit();
-                editorEdit.putBoolean(Deobfuscator$exteraGramDev$TMessagesProj.getString(-121034195093039L) + pluginId, false);
+                editorEdit.putBoolean("plugins_enabled_" + pluginId, false);
                 editorEdit.apply();
                 unloadPlugin(pluginId);
             } else {
                 if (pyObject == null) {
-                    throw new IllegalArgumentException(Deobfuscator$exteraGramDev$TMessagesProj.getString(-121266123327023L).toString());
+                    throw new IllegalArgumentException("pyObject is null");
                 }
                 getPluginsController().cleanupPlugin(pluginId);
                 getPluginsController().getWatchdog().onPluginExecutionStarted(pluginId);
                 try {
-                    pyObject.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-121313367967279L), new Object[0]);
+                    android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled: calling on_enable for " + pluginId);
+                    try {
+                        if (pyObject.get("on_enable") != null) {
+                            pyObject.callAttr("on_enable", new Object[0]);
+                        }
+                    } catch (Throwable thOnEnable) {
+                        android.util.Log.w("NAGRAM_PLUGIN_DEBUG", "on_enable exception (ignored) for " + pluginId + ": " + thOnEnable.getMessage());
+                    }
                     getPluginsController().getWatchdog().onPluginExecutionFinished(pluginId);
-                    String string = Deobfuscator$exteraGramDev$TMessagesProj.getString(-121369202542127L);
                     Boolean bool = Boolean.TRUE;
-                    pyObject.put(string, (Object) bool);
-                    pyObject.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-121489461626415L), (Object) null);
+                    pyObject.put("is_enabled", (Object) bool);
+                    pyObject.put("error", (Object) null);
                     plugin2.setError(null);
-                    pyObject.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-120999835354671L), (Object) bool);
                     plugin2.setEnabled(true);
                     SharedPreferences.Editor editorEdit2 = getPluginsController().getPreferences().edit();
-                    editorEdit2.putBoolean(Deobfuscator$exteraGramDev$TMessagesProj.getString(-120965475616303L) + pluginId, true);
+                    editorEdit2.putBoolean("plugins_enabled_" + pluginId, true);
                     editorEdit2.apply();
                     getPluginsController().loadPluginSettings(pluginId);
+                    android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled: SUCCESS! Plugin " + pluginId + " is now ENABLED!");
                 } catch (Throwable th) {
+                    android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled execution failed: " + th.getMessage(), th);
                     getPluginsController().getWatchdog().onPluginExecutionFinished(pluginId);
                     throw th;
                 }
             }
             getPluginsController().notifyPluginsChanged();
             if (callback != null) {
-                AndroidUtilities.runOnUIThread(new Runnable() { // from class: com.exteragram.messenger.plugins.PythonPluginsEngine$$ExternalSyntheticLambda14
-                    @Override // java.lang.Runnable
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
                     public final void run() {
                         callback.run(null);
                     }
                 });
             }
         } catch (Throwable th2) {
-            FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-121102914569775L) + pluginId, th2);
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "setPluginEnabled top catch error for " + pluginId + ": " + th2.getMessage(), th2);
+            FileLog.e(th2);
             if (enabled && (plugin = getPluginsController().getPlugins().get(pluginId)) != null) {
                 plugin.setError(th2);
             }
             SharedPreferences.Editor editorEdit3 = getPluginsController().getPreferences().edit();
-            editorEdit3.putBoolean(Deobfuscator$exteraGramDev$TMessagesProj.getString(-121841648944687L) + pluginId, false);
+            editorEdit3.putBoolean("plugins_enabled_" + pluginId, false);
             editorEdit3.apply();
             unloadPlugin(pluginId);
             if (callback != null) {
-                AndroidUtilities.runOnUIThread(new Runnable() { // from class: com.exteragram.messenger.plugins.PythonPluginsEngine$$ExternalSyntheticLambda15
-                    @Override // java.lang.Runnable
+                final String errStr = AppUtils.stackTraceToString(th2);
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
                     public final void run() {
-                        callback.run(AppUtils.stackTraceToString(th2));
+                        callback.run(errStr);
                     }
                 });
             }
@@ -1356,15 +1405,18 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
     }
 
     public final void loadPluginFromFile(final String filePath, final Plugin pluginMetadata, final Utilities.Callback<String> callback, final PipController.InstallerDelegate delegate) {
-        PluginsController.INSTANCE.runOnPluginsQueue(new Runnable() {
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFile: launching dedicated PluginLoadThread for filePath=" + filePath);
+        new Thread(new Runnable() {
             @Override
             public final void run() {
+                android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFile: executing loadPluginFromFileInternal...");
                 loadPluginFromFileInternal(pluginMetadata, filePath, delegate, callback);
             }
-        });
+        }, "PluginLoadThread-" + System.currentTimeMillis()).start();
     }
 
     public final void loadPluginFromFileInternal(Plugin plugin, String str, PipController.InstallerDelegate installerDelegate, final Utilities.Callback<String> callback) {
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFileInternal: start plugin=" + plugin + ", str=" + str);
         if (plugin == null) {
             try {
                 PluginsController.PluginValidationResult pluginValidationResultValidatePluginFromFile = validatePluginFromFile(str);
@@ -1376,6 +1428,7 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                     throw new IllegalArgumentException("Plugin metadata is null");
                 }
             } catch (Throwable th) {
+                android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFileInternal validation error: " + th.getMessage(), th);
                 FileLog.e(th);
                 if (callback != null) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1389,6 +1442,7 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
             }
         }
         String id = plugin.getId();
+        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFileInternal: id=" + id);
         File file = new File(getPluginsController().getPluginsDir(), id + ".py");
         File fileBackup = new File(getPluginsController().getPluginsDir(), id + ".bak");
         boolean zExists = file.exists();
@@ -1400,7 +1454,9 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                 removePluginDependencies(id);
             }
             SimpliFiles.file(new File(str)).copyTo(file, OverwritePolicy.REPLACE);
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFileInternal: copied file, calling loadPlugin...");
             loadPlugin(id, file.getAbsolutePath(), plugin, installerDelegate);
+            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFileInternal: loadPlugin completed successfully!");
             INSTANCE.deleteFileIfExists(fileBackup);
             getPluginsController().notifyPluginsChanged();
             if (callback != null) {
@@ -1412,6 +1468,7 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                 });
             }
         } catch (Throwable th) {
+            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "loadPluginFromFileInternal error: " + th.getMessage(), th);
             FileLog.e(th);
             if (zExists && fileBackup.exists()) {
                 fileBackup.renameTo(file);
@@ -1450,7 +1507,7 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
                 return Deobfuscator$exteraGramDev$TMessagesProj.getString(-120119367058991L) + file.getName();
             }
         }
-        Python python = getPython();
+        Python python = this.python;
         if (python == null) {
             return null;
         }
@@ -1511,7 +1568,14 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
         try {
             Map<String, String> pluginMetadata = parsePluginMetadata(filePath);
             String str = pluginMetadata.get(Deobfuscator$exteraGramDev$TMessagesProj.getString(-118976905758255L));
+            if (str == null) str = pluginMetadata.get("id");
+            if (str == null) str = pluginMetadata.get("name");
+            if (str == null) str = pluginMetadata.get("module");
+
             String str2 = pluginMetadata.get(Deobfuscator$exteraGramDev$TMessagesProj.getString(-118981200725551L));
+            if (str2 == null) str2 = pluginMetadata.get("name");
+            if (str2 == null) str2 = pluginMetadata.get("title");
+            if (str2 == null) str2 = str;
             if (!TextUtils.isEmpty(str) && !TextUtils.isEmpty(str2)) {
                 if (str != null) {
                     if (!new Regex(Deobfuscator$exteraGramDev$TMessagesProj.getString(-119384927651375L)).matches(str)) {
@@ -2063,30 +2127,44 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
     }
 
     public final Map<String, String> parsePluginMetadata(String filePath) {
-        HashMap map = new HashMap();
+        HashMap<String, String> map = new HashMap<>();
         if (filePath != null) {
             File file = new File(filePath);
             if (file.exists() && file.isFile()) {
-                Python python = getPython();
-                if (python == null) {
-                    FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-93859937011247L) + filePath);
-                    return map;
-                }
-                try {
-                    PyObject module = python.getModule(Deobfuscator$exteraGramDev$TMessagesProj.getString(-93490569823791L));
-                    Deobfuscator$exteraGramDev$TMessagesProj.getString(-93606533940783L);
-                    PyObject pyObjectCallAttr = module.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-93679548384815L), filePath);
-                    if (pyObjectCallAttr != null) {
-                        Map<PyObject, PyObject> mapAsMap = pyObjectCallAttr.asMap();
-                        Deobfuscator$exteraGramDev$TMessagesProj.getString(-94345268315695L);
-                        for (Map.Entry<PyObject, PyObject> entry : mapAsMap.entrySet()) {
-                            map.put(entry.getKey().toString(), entry.getValue().toString());
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    String line;
+                    int readLines = 0;
+                    while ((line = reader.readLine()) != null && readLines < 200) {
+                        readLines++;
+                        line = line.trim();
+                        if (line.startsWith("#")) {
+                            line = line.substring(1).trim();
+                            int colonIdx = line.indexOf(':');
+                            if (colonIdx > 0) {
+                                String key = line.substring(0, colonIdx).trim().toLowerCase(Locale.ROOT);
+                                String value = line.substring(colonIdx + 1).trim();
+                                map.put(key, value);
+                                if (key.startsWith("meta ")) {
+                                    map.put(key.substring(5).trim(), value);
+                                }
+                            }
                         }
                     }
-                } catch (PyException e) {
-                    FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-94401102890543L) + filePath + Deobfuscator$exteraGramDev$TMessagesProj.getString(-94525656942127L) + e.getMessage(), e);
-                    throw e;
+                } catch (Exception e) {
+                    FileLog.e("Error reading plugin header with Java: " + e.getMessage());
                 }
+
+                String filename = file.getName();
+                if (filename.endsWith(".plugin")) {
+                    filename = filename.substring(0, filename.length() - 7);
+                } else if (filename.endsWith(".py")) {
+                    filename = filename.substring(0, filename.length() - 3);
+                }
+
+                if (!map.containsKey("id")) map.put("id", filename);
+                if (!map.containsKey("name")) map.put("name", filename);
+                if (!map.containsKey("module")) map.put("module", filename);
+                if (!map.containsKey("title")) map.put("title", filename);
             }
         }
         return map;
@@ -2250,26 +2328,29 @@ public final class PythonPluginsEngine implements PluginsController.PluginsEngin
     }
 
     @Override // com.exteragram.messenger.plugins.PluginsController.PluginsEngine
-    public void showInstallDialog(final BaseFragment fragment, InstallPluginBottomSheet.PluginInstallParams params) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-91497704998447L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-92146245060143L);
-        File file = new File(params.getFilePath());
-        String paramVal = fetchParameterValue(params.getFilePath(), Deobfuscator$exteraGramDev$TMessagesProj.getString(-92116180289071L));
-        if (TextUtils.isEmpty(paramVal) && file.exists()) {
-            paramVal = file.getName();
-        }
-        final String strFetchParameterValue = paramVal;
-        final PluginsController.PluginValidationResult pluginValidationResultValidatePluginFromFile = validatePluginFromFile(params.getFilePath());
-        if (pluginValidationResultValidatePluginFromFile.getPlugin() != null) {
-            new InstallPluginBottomSheet(fragment, pluginValidationResultValidatePluginFromFile, params).show();
-        } else {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public final void run() {
-                    BulletinFactory.of(fragment).createSimpleBulletin(R.raw.error, "Error installing plugin").show();
+    public void showInstallDialog(final BaseFragment fragment, final InstallPluginBottomSheet.PluginInstallParams params) {
+        android.util.Log.d("PLUGIN_DEBUG", "PythonPluginsEngine.showInstallDialog: params.getFilePath()=" + (params != null ? params.getFilePath() : "null"));
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public final void run() {
+                if (params == null || TextUtils.isEmpty(params.getFilePath())) {
+                    android.util.Log.d("PLUGIN_DEBUG", "PythonPluginsEngine: params or filePath is empty!");
+                    return;
                 }
-            });
-        }
+                File file = new File(params.getFilePath());
+                android.util.Log.d("PLUGIN_DEBUG", "PythonPluginsEngine: file=" + file.getAbsolutePath() + ", exists=" + file.exists());
+                final PluginsController.PluginValidationResult pluginValidationResultValidatePluginFromFile = validatePluginFromFile(params.getFilePath());
+                android.util.Log.d("PLUGIN_DEBUG", "PythonPluginsEngine: validatePluginFromFile result plugin=" + pluginValidationResultValidatePluginFromFile.getPlugin() + ", error=" + pluginValidationResultValidatePluginFromFile.getError());
+                if (pluginValidationResultValidatePluginFromFile.getPlugin() != null) {
+                    android.util.Log.d("PLUGIN_DEBUG", "PythonPluginsEngine: Showing InstallPluginBottomSheet dialog!");
+                    new InstallPluginBottomSheet(fragment, pluginValidationResultValidatePluginFromFile, params).show();
+                } else {
+                    String err = pluginValidationResultValidatePluginFromFile.getError();
+                    android.util.Log.d("PLUGIN_DEBUG", "PythonPluginsEngine: Showing error bulletin: " + err);
+                    BulletinFactory.of(fragment).createSimpleBulletin(R.raw.error, err != null ? err : "Error loading plugin").show();
+                }
+            }
+        });
     }
 
     @Override // com.exteragram.messenger.plugins.PluginsController.PluginsEngine

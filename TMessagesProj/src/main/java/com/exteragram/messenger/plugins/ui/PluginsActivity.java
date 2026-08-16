@@ -269,33 +269,36 @@ public final class PluginsActivity extends BasePreferencesActivity implements No
                 return;
             }
             final PluginCell pluginCell = (PluginCell) view;
-            final boolean z = !this.$plugin.isEnabled();
+            final boolean newState = !this.$plugin.isEnabled();
+            pluginCell.setChecked(newState, true);
             PluginsController companion = PluginsController.INSTANCE.getInstance();
             String id = this.$plugin.getId();
             final PluginsActivity pluginsActivity = this.this$0;
             final Plugin plugin = this.$plugin;
-            companion.setPluginEnabled(id, z, obj -> {
+            companion.setPluginEnabled(id, newState, obj -> {
                 final String str = obj instanceof String ? (String) obj : null;
-                AndroidUtilities.runOnUIThread(() -> PluginsActivity.AnonymousClass1.togglePlugin$lambda$1$0(pluginsActivity, str, z, plugin, pluginCell));
+                AndroidUtilities.runOnUIThread(() -> PluginsActivity.AnonymousClass1.togglePlugin$lambda$1$0(pluginsActivity, str, newState, plugin, pluginCell));
             });
         }
 
-        /* JADX INFO: Access modifiers changed from: private */
-        public static final void togglePlugin$lambda$1$0(final PluginsActivity pluginsActivity, final String str, boolean z, Plugin plugin, PluginCell pluginCell) {
+        private static final void togglePlugin$lambda$1$0(final PluginsActivity pluginsActivity, final String str, boolean z, Plugin plugin, PluginCell pluginCell) {
             if (pluginsActivity.fragmentView == null || pluginsActivity.getParentActivity() == null) {
                 return;
             }
             if (str != null) {
-                BulletinFactory.of(pluginsActivity).createSimpleBulletin(R.raw.error, (z ? "Failed to enable " : "Failed to disable ") + plugin.getName(), LocaleUtils.createCopySpan(pluginsActivity), () -> PluginsActivity.AnonymousClass1.togglePlugin$lambda$1$0$0(str, pluginsActivity)).show();
+                pluginCell.setChecked(!z, true);
+                AlertDialog.Builder builder = new AlertDialog.Builder(pluginsActivity.getParentActivity());
+                builder.setTitle((z ? "Failed to enable " : "Failed to disable ") + plugin.getName());
+                builder.setMessage(str);
+                builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
+                builder.setNegativeButton(LocaleController.getString(R.string.Copy), (dialog, which) -> {
+                    if (AndroidUtilities.addToClipboard(str)) {
+                        BulletinFactory.of(pluginsActivity).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                    }
+                });
+                builder.show();
             } else {
                 pluginCell.setChecked(z, true);
-            }
-        }
-
-        /* JADX INFO: Access modifiers changed from: private */
-        public static final void togglePlugin$lambda$1$0$0(String str, PluginsActivity pluginsActivity) {
-            if (AndroidUtilities.addToClipboard(str)) {
-                BulletinFactory.of(pluginsActivity).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
             }
         }
 
