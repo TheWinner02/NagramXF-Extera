@@ -28,7 +28,7 @@ public abstract class AyuConstants {
     public static final String AYU_DATABASE = "ayugram.db";
     public static final String AYU_DATABASE_EXPORT = "ayugram.db";
     public static final int DELETED_MEDIA_LOADED_NOTIFICATION = 29481;
-    public static String APP_NAME = "NagramX";
+    public static String APP_NAME = "NegramXFE";
     public static final String UPDATES_CHANNEL_USERNAME = "default";
     public static final int OPTION_CLEAR_DELETED = 80;
     public static String BUILD_STORE_PACKAGE = "default";
