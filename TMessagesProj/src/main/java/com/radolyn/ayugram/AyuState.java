@@ -64,7 +64,10 @@ public class AyuState {
     }
 
     public static boolean isDeletePermitted(long dialogId, Integer msgId) {
-        return true;
+        if (msgId == null) {
+            return false;
+        }
+        return isDeleteMessagePermitted(dialogId, msgId);
     }
 
     public static boolean getAllowReadMessage(long j) {

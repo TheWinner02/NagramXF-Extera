@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 import com.radolyn.ayugram.AyuGhostPreferences;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 
 import android.annotation.SuppressLint;
 import android.content.ClipDescription;
@@ -4267,6 +4268,18 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         int pollIndex = sendMessageParams.pollIndex;
         PollSendParams pollSendParams = sendMessageParams.pollSendParams;
         TL_iv.RichMessage richMessage = sendMessageParams.richMessage;
+
+        if (AyuGhostController.getInstance(currentAccount).isSendWithoutSound()) {
+            sendMessageParams.notify = false;
+            notify = false;
+        }
+        if (AyuGhostController.getInstance(currentAccount).isUseScheduledMessages() && !DialogObject.isEncryptedDialog(peer) && sendMessageParams.scheduleDate == 0) {
+            int delay = com.radolyn.ayugram.utils.AyuGhostUtils.calculateAutoScheduleDelay(currentAccount, sendMessageParams);
+            int currentTime = ConnectionsManager.getInstance(this.currentAccount).getCurrentTime() + delay;
+            sendMessageParams.scheduleDate = currentTime;
+            scheduleDate = currentTime;
+            com.radolyn.ayugram.AyuState.setAutomaticallyScheduled(true, 1);
+        }
 
         boolean canSendGames = sendMessageParams.canSendGames;
         boolean canUsePangu = sendMessageParams.canUsePangu == null ? NaConfig.INSTANCE.getEnablePanguOnSending().Bool() : sendMessageParams.canUsePangu;

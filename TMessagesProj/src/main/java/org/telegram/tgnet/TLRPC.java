@@ -58145,6 +58145,7 @@ public class TLRPC {
         public boolean reactions_are_possible;
         public boolean edit_hide;
         public boolean pinned;
+        public boolean ayuNoforwards;
         public MessageFwdHeader fwd_from;
         public long via_bot_id;
         public long via_business_bot_id;

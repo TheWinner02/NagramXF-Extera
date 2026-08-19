@@ -1,16 +1,25 @@
 package com.radolyn.ayugram.controllers;
 
-public class AyuSavePreferences {
+import com.radolyn.ayugram.controllers.messages.SaveMessageRequest;
+import org.telegram.tgnet.TLRPC;
+
+public class AyuSavePreferences extends SaveMessageRequest {
     public static String saveExclusionPrefix = "save_excl_";
 
-    public AyuSavePreferences(Object... args) {
+    public AyuSavePreferences(TLRPC.Message message, int account) {
+        super(account, message);
     }
 
-    public void setDialogId(long dialogId) {
+    public AyuSavePreferences(TLRPC.Message message, long dialogId, long topicId, int messageId, int catchTime) {
+        super(message, dialogId, topicId, messageId, catchTime);
+    }
+
+    public AyuSavePreferences(TLRPC.Message message, int account, long dialogId, long topicId, int messageId, int catchTime) {
+        super(message, dialogId, topicId, messageId, catchTime);
     }
 
     public static boolean saveDeletedMessageFor(int account, long dialogId, Object obj) {
-        return true;
+        return com.radolyn.ayugram.AyuConfig.saveDeletedMessageFor(account, dialogId);
     }
 
     public static boolean getSaveDeletedExclusion(long chatId) {

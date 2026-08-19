@@ -1,42 +1,41 @@
 package com.radolyn.ayugram.utils.filters;
 
 import java.util.Objects;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
-/* JADX INFO: loaded from: classes5.dex */
 public class HashablePattern {
-    private final UUID id;
-    private final ReversiblePattern pattern;
+    private final Pattern pattern;
+    private final boolean reversed;
+    private final String rawPattern;
 
-    public HashablePattern(UUID uuid, ReversiblePattern reversiblePattern) {
-        this.id = uuid;
-        this.pattern = reversiblePattern;
-    }
-
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        return Objects.equals(this.id, ((HashablePattern) obj).id);
-    }
-
-    public int hashCode() {
-        return Objects.hash(this.id);
-    }
-
-    public UUID getId() {
-        return this.id;
+    public HashablePattern(String regex, boolean reversed) {
+        this.rawPattern = regex;
+        this.pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        this.reversed = reversed;
     }
 
     public Pattern getPattern() {
-        return this.pattern.pattern();
+        return pattern;
     }
 
     public boolean isReversed() {
-        return this.pattern.reversed();
+        return reversed;
+    }
+
+    public String getRawPattern() {
+        return rawPattern;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof HashablePattern)) return false;
+        HashablePattern that = (HashablePattern) o;
+        return reversed == that.reversed && Objects.equals(rawPattern, that.rawPattern);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rawPattern, reversed);
     }
 }

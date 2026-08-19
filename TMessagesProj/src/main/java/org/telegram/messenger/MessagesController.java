@@ -9462,7 +9462,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
         // --- AyuGram hook
         int ayuDeletedMessagesCount = 0;
-        if (!scheduled && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+        if (!scheduled && (com.radolyn.ayugram.AyuConfig.saveDeletedMessages || NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool())) {
             var ayuMessagesController = AyuMessagesController.getInstance();
             if (DialogObject.isEncryptedDialog(dialogId) && messages != null && !messages.isEmpty()) { // process TTL messages from secrets
                 final ArrayList<Integer> messagesCopy = new ArrayList<>(messages);
@@ -19941,7 +19941,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
 
         // --- AyuGram request hook
-        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && deletedMessages != null) {
+        if ((com.radolyn.ayugram.AyuConfig.saveDeletedMessages || NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) && deletedMessages != null) {
             var ayuMessagesController = AyuMessagesController.getInstance();
             var deletedMessagesFinal = deletedMessages.clone();
             getMessagesStorage().getStorageQueue().postRunnable(() -> {

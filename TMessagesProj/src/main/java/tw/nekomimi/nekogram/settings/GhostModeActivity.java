@@ -228,6 +228,13 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
             if (checkBox.getBindConfig() == invSendReadMessagePackets) {
                 AyuState.setAllowReadPacket(false, -1);
             }
+            if (checkBox.getBindConfig() == invSendOnlinePackets) {
+                if (!NekoConfig.sendOnlinePackets.Bool()) {
+                    com.radolyn.ayugram.utils.network.AyuRequestUtils.sendOffline(UserConfig.selectedAccount);
+                } else {
+                    com.radolyn.ayugram.utils.network.AyuRequestUtils.sendOnline(UserConfig.selectedAccount);
+                }
+            }
             updateGhostViews();
         }
     }
@@ -242,6 +249,9 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
         } else if (row == useScheduledMessagesRow) {
             NekoConfig.useScheduledMessages.toggleConfigBool();
             ((TextCheckCell) view).setChecked(NekoConfig.useScheduledMessages.Bool());
+            com.radolyn.ayugram.AyuGhostConfig.GhostModeSettings settings = com.radolyn.ayugram.AyuGhostConfig.getGhostModeSettings(getUserConfig().getClientUserId());
+            settings.useScheduledMessages = NekoConfig.useScheduledMessages.Bool();
+            settings.save();
         } else if (row == sendWithoutSoundRow) {
             NaConfig.INSTANCE.getSilentMessageByDefault().toggleConfigBool();
             ((TextCheckCell) view).setChecked(NaConfig.INSTANCE.getSilentMessageByDefault().Bool());

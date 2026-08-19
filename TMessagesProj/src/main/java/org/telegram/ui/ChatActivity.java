@@ -10,6 +10,7 @@ package org.telegram.ui;
 import com.radolyn.ayugram.controllers.AyuSavePreferences;
 import com.radolyn.ayugram.controllers.AyuMessagesController;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
+import com.radolyn.ayugram.ui.AyuMessageHistory;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -152,6 +153,7 @@ import com.radolyn.ayugram.database.AyuData;
 import com.radolyn.ayugram.AyuGhostPreferences;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
 import com.radolyn.ayugram.AyuState;
+import com.radolyn.ayugram.utils.AyuHistoryHook;
 import com.radolyn.ayugram.utils.LastSeenHelper;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -21991,7 +21993,7 @@ public class ChatActivity extends BaseFragment implements
             }
 
             // --- AyuGram history hook start
-            if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+            if (com.radolyn.ayugram.AyuConfig.saveDeletedMessageFor(currentAccount, getDialogId())) {
                 long dialogId = getDialogId();
                 long topicId = getTopicId();
 
@@ -22003,15 +22005,14 @@ public class ChatActivity extends BaseFragment implements
                 int maxVal = isSecretChat() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
 
                 long startId = minVal; // top message (startId < endId)
-                // ...deleted messages
                 long endId = minVal; // bottom message
 
-                Pair<Integer, Integer> msgIds = new Pair<>(0, 0);
+                Pair<Integer, Integer> msgIds = AyuHistoryHook.getMinAndMaxIds(messArr, true);
 
                 if (!DialogObject.isEncryptedDialog(dialogId)) {
                     if (!messArr.isEmpty()) {
-                        int msg1 = msgIds.first; // smaller
-                        int msg2 = msgIds.second; // bigger
+                        int msg1 = msgIds.first != null ? msgIds.first : 0; // smaller
+                        int msg2 = msgIds.second != null ? msgIds.second : 0; // bigger
 
                         startId = Math.min(msg1, msg2);
                         endId = Math.max(msg1, msg2);
@@ -22062,8 +22063,8 @@ public class ChatActivity extends BaseFragment implements
                     int secretStartId = secretRes.second; // bigger
                     int secretEndId = secretRes.first; // smaller
 
-                    int msg1 = msgIds.second; // bigger
-                    int msg2 = msgIds.first; // smaller
+                    int msg1 = msgIds.second != null ? msgIds.second : 0; // bigger
+                    int msg2 = msgIds.first != null ? msgIds.first : 0; // smaller
 
                     if (Math.abs(secretStartId - secretEndId) == 1 || (secretStartId == msg1 && secretEndId == msg2)) { // empty dialog, so load as much as we can
                         startId = minVal;
@@ -22088,8 +22089,7 @@ public class ChatActivity extends BaseFragment implements
 
                 if (!isChannelComment && !isInScheduleMode() && chatMode != MODE_PINNED && (startId != minVal || endId != minVal)) {
                     boolean needToReset = messArr.size() == count;
-                    int limit = 200;
-                    // doHookAsync
+                    AyuHistoryHook.doHook(currentAccount, messArr, messagesDict, (int) startId, (int) endId, dialogId, topicId, isSecretChat(), false);
                     if (needToReset) {
                         count = messArr.size();
                     }
@@ -34684,7 +34684,7 @@ public class ChatActivity extends BaseFragment implements
         boolean preserveDim = false;
         switch (option) {
             case 801:
-                // AyuMessageHistory
+                presentFragment(new AyuMessageHistory(this, currentChat, currentUser, selectedObject, themeDelegate));
                 break;
             case 803:
                 AyuState.setAllowReadPacket(true, 1);
@@ -46273,7 +46273,7 @@ public class ChatActivity extends BaseFragment implements
                 button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
             }
         } else if (id == nkbtn_viewDeleted) {
-            // AyuViewDeleted
+            presentFragment(new AyuMessageHistory(this, currentChat, currentUser, currentEncryptedChat, dialog_id, themeDelegate));
         } else if (id == nkbtn_bookmarks_manager) {
             presentFragment(new BookmarksActivity(dialog_id));
         } else if (id == nkheaderbtn_upgrade) {
