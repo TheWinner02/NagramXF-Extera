@@ -178,7 +178,7 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
 
     @Override
     public int getDrawable() {
-        return R.drawable.heart_angle_solar;
+        return R.drawable.ayu_ghost;
     }
 
     @Override

@@ -413,7 +413,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == appearanceRow) {
                         textCell.setTextAndIcon(getString(R.string.Appearance), R.drawable.msg_theme, true);
                     } else if (position == ayuMomentsRow) {
-                        textCell.setTextAndIcon(getString(R.string.AyuMoments), R.drawable.heart_angle_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.AyuMoments), R.drawable.ayu_ghost, true);
                     } else if (position == translatorRow) {
                         textCell.setTextAndIcon(getString(R.string.TranslatorSettings), R.drawable.ic_translate, true);
                     } else if (position == pluginsRow) {
