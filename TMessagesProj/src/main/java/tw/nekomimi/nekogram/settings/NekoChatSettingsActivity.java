@@ -128,10 +128,12 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             getString(R.string.TranscribeProviderWorkersAI),
             getString(R.string.TranscribeProviderGemini),
             getString(R.string.TranscribeProviderOpenAI),
+            "Vosk (Offline)",
     }, null));
     private final AbstractConfigCell transcribeProviderCfCredentialsRow = cellGroup.appendCell(new ConfigCellCustom("CloudflareCredentials", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell transcribeProviderGeminiApiKeyRow = cellGroup.appendCell(new ConfigCellCustom("LlmProviderGeminiKey", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell transcribeProviderOpenAiRow = cellGroup.appendCell(new ConfigCellCustom("TranscribeProviderOpenAI", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell transcribeVoskLanguageRow = cellGroup.appendCell(new ConfigCellCustom("VoskLanguage", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell dividerTranscribe = cellGroup.appendCell(new ConfigCellDivider());
 
     // Messages
@@ -889,6 +891,8 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             TranscribeHelper.showGeminiApiKeyDialog(this);
         } else if (position == cellGroup.rows.indexOf(transcribeProviderOpenAiRow)) {
             TranscribeHelper.showOpenAiCredentialsDialog(this);
+        } else if (position == cellGroup.rows.indexOf(transcribeVoskLanguageRow)) {
+            TranscribeHelper.showVoskLanguageDialog(this);
         }
     }
 
@@ -1138,6 +1142,11 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                     textCell.setTextAndValue(getString(R.string.LlmProviderGeminiKey), "", true);
                 } else if (position == cellGroup.rows.indexOf(transcribeProviderOpenAiRow)) {
                     textCell.setTextAndValue(getString(R.string.TranscribeProviderOpenAI), "", true);
+                } else if (position == cellGroup.rows.indexOf(transcribeVoskLanguageRow)) {
+                    String lang = com.exteragram.messenger.ExteraConfig.recognitionLanguage;
+                    String langTitle = new java.util.Locale(lang).getDisplayLanguage();
+                    if (android.text.TextUtils.isEmpty(langTitle)) langTitle = lang;
+                    textCell.setTextAndValue("Lingua trascrizione (Vosk)", langTitle, true);
                 }
             } else if (holder.itemView instanceof TextInfoPrivacyCell textInfoPrivacyCell) {
                 if (position == cellGroup.rows.indexOf(staticZoomInfoRow)) {

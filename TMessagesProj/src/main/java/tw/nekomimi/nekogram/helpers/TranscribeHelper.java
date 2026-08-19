@@ -61,6 +61,7 @@ public class TranscribeHelper {
     public static final int TRANSCRIBE_WORKERSAI = 2;
     public static final int TRANSCRIBE_GEMINI = 3;
     public static final int TRANSCRIBE_OPENAI = 4;
+    public static final int TRANSCRIBE_VOSK = 5;
     private static final String GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/" + getString(R.string.LlmModelNameDefault) + ":generateContent?key=%s";
     private static final String GEMINI_PROMPT = """
     Your task is to create a detailed, verbatim transcription of the provided audio, formatted like closed captions for the hard of hearing. Follow these instructions strictly:
@@ -85,7 +86,7 @@ public class TranscribeHelper {
 
     public static boolean useTranscribeAI(int account) {
         int provider = NaConfig.INSTANCE.getTranscribeProvider().Int();
-        return provider == TRANSCRIBE_WORKERSAI || provider == TRANSCRIBE_GEMINI || provider == TRANSCRIBE_OPENAI ||
+        return provider == TRANSCRIBE_WORKERSAI || provider == TRANSCRIBE_GEMINI || provider == TRANSCRIBE_OPENAI || provider == TRANSCRIBE_VOSK ||
                 (!UserConfig.getInstance(account).isPremium() && provider == TRANSCRIBE_AUTO);
     }
 
@@ -113,6 +114,84 @@ public class TranscribeHelper {
             editText.requestFocus();
         }
         return editText;
+    }
+
+    public static void showVoskLanguageDialog(BaseFragment fragment) {
+        var context = fragment.getParentActivity();
+        if (context == null) return;
+        var controller = com.exteragram.messenger.speech.VoiceRecognitionController.getInstance();
+        var models = controller.listAvailableModels("vosk");
+        var downloaded = controller.listDownloadedModels("vosk");
+        var downloadedLangs = new java.util.HashSet<String>();
+        for (var m : downloaded) {
+            downloadedLangs.add(m.getLanguage());
+        }
+
+        String[] items = new String[models.size()];
+        for (int i = 0; i < models.size(); i++) {
+            var m = models.get(i);
+            boolean isDownloaded = downloadedLangs.contains(m.getLanguage());
+            String status = isDownloaded ? " ✓ (Scaricato)" : " (" + (m.getSize() / 1024 / 1024) + " MB)";
+            items[i] = m.getName() + status;
+        }
+
+        var builder = new AlertDialog.Builder(context, fragment.getResourceProvider());
+        builder.setTitle("Lingua Trascrizione Vosk");
+        builder.setItems(items, (dialog, which) -> {
+            var selected = models.get(which);
+            var langCode = selected.getLanguage();
+            if (downloadedLangs.contains(langCode)) {
+                com.exteragram.messenger.ExteraConfig.recognitionLanguage = langCode;
+                com.exteragram.messenger.ExteraConfig.getEditor().putString("recognitionLanguage", langCode).apply();
+            } else {
+                showVoskDownloadDialog(fragment, selected);
+            }
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        fragment.showDialog(builder.create());
+    }
+
+    private static void showVoskDownloadDialog(BaseFragment fragment, com.exteragram.messenger.speech.VoiceRecognitionController.RecognitionModel model) {
+        var context = fragment.getParentActivity();
+        if (context == null) return;
+        var builder = new AlertDialog.Builder(context, fragment.getResourceProvider());
+        builder.setTitle("Scarica Modello Lingua");
+        builder.setMessage("Vuoi scaricare il modello vocale per " + model.getName() + " (" + (model.getSize() / 1024 / 1024) + " MB)?");
+        builder.setPositiveButton("Scarica", (dialog, which) -> {
+            var loadingView = new com.exteragram.messenger.speech.ui.LoadingModelView(context);
+            var loadBuilder = new AlertDialog.Builder(context, fragment.getResourceProvider());
+            loadBuilder.setView(loadingView);
+            var loadDialog = loadBuilder.create();
+            loadDialog.setCancelable(false);
+            loadDialog.show();
+
+            var controller = com.exteragram.messenger.speech.VoiceRecognitionController.getInstance();
+            controller.downloadModel("vosk", model.getLanguage(), new com.exteragram.messenger.speech.VoiceRecognitionController.DownloadModelCallback() {
+                @Override
+                public void onCompleted() {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        loadDialog.dismiss();
+                        com.exteragram.messenger.ExteraConfig.recognitionLanguage = model.getLanguage();
+                        com.exteragram.messenger.ExteraConfig.getEditor().putString("recognitionLanguage", model.getLanguage()).apply();
+                    });
+                }
+
+                @Override
+                public void onError(Exception exc) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        loadDialog.dismiss();
+                        FileLog.e(exc);
+                    });
+                }
+
+                @Override
+                public void onProgress(float f) {
+                    AndroidUtilities.runOnUIThread(() -> loadingView.setProgress(f));
+                }
+            });
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        fragment.showDialog(builder.create());
     }
 
     public static void showCfCredentialsDialog(BaseFragment fragment) {
@@ -400,6 +479,9 @@ public class TranscribeHelper {
             case TRANSCRIBE_OPENAI:
                 requestOpenAiCompatible(path, video, callback);
                 break;
+            case TRANSCRIBE_VOSK:
+                requestVoskOffline(path, video, callback);
+                break;
             default:
                 requestWorkersAi(path, video, callback);
         }
@@ -407,7 +489,7 @@ public class TranscribeHelper {
 
     private static void requestWorkersAi(String path, boolean video, BiConsumer<String, Exception> callback) {
         if (TextUtils.isEmpty(NaConfig.INSTANCE.getTranscribeProviderCfAccountID().String()) || TextUtils.isEmpty(NaConfig.INSTANCE.getTranscribeProviderCfApiToken().String())) {
-            callback.accept(null, new Exception(getString(R.string.CloudflareCredentialsNotSet)));
+            requestVoskOffline(path, video, callback);
             return;
         }
         executorService.submit(() -> {
@@ -451,6 +533,58 @@ public class TranscribeHelper {
                 }
             } catch (Exception e) {
                 callback.accept(null, e);
+            }
+        });
+    }
+
+    private static void requestVoskOffline(String path, boolean video, BiConsumer<String, Exception> callback) {
+        String lang = org.telegram.messenger.LocaleController.getInstance().getCurrentLocale().getLanguage();
+        if (TextUtils.isEmpty(lang)) {
+            lang = "it";
+        }
+        final String targetLang = lang;
+        com.exteragram.messenger.speech.VoiceRecognitionController controller = com.exteragram.messenger.speech.VoiceRecognitionController.getInstance();
+        controller.startRecognition("voice_" + System.currentTimeMillis(), path, targetLang, "vosk", new com.exteragram.messenger.speech.VoiceRecognitionController.RecognitionCallback() {
+            @Override
+            public void onChunk(String str) {
+            }
+
+            @Override
+            public void onCompleted(String str) {
+                callback.accept(str, null);
+            }
+
+            @Override
+            public void onError(Exception exc) {
+                callback.accept(null, exc);
+            }
+
+            @Override
+            public void onLanguageNotDownloaded(String str) {
+                controller.downloadModel("vosk", str, new com.exteragram.messenger.speech.VoiceRecognitionController.DownloadModelCallback() {
+                    @Override
+                    public void onCompleted() {
+                        requestVoskOffline(path, video, callback);
+                    }
+
+                    @Override
+                    public void onError(Exception exc) {
+                        callback.accept(null, exc);
+                    }
+
+                    @Override
+                    public void onProgress(float f) {
+                    }
+                });
+            }
+
+            @Override
+            public void onLanguageNotSupported(String str) {
+                if (!"en".equals(str)) {
+                    controller.startRecognition("voice_" + System.currentTimeMillis(), path, "en", "vosk", this);
+                } else {
+                    callback.accept(null, new Exception("Language not supported"));
+                }
             }
         });
     }

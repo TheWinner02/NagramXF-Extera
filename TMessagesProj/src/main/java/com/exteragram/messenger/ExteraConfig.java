@@ -6,6 +6,7 @@ import org.telegram.messenger.ApplicationLoader;
 import java.util.ArrayList;
 
 public class ExteraConfig {
+    public static String recognitionLanguage = "auto";
     private static String editingIconPackId;
     private static IconPackType iconPack = IconPackType.SYSTEM;
     private static final ArrayList<String> iconPacksLayout = new ArrayList<>();

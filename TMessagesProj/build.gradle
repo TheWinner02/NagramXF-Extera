@@ -247,6 +247,7 @@ dependencies {
     implementation libs.html
     implementation libs.inline.parser
     implementation libs.ext.latex
+    implementation 'com.alphacephei:vosk-android:0.3.47'
     // payment
     implementation(libs.stripe.android) {
         exclude group: 'com.android.support', module: 'support-annotations'
