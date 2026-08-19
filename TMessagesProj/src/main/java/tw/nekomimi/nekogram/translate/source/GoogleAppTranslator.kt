@@ -64,19 +64,15 @@ object GoogleAppTranslator : Translator {
             "GoogleTranslate/6.14.0.04.343003216 (Linux; U; Android 10; Redmi K20 Pro)"
         ).get().build()
 
-        val responseBodyString: String
-        try {
-            responseBodyString = httpClient.newCall(request).await().use { response ->
-                val bodyString = response.body.string()
-                if (!response.isSuccessful) {
-                    error("HTTP ${response.code} : $bodyString")
-                }
-                bodyString
+        val responseBodyString: String = try {
+            val response = httpClient.newCall(request).await()
+            val bodyString = response.body.string()
+            if (!response.isSuccessful || bodyString.isBlank()) {
+                return GoogleTranslator.doTranslate(from, to, query, entities)
             }
-        } catch (e: IOException) {
-            error("Google Translate API request failed due to network issue: ${e.message}")
+            bodyString
         } catch (e: Exception) {
-            error("An unexpected error occurred during Google Translate API call: ${e.message}")
+            return GoogleTranslator.doTranslate(from, to, query, entities)
         }
 
         try {
@@ -84,8 +80,8 @@ object GoogleAppTranslator : Translator {
             for (index in 0 until array.length()) {
                 finalString.append(array.getJSONObject(index).getString("trans"))
             }
-        } catch (e: JSONException) {
-            error("Google Translate API response parsing failed: ${e.message}")
+        } catch (e: Exception) {
+            return GoogleTranslator.doTranslate(from, to, query, entities)
         }
 
         var finalText = TLRPC.TL_textWithEntities()

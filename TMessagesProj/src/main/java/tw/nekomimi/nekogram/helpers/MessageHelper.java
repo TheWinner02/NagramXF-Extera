@@ -8,6 +8,7 @@ import android.app.TimePickerDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import org.telegram.tgnet.TLRPC;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -142,8 +143,20 @@ public class MessageHelper extends BaseController {
     }
 
     public static String buildTranslatedDisplayText(Object text, Object translated, boolean keepOriginal) {
-        String tStr = translated != null ? translated.toString() : "";
-        String oStr = text != null ? text.toString() : "";
+        String tStr = "";
+        if (translated instanceof TLRPC.TL_textWithEntities) {
+            tStr = ((TLRPC.TL_textWithEntities) translated).text;
+        } else if (translated != null) {
+            tStr = translated.toString();
+        }
+
+        String oStr = "";
+        if (text instanceof TLRPC.TL_textWithEntities) {
+            oStr = ((TLRPC.TL_textWithEntities) text).text;
+        } else if (text != null) {
+            oStr = text.toString();
+        }
+
         if (keepOriginal && !TextUtils.isEmpty(oStr)) {
             return oStr + "\n\n--------\n\n" + tStr;
         }
@@ -159,10 +172,18 @@ public class MessageHelper extends BaseController {
     }
 
     public static CharSequence buildTranslatedDisplayText(CharSequence text, CharSequence translated, boolean keepOriginal) {
-        if (keepOriginal && !TextUtils.isEmpty(text)) {
-            return text + "\n\n--------\n\n" + translated;
+        CharSequence tStr = translated;
+        if (translated instanceof TLRPC.TL_textWithEntities) {
+            tStr = ((TLRPC.TL_textWithEntities) translated).text;
         }
-        return translated;
+        CharSequence oStr = text;
+        if (text instanceof TLRPC.TL_textWithEntities) {
+            oStr = ((TLRPC.TL_textWithEntities) text).text;
+        }
+        if (keepOriginal && !TextUtils.isEmpty(oStr)) {
+            return oStr + "\n\n--------\n\n" + (tStr != null ? tStr : "");
+        }
+        return tStr != null ? tStr : "";
     }
 
     public static String getPathToMessage(MessageObject messageObject) {
