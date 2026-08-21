@@ -303,6 +303,9 @@ public class DrawerLayoutContainer extends FrameLayout {
 
             if ((allowOpenDrawerBySwipe || drawerOpened) && allowOpenDrawer && parentActionBarLayout.getFragmentStack().size() == 1 && parentActionBarLayout.allowSwipe()) {
                 if (ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && !startedTracking && !maybeStartTracking) {
+                    if (!drawerOpened && ev.getX() > (getWidth() > 0 ? getWidth() * 0.25f : AndroidUtilities.dp(80))) {
+                        return false;
+                    }
                     View scrollingChild = findScrollingChild(this, ev.getX(), ev.getY());
                     if (scrollingChild != null) {
                         return false;
