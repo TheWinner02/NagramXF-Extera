@@ -1393,6 +1393,10 @@ public class EmojiView extends FrameLayout implements
                     emoticon = MessageObject.findAnimatedEmojiEmoticon(document);
                 }
                 if (!MessageObject.isFreeEmoji(document) && !UserConfig.getInstance(currentAccount).isPremium() && !(delegate != null && delegate.isUserSelf()) && !allowEmojisForNonPremium && !isGroupEmojis) {
+                    if (NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker().Bool() && delegate != null && document != null) {
+                        delegate.onStickerSelected(imageViewEmoji, document, emoticon, null, null, true, 0, 0);
+                        return;
+                    }
                     showBottomTab(false, true);
                     BulletinFactory factory = fragment != null ? BulletinFactory.of(fragment) : BulletinFactory.of(bulletinContainer, resourcesProvider);
                     if (premiumBulletin || fragment == null) {

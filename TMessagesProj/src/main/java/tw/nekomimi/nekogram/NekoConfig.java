@@ -95,8 +95,16 @@ public class NekoConfig {
     public static ConfigItem typeface = addConfig("TypefaceUseDefault", configTypeBool, false);
     public static ConfigItem nameOrder = addConfig("NameOrder", configTypeInt, 1);
     public static ConfigItem mapPreviewProvider = addConfig("MapPreviewProvider", configTypeInt, 0);
-    public static ConfigItem forceBlurInChat = addConfig("forceBlurInChat", configTypeBool, false);
-    public static ConfigItem chatBlueAlphaValue = addConfig("forceBlurInChatAlphaValue", configTypeInt, 200);
+    public static ConfigItem blurBehindDrawer = addConfig("blurBehindDrawer", configTypeBool, true);
+    public static ConfigItem blurRadiusDrawer = addConfig("blurRadiusDrawer", configTypeInt, 16);
+    public static ConfigItem forceChatBlur = addConfig("forceChatBlur", configTypeBool, false);
+    public static ConfigItem blurRadiusGlobal = addConfig("blurRadiusGlobal", configTypeInt, 16);
+    public static ConfigItem forceMainTabsBlur = addConfig("forceMainTabsBlur", configTypeBool, true);
+    public static ConfigItem mainTabsGlassAlpha = addConfig("mainTabsGlassAlpha", configTypeInt, 76);
+    public static ConfigItem mainTabsBlurRadius = addConfig("mainTabsBlurRadius", configTypeInt, 16);
+    public static ConfigItem forceActionBarBlur = addConfig("forceActionBarBlur", configTypeBool, false);
+    public static ConfigItem actionBarGlassAlpha = addConfig("actionBarGlassAlpha", configTypeInt, 76);
+    public static ConfigItem actionBarBlurRadius = addConfig("actionBarBlurRadius", configTypeInt, 16);
     public static ConfigItem hideProxySponsorChannel = addConfig("HideProxySponsorChannel", configTypeBool, false);
     public static ConfigItem showAddToSavedMessages = addConfig("showAddToSavedMessages", configTypeBool, true);
     public static ConfigItem showReport = addConfig("showReport", configTypeBool, false);
@@ -131,7 +139,7 @@ public class NekoConfig {
     public static ConfigItem showIdAndDc = addConfig("ShowIdAndDc", configTypeBool, true);
 
     public static ConfigItem cachePath = addConfig("cache_path", configTypeString, "");
-    public static ConfigItem customSavePath = addConfig("customSavePath", configTypeString, "Nagram");
+    public static ConfigItem customSavePath = addConfig("customSavePath", configTypeString, "NegramXFE");
 
     public static ConfigItem translationProvider = addConfig("translationProvider", configTypeInt, 1);
     public static ConfigItem translateToLang = addConfig("TransToLang", configTypeString, ""); // "" -> translate to current language (MessageTrans.kt & Translator.kt)

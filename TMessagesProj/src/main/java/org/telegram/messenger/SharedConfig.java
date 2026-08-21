@@ -1887,11 +1887,13 @@ public class SharedConfig {
     }
 
     public static boolean canBlurChat() {
-        return getDevicePerformanceClass() >= (Build.VERSION.SDK_INT >= 31 ? PERFORMANCE_CLASS_AVERAGE : PERFORMANCE_CLASS_HIGH) || BuildVars.DEBUG_PRIVATE_VERSION;
+        return tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()
+            || tw.nekomimi.nekogram.NekoConfig.forceMainTabsBlur.Bool()
+            || tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool();
     }
 
     public static boolean chatBlurEnabled() {
-        return canBlurChat() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR);
+        return canBlurChat();
     }
 
     public static class BackgroundActivityPrefs {

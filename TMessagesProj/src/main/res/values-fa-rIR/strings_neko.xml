@@ -268,4 +268,15 @@
     <string name="EmojiUseDefault">استفاده از اموجی سیستم</string>
     <string name="Chat">گفتگوها</string>
     <string name="Appearance">ظاهر</string>
+    <string name="BlurOptions">گزینه‌های تار شدن</string>
+    <string name="BlurBehindDrawer">تار کردن پس‌زمینه هنگام باز شدن منوی کناری</string>
+    <string name="ForceChatBlur">اجبار تاری سراسری (نادیده گرفتن محدودیت‌ها)</string>
+    <string name="ForceMainTabsBlur">تار کردن نوار ناوبری پایین</string>
+    <string name="ForceActionBarBlur">تار کردن نوار بالای گفتگو</string>
+    <string name="BlurRadiusDrawer">شدت تار شدن منوی کناری</string>
+    <string name="BlurRadiusGlobal">شدت تار شدن سراسری</string>
+    <string name="MainTabsGlassAlpha">میزان ماتی شیشه‌ای نوار پایین</string>
+    <string name="MainTabsBlurRadius">شدت تار شدن نوار پایین</string>
+    <string name="ActionBarGlassAlpha">میزان ماتی شیشه‌ای نوار بالا</string>
+    <string name="ActionBarBlurRadius">شدت تار شدن نوار بالا</string>
 </resources>

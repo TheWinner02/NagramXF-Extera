@@ -268,4 +268,15 @@
     <string name="EmojiUseDefault">Usar emojis del sistema</string>
     <string name="Chat">Chats</string>
     <string name="Appearance">Apariencia</string>
+    <string name="BlurOptions">Opciones de desenfoque</string>
+    <string name="BlurBehindDrawer">Desenfocar fondo al abrir el menú lateral</string>
+    <string name="ForceChatBlur">Forzar desenfoque global (omitir límites)</string>
+    <string name="ForceMainTabsBlur">Desenfocar barra de navegación inferior</string>
+    <string name="ForceActionBarBlur">Desenfocar barra superior en chats</string>
+    <string name="BlurRadiusDrawer">Intensidad de desenfoque del menú lateral</string>
+    <string name="BlurRadiusGlobal">Intensidad de desenfoque global</string>
+    <string name="MainTabsGlassAlpha">Opacidad de cristal de la barra inferior</string>
+    <string name="MainTabsBlurRadius">Intensidad de desenfoque de la barra inferior</string>
+    <string name="ActionBarGlassAlpha">Opacidad de cristal de la barra superior</string>
+    <string name="ActionBarBlurRadius">Intensidad de desenfoque de la barra superior</string>
 </resources>

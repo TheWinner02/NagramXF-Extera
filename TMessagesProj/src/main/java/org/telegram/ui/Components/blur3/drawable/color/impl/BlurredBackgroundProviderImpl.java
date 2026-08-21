@@ -19,7 +19,7 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider mainTabs(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) -> {
-                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
+                final float alpha = tw.nekomimi.nekogram.NekoConfig.mainTabsGlassAlpha.Int() / 100f;
                 final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
                 final int colorTarget = Theme.getColor(Theme.key_glass_targetMainTabs, r);
                 return solveSrcColor(colorBg, colorTarget, alpha);
@@ -35,7 +35,7 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider topPanel(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) -> {
-                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
+                final float alpha = tw.nekomimi.nekogram.NekoConfig.actionBarGlassAlpha.Int() / 100f;
                 final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
                 final int colorTarget = Theme.getColor(Theme.key_glass_targetMainTopPanel, r);
                 return solveSrcColor(colorBg, colorTarget, alpha);
@@ -122,7 +122,7 @@ public class BlurredBackgroundProviderImpl {
                         return ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_messagePanelBackground, r), 255);
                     }
 
-                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
+                    final float alpha = tw.nekomimi.nekogram.NekoConfig.mainTabsGlassAlpha.Int() / 100f;
                     final int colorBg = Theme.getColor(Theme.key_chat_messagePanelBackground, r);
                     return Theme.multAlpha(colorBg, alpha);
                 })
@@ -142,7 +142,7 @@ public class BlurredBackgroundProviderImpl {
                             Theme.key_actionBarDefault : Theme.key_chat_topPanelBackground, r), 255);
                     }
 
-                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
+                    final float alpha = tw.nekomimi.nekogram.NekoConfig.actionBarGlassAlpha.Int() / 100f;
                     final int colorBg = Theme.getColor(Theme.key_chat_topPanelBackground, r);
                     return Theme.multAlpha(colorBg, alpha);
                 })
@@ -320,19 +320,8 @@ public class BlurredBackgroundProviderImpl {
     }
 
     public static boolean checkBlurEnabled(int currentAccount, Theme.ResourcesProvider resourcesProvider) {
-        final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
-        final boolean isLight = !isDark;
-        boolean blurEnabled = SharedConfig.chatBlurEnabled();
-        if (blurEnabled && isLight) {
-            if (MessagesController.getInstance(currentAccount).config.disableBlurInLightTheme.get()) {
-                blurEnabled = false;
-            }
-        }
-        if (blurEnabled && isDark) {
-            if (MessagesController.getInstance(currentAccount).config.disableBlurInDarkTheme.get()) {
-                blurEnabled = false;
-            }
-        }
-        return blurEnabled;
+        return tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()
+            || tw.nekomimi.nekogram.NekoConfig.forceMainTabsBlur.Bool()
+            || tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool();
     }
 }

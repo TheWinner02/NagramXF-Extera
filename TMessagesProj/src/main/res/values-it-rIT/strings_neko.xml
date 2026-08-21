@@ -268,4 +268,15 @@
     <string name="EmojiUseDefault">Usa le Emoji di Sistema</string>
     <string name="Chat">Chats</string>
     <string name="Appearance">Aspetto</string>
+    <string name="BlurOptions">Opzioni sfocatura</string>
+    <string name="BlurBehindDrawer">Sfoca sfondo all\'apertura dell\'Home Drawer</string>
+    <string name="BlurRadiusDrawer">Intensità sfocatura cassetto</string>
+    <string name="ForceChatBlur">Forza sfocatura globale (Bypass limiti)</string>
+    <string name="BlurRadiusGlobal">Intensità sfocatura globale</string>
+    <string name="ForceMainTabsBlur">Sfoca barra di navigazione inferiore</string>
+    <string name="MainTabsGlassAlpha">Opacità vetro barra inferiore</string>
+    <string name="MainTabsBlurRadius">Intensità sfocatura barra inferiore</string>
+    <string name="ForceActionBarBlur">Sfoca barra superiore nelle chat</string>
+    <string name="ActionBarGlassAlpha">Opacità vetro barra superiore</string>
+    <string name="ActionBarBlurRadius">Intensità sfocatura barra superiore</string>
 </resources>

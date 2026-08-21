@@ -276,6 +276,8 @@ public class ItemOptions {
                 dismiss();
             }
         });
+        this.blur = tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool();
+        this.blurForMenu = tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool();
         layout = lastLayout;
     }
 

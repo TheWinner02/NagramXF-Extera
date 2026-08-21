@@ -158,6 +158,10 @@
     <string name="SingleCornerRadius">角丸半径を統一</string>
     <string name="SingleCornerRadiusInfo">トピックグループでも、チャットメッセージと同じアバター形状が使用されます。</string>
     <string name="BlurOptions">ぼかしオプション</string>
+    <string name="BlurBehindDrawer">ドロワー展開時に背景をぼかす</string>
+    <string name="ForceChatBlur">強制グローバルぼかし (制限を無視)</string>
+    <string name="ForceMainTabsBlur">下部ナビゲーションバーをぼかす</string>
+    <string name="ForceActionBarBlur">チャット上部バーをぼかす</string>
     <string name="SaveAttachmentsCardTitle">添付ファイルを保存</string>
     <string name="SaveAttachmentsCardSubtitle">チャットと上限を設定</string>
     <string name="MaximumMediaSizeCellular">メディアサイズ上限 (モバイルデータ)</string>
@@ -293,4 +297,10 @@
     <!-- 添付カメラ -->
     <string name="MoveAttachCameraToBottom">下部カメラショートカット</string>
     <string name="MoveAttachCameraToBottomNotice">ギャラリーグリッドの代わりに、下部の添付バーにカメラを表示します。</string>
+    <string name="BlurRadiusDrawer">ドロワーぼかし強度</string>
+    <string name="BlurRadiusGlobal">グローバルぼかし強度</string>
+    <string name="MainTabsGlassAlpha">下部バーのすりガラス不透明度</string>
+    <string name="MainTabsBlurRadius">下部バーのぼかし強度</string>
+    <string name="ActionBarGlassAlpha">上部バーのすりガラス不透明度</string>
+    <string name="ActionBarBlurRadius">上部バーのぼかし強度</string>
 </resources>

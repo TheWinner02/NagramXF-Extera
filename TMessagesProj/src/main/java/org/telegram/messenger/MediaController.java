@@ -4786,6 +4786,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         writtenFrame = 0;
                         samplesCount = 0;
                         fileBuffer.rewind();
+                        AudioEnhance.INSTANCE.initVoiceEnhance(audioRecorder);
                         audioRecorder.startRecording();
                         recordQueue.postRunnable(recordRunnable);
 

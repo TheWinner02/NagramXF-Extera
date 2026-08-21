@@ -2871,7 +2871,7 @@ public class ChatActivity extends BaseFragment implements
         super(args);
 
         navbarContentSourceWallpaper = new BlurredBackgroundSourceWrapped();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SharedConfig.chatBlurEnabled()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool()) {
             scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
 
             recommendedAdditionalSizeY = Math.max(0, dp(48) - Math.min(AndroidUtilities.navigationBarHeight, AndroidUtilities.statusBarHeight));
@@ -3902,11 +3902,8 @@ public class ChatActivity extends BaseFragment implements
                     return ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelBackground), 255);
                 }
 
-                final boolean isThemeLight = themeDelegate != null && !themeDelegate.isDark();
-                if (isThemeLight) {
-                    return ColorUtils.setAlphaComponent(super.getBackgroundColor(), 216);
-                }
-                return super.getBackgroundColor();
+                int alpha = (int) (255 * (tw.nekomimi.nekogram.NekoConfig.mainTabsGlassAlpha.Int() / 100f));
+                return ColorUtils.setAlphaComponent(super.getBackgroundColor(), alpha);
             }
         };
         blurredBackgroundColorProviderWhite = new BlurredBackgroundColorProviderThemed(themeDelegate, Theme.key_windowBackgroundWhite) {
@@ -3916,11 +3913,8 @@ public class ChatActivity extends BaseFragment implements
                     return ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhite), 255);
                 }
 
-                final boolean isThemeLight = themeDelegate != null && !themeDelegate.isDark();
-                if (isThemeLight) {
-                    return ColorUtils.setAlphaComponent(super.getBackgroundColor(), 216);
-                }
-                return super.getBackgroundColor();
+                int alpha = (int) (255 * (tw.nekomimi.nekogram.NekoConfig.mainTabsGlassAlpha.Int() / 100f));
+                return ColorUtils.setAlphaComponent(super.getBackgroundColor(), alpha);
             }
         };
 

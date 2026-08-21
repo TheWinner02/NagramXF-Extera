@@ -309,8 +309,8 @@
     <string name="BackAnimationSpring">Musim Semi</string>
     <string name="BackAnimationPredictive">Perkiraan</string>
     <string name="AddToFilter">Tambah ke Penyaring</string>
-    <string name="UnifiedPushNeverReceivedNotifications">Anda tidak pernah menerima pemberitahuan dengan UnifiedPush sejak Nagram X dimulai.</string>
-    <string name="UnifiedPushLastReceivedNotification">Pemberitahuan terakhir yang diterima dengan UnifiedPush adalah %1$d detik yang lalu.\n\nAnda menerima %2$d pemberitahuan sejak Nagram X dimulai.</string>
+    <string name="UnifiedPushNeverReceivedNotifications">Anda tidak pernah menerima pemberitahuan dengan UnifiedPush sejak NegramXFE dimulai.</string>
+    <string name="UnifiedPushLastReceivedNotification">Pemberitahuan terakhir yang diterima dengan UnifiedPush adalah %1$d detik yang lalu.\n\nAnda menerima %2$d pemberitahuan sejak NegramXFE dimulai.</string>
     <string name="UnifiedPushCurrentEndpoint">Titik akhir UnifiedPush saat ini adalah: %1$s</string>
     <string name="PlayOnce">Putar sekali</string>
     <string name="StorageSettings">Penyimpanan</string>

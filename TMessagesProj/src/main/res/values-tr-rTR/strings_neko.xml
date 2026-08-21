@@ -268,4 +268,15 @@
     <string name="EmojiUseDefault">Sistem emojilerini kullan</string>
     <string name="Chat">Sohbetler</string>
     <string name="Appearance">Görünüm</string>
+    <string name="BlurOptions">Bulanıklık Seçenekleri</string>
+    <string name="BlurBehindDrawer">Yan menü açıldığında arka planı bulanıklaştır</string>
+    <string name="ForceChatBlur">Genel bulanıklığı zorla (sınırları yok say)</string>
+    <string name="ForceMainTabsBlur">Alt gezinme çubuğunu bulanıklaştır</string>
+    <string name="ForceActionBarBlur">Sohbet üst çubuğunu bulanıklaştır</string>
+    <string name="BlurRadiusDrawer">Yan menü bulanıklık yoğunluğu</string>
+    <string name="BlurRadiusGlobal">Genel bulanıklık yoğunluğu</string>
+    <string name="MainTabsGlassAlpha">Alt çubuk cam opaklığı</string>
+    <string name="MainTabsBlurRadius">Alt çubuk bulanıklık yoğunluğu</string>
+    <string name="ActionBarGlassAlpha">Üst çubuk cam opaklığı</string>
+    <string name="ActionBarBlurRadius">Üst çubuk bulanıklık yoğunluğu</string>
 </resources>

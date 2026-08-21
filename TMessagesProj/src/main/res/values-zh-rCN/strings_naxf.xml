@@ -131,6 +131,10 @@
     <string name="SingleCornerRadius">统一圆角半径</string>
     <string name="SingleCornerRadiusInfo">话题群组会采用与聊天消息相同的头像形状。</string>
     <string name="BlurOptions">模糊选项</string>
+    <string name="BlurBehindDrawer">展开侧边栏时背景模糊</string>
+    <string name="ForceChatBlur">强制全局模糊 (绕过性能限制)</string>
+    <string name="ForceMainTabsBlur">底部导航栏模糊</string>
+    <string name="ForceActionBarBlur">聊天顶栏模糊</string>
     <string name="AyuSpySettings">间谍设置</string>
     <string name="AyuMomentsCustomHeader">自定义</string>
     <string name="AyuMomentsPreviewMessage">尽人事，听天命</string>
@@ -263,4 +267,10 @@
     <!-- 附件相机 -->
     <string name="MoveAttachCameraToBottom">底部相机快捷入口</string>
     <string name="MoveAttachCameraToBottomNotice">在底部附件栏显示相机入口，而不是显示在相册网格中。</string>
+    <string name="BlurRadiusDrawer">侧边栏模糊强度</string>
+    <string name="BlurRadiusGlobal">全局模糊强度</string>
+    <string name="MainTabsGlassAlpha">底栏毛玻璃不透明度</string>
+    <string name="MainTabsBlurRadius">底栏模糊强度</string>
+    <string name="ActionBarGlassAlpha">顶栏毛玻璃不透明度</string>
+    <string name="ActionBarBlurRadius">顶栏模糊强度</string>
 </resources>

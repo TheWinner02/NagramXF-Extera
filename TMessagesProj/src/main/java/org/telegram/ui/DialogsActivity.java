@@ -317,6 +317,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private static final int ANIMATOR_ID_FORWARD_BUTTON_VISIBLE = 7;
     private static final int ANIMATOR_ID_FILTER_TABS_VISIBLE = 8;
     private static final int ANIMATOR_ID_SEARCH_FILTER_TABS_VISIBLE = 9;
+    private static final int ANIMATOR_ID_BOTTOM_FOLDERS_FLOATING_VISIBLE = 10;
 
     private final BoolAnimator animatorSearchVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_VISIBLE,
             this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
@@ -336,6 +337,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
     private final BoolAnimator animatorSearchFilterTabsVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_FILTER_TABS_VISIBLE,
             this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
+    private final BoolAnimator animatorBottomFoldersFloatingVisible = new BoolAnimator(ANIMATOR_ID_BOTTOM_FOLDERS_FLOATING_VISIBLE,
+            this, CubicBezierInterpolator.EASE_OUT_QUINT, 350, true);
 
 
     private final WindowInsetsStateHolder windowInsetsStateHolder = new WindowInsetsStateHolder(this::checkInsets);
@@ -1073,7 +1076,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (dialogStoriesCellVisible) {
                     storiesAlpha = 1f - Utilities.clamp(rightSlidingProgress / 0.5f, 1f, 0f);
                 }
-                if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
+                if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && !xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
                     tabsYOffset -= (1f - animatorFilterTabsVisible.getFloatValue()) * filterTabsView.getMeasuredHeight();
                 }
                 if (fragmentSearchField != null) {
@@ -1082,7 +1085,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 float rightFragmentOffset = 0;
                 if (rightFragmentTransitionInProgress) {
                     float scrollOffset = rightFragmentTransitionIsOpen ? 0 : scrollYOffset;
-                    rightFragmentOffset = -AndroidUtilities.lerp(-scrollOffset + (dp(!rightFragmentTransitionIsOpen && canShowFilterTabsView ? 50 : 0)), scrollOffset, rightSlidingDialogContainer.openedProgress);
+                    rightFragmentOffset = -AndroidUtilities.lerp(-scrollOffset + (dp(!rightFragmentTransitionIsOpen && canShowFilterTabsView && !xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() ? 50 : 0)), scrollOffset, rightSlidingDialogContainer.openedProgress);
                 }
                 float addH = 0;
                 if (hasStories) {
@@ -1324,7 +1327,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     childTop = actionBar.getMeasuredHeight();
                 } else if (child instanceof ViewPage) {
                     childTop = 0;
-                } else if (child == topPanelLayout || child == topBubblesFadeView || child == filterTabsView) {
+                } else if (child == topPanelLayout || child == topBubblesFadeView || (child == filterTabsView && !xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom())) {
                     childTop += actionBar.getMeasuredHeight();
                     childTop += getIdleSearchFieldHeight();
                 } else if (dialogStoriesCell != null && dialogStoriesCell.getPremiumHint() == child) {
@@ -2096,8 +2099,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             final float filterTabsVisibility = getFilterTabsVisibilityFactor(false);
             final float topPanelsVisibility = topPanelLayout != null ? topPanelLayout.getMetadata().getTotalVisibility() : 0f;
 
-            t += (int) (dp(36 + 14) * filterTabsVisibility);
-            additionalPadding += (int) (dp(36 + 14) * filterTabsVisibility);
+            if (!xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
+                t += (int) (dp(36 + 14) * filterTabsVisibility);
+                additionalPadding += (int) (dp(36 + 14) * filterTabsVisibility);
+            }
 
             if (topPanelLayout != null) {
                 final int h = (int) topPanelLayout.getAnimatedHeightWithPadding(lerp((float) dp(14), dp(7), filterTabsVisibility));
@@ -2105,8 +2110,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 additionalPadding += h;
             }
 
-            t -= dp(5 * Math.max(filterTabsVisibility, topPanelsVisibility));
-            additionalPadding -= dp(5 * Math.max(filterTabsVisibility, topPanelsVisibility));
+            t -= dp(5 * Math.max(xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() ? 0f : filterTabsVisibility, topPanelsVisibility));
+            additionalPadding -= dp(5 * Math.max(xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() ? 0f : filterTabsVisibility, topPanelsVisibility));
 
             final int b = calculateListViewPaddingBottom();
             if (t != topPadding || b != getPaddingBottom()) {
@@ -3612,6 +3617,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else {
             if (searchString != null || folderId != 0 || communityId != 0) {
                 actionBar.setBackButtonDrawable(backDrawable = new BackDrawable(false));
+            } else if (tw.nekomimi.nekogram.NekoConfig.navigationDrawerEnabled.Bool()) {
+                actionBar.setBackButtonDrawable(new org.telegram.ui.ActionBar.MenuDrawable());
             }
             if (folderId != 0) {
                 actionBar.setTitle(actionBarTitleNax = getString(R.string.ArchivedChats));
@@ -4034,6 +4041,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }
                     } else if (onlySelect || folderId != 0 || communityId != 0) {
                         finishFragment();
+                    } else if (tw.nekomimi.nekogram.NekoConfig.navigationDrawerEnabled.Bool()) {
+                        if (parentLayout != null && parentLayout.getDrawerLayoutContainer() != null) {
+                            parentLayout.getDrawerLayoutContainer().openDrawer(true);
+                        } else if (getParentActivity() instanceof LaunchActivity) {
+                            LaunchActivity launchActivity = (LaunchActivity) getParentActivity();
+                            if (launchActivity.drawerLayoutContainer != null) {
+                                launchActivity.drawerLayoutContainer.openDrawer(true);
+                            }
+                        }
                     }
                 } else if (id == 1) {
                     if (getParentActivity() == null) {
@@ -5313,12 +5329,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (filterTabsView != null) {
-            BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(filterTabsView, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
-            filterTabsViewBackground.setRadius(dp(18));
-            filterTabsViewBackground.setPadding(dp(6.666f));
-            filterTabsView.setPadding(0, dp(7), 0, dp(7));
-            filterTabsView.setBlurredBackground(filterTabsViewBackground);
-            contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, Gravity.TOP, 4, 0, 4, 0));
+            if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
+                xyz.nextalone.nagram.ui.folders.FoldersHelper.setupFilterTabs(context, contentView, filterTabsView, resourceProvider, iBlur3FactoryLiquidGlass, iBlur3FactoryFade, hasMainTabs);
+            } else {
+                BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(filterTabsView, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
+                filterTabsViewBackground.setRadius(dp(18));
+                filterTabsViewBackground.setPadding(dp(6.666f));
+                filterTabsView.setPadding(0, dp(7), 0, dp(7));
+                filterTabsView.setBlurredBackground(filterTabsViewBackground);
+                contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, Gravity.TOP, 4, 0, 4, 0));
+            }
         }
 
         if (fragmentSearchField != null) {
@@ -6760,10 +6780,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         float fadeViewT = totalOffset;
 
         if (filterTabsView != null) {
-            filterTabsView.setTranslationY(totalOffset - searchOffset);
-            filtersTabVisibility = filterTabsView.getAlpha();
-            filtersTabHeight = dp(36 + 7) * filtersTabVisibility;
-            totalOffset += filtersTabHeight;
+            if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
+                xyz.nextalone.nagram.ui.folders.FoldersHelper.updateFoldersOffset(filterTabsView, 0f, hasMainTabs, navigationBarHeight, additionFloatingButtonOffset, additionalFloatingTranslation, floatingButtonPanOffset);
+            } else {
+                filterTabsView.setTranslationY(totalOffset - searchOffset);
+                filtersTabVisibility = filterTabsView.getAlpha();
+                filtersTabHeight = dp(36 + 7) * filtersTabVisibility;
+                totalOffset += filtersTabHeight;
+            }
         }
 
         if (topPanelLayout != null) {
@@ -7211,6 +7235,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             blurredView.setVisibility(View.GONE);
             blurredView.setBackground(null);
         }
+        floatingButtonHidden = false;
+        updateFloatingButtonVisibility(true);
+        if (parentLayout != null && parentLayout.getDrawerLayoutContainer() != null) {
+            boolean allowDrawer = folderId == 0 && communityId == 0 && !onlySelect && tw.nekomimi.nekogram.NekoConfig.navigationDrawerEnabled.Bool();
+            parentLayout.getDrawerLayoutContainer().setAllowOpenDrawer(allowDrawer, false);
+            parentLayout.getDrawerLayoutContainer().setAllowOpenDrawerBySwipe(allowDrawer);
+        } else if (getParentActivity() instanceof LaunchActivity) {
+            LaunchActivity launchActivity = (LaunchActivity) getParentActivity();
+            if (launchActivity.drawerLayoutContainer != null) {
+                boolean allowDrawer = folderId == 0 && communityId == 0 && !onlySelect && tw.nekomimi.nekogram.NekoConfig.navigationDrawerEnabled.Bool();
+                launchActivity.drawerLayoutContainer.setAllowOpenDrawer(allowDrawer, false);
+                launchActivity.drawerLayoutContainer.setAllowOpenDrawerBySwipe(allowDrawer);
+            }
+        }
         if (viewPages != null) {
             for (int a = 0; a < viewPages.length; a++) {
                 viewPages[a].dialogsAdapter.notifyDataSetChanged();
@@ -7362,7 +7400,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             public int getTopOffset(int tag) {
                 return (
                     (actionBar != null ? actionBar.getMeasuredHeight() : 0) +
-                    (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE ? filterTabsView.getMeasuredHeight() : 0) +
+                    (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && !xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() ? filterTabsView.getMeasuredHeight() : 0) +
                     (topPanelLayout != null ? topPanelLayout.getHeight() : 0) +
                     (dialogStoriesCell != null && dialogStoriesCellVisible ? (int) ((1f - dialogStoriesCell.getCollapsedProgress()) * dp(DialogStoriesCell.HEIGHT_IN_DP)) : 0) +
                     (getIdleSearchFieldHeight())
@@ -7911,6 +7949,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         animatorFilterTabsVisible.setValue(canShowFilterTabsView, animated);
+        checkUi_filterTabsVisible();
     }
 
     private void setSearchAnimationProgress(float progress, boolean full) {
@@ -9057,10 +9096,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (floatingButtonStories != null) {
             floatingButtonStories.setButtonVisible(isVisible && !NaConfig.INSTANCE.getDisableStories().Bool(), animated);
         }
+        if (mainTabsActivityController != null && tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode() == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
+            mainTabsActivityController.setTabsVisible(isVisible);
+        }
+        if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() && tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode() == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
+            animatorBottomFoldersFloatingVisible.setValue(isVisible, animated);
+        }
     }
 
     private void updateFloatingButtonOffset() {
-        final float top = -navigationBarHeight - additionFloatingButtonOffset - additionalFloatingTranslation;
+        int foldersOffset = 0;
+        if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() && filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
+            foldersOffset = dp(36 + 7 + 7 + 8);
+        }
+        final float top = -navigationBarHeight - additionFloatingButtonOffset - additionalFloatingTranslation - foldersOffset;
         final float baseTranslationY = top
             - floatingButtonPanOffset;
 
@@ -9072,6 +9121,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (storyHint != null) {
                 storyHint.setTranslationY(baseTranslationY - dp(52));
             }
+        }
+        if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
+            xyz.nextalone.nagram.ui.folders.FoldersHelper.updateFoldersOffset(filterTabsView, 0f, hasMainTabs, navigationBarHeight, additionFloatingButtonOffset, additionalFloatingTranslation, floatingButtonPanOffset);
         }
     }
 
@@ -9226,7 +9278,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             backDrawable.setRotation(0, true);
         }
         if (filterTabsView != null) {
-            filterTabsView.animateColorsTo(Theme.key_actionBarTabLine, Theme.key_actionBarTabActiveText, Theme.key_actionBarTabUnactiveText, Theme.key_actionBarTabSelector, Theme.key_windowBackgroundWhite);
+            if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
+                filterTabsView.animateColorsTo(Theme.key_chats_actionBackground, Theme.key_windowBackgroundWhiteBlackText, Theme.key_windowBackgroundWhiteGrayText, Theme.key_listSelector, Theme.key_windowBackgroundWhite);
+            } else {
+                filterTabsView.animateColorsTo(Theme.key_actionBarTabLine, Theme.key_actionBarTabActiveText, Theme.key_actionBarTabUnactiveText, Theme.key_actionBarTabSelector, Theme.key_windowBackgroundWhite);
+            }
         }
         if (actionBarColorAnimator != null) {
             actionBarColorAnimator.cancel();
@@ -12423,6 +12479,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 arrayList.add(new ThemeDescription(filterTabsView.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FilterTabsView.TabView.class}, null, null, null, Theme.key_profile_tabSelectedText));
                 arrayList.add(new ThemeDescription(filterTabsView.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FilterTabsView.TabView.class}, null, null, null, Theme.key_profile_tabText));
                 arrayList.add(new ThemeDescription(filterTabsView.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{FilterTabsView.TabView.class}, null, null, null, Theme.key_profile_tabSelector));
+            } else if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
+                arrayList.add(new ThemeDescription(filterTabsView, 0, new Class[]{FilterTabsView.class}, new String[]{"selectorDrawable"}, null, null, null, Theme.key_chats_actionBackground));
+                arrayList.add(new ThemeDescription(filterTabsView.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FilterTabsView.TabView.class}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+                arrayList.add(new ThemeDescription(filterTabsView.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FilterTabsView.TabView.class}, null, null, null, Theme.key_windowBackgroundWhiteGrayText));
+                arrayList.add(new ThemeDescription(filterTabsView.getTabsContainer(), ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
             } else {
                 arrayList.add(new ThemeDescription(filterTabsView, 0, new Class[]{FilterTabsView.class}, new String[]{"selectorDrawable"}, null, null, null, Theme.key_actionBarTabLine));
                 arrayList.add(new ThemeDescription(filterTabsView.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FilterTabsView.TabView.class}, null, null, null, Theme.key_actionBarTabActiveText));
@@ -13882,6 +13943,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private void showItemOptions() {
         ItemOptions io = ItemOptions.makeOptions(this, optionsItem);
+        io.setBlur(tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool());
         io.setColors(getThemedColor(Theme.key_actionBarDefaultTitle), getThemedColor(Theme.key_actionBarDefaultTitle));
         if (Theme.getActiveTheme().isMonet()) {
             io.setSelectorColor(getThemedColor(Theme.key_dialogButtonSelector));
@@ -14188,11 +14250,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             checkUi_searchFiltersVisibility();
         } else if (id == ANIMATOR_ID_SEARCH_FILTER_TABS_VISIBLE) {
             checkUi_searchFiltersVisibility();
+        } else if (id == ANIMATOR_ID_BOTTOM_FOLDERS_FLOATING_VISIBLE) {
+            checkUi_filterTabsVisible();
         }
     }
 
     @Override
     public void onFactorChangeFinished(int id, float finalFactor, FactorAnimator callee) {
+        onFactorChanged(id, finalFactor, 1f, callee);
         if (id == ANIMATOR_ID_SPEED_BUTTON_VISIBLE && speedItem != null) {
             final AnimatedVectorDrawable drawable = (AnimatedVectorDrawable) speedItem.getIconView().getDrawable();
             if (animatorSpeedButtonVisible.getValue()) {
@@ -14316,7 +14381,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factor1 = includeSearch ? (1f - animatorSearchVisible.getFloatValue()) : 1f;
         final float factor2 = 1f - getRightSlidingProgress();
         final float factor3 = animatorFilterTabsVisible.getFloatValue();
-        return factor1 * factor2 * factor3;
+        float factor4 = 1f;
+        if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() && tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode() == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
+            factor4 = animatorBottomFoldersFloatingVisible.getFloatValue();
+        }
+        return factor1 * factor2 * factor3 * factor4;
     }
 
     private void checkUi_filterTabsVisible() {
@@ -14324,10 +14393,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (filterTabsView != null) {
             final boolean alphaChanged = filterTabsView.getAlpha() != factor;
 
-            final float s = lerp(0.98f, 1f, factor);
+            final float minScale = (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() && tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode() == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) ? 0.4f : 0.98f;
+            final float s = lerp(minScale, 1f, factor);
             filterTabsView.setAlpha(factor);
             filterTabsView.setScaleX(s);
             filterTabsView.setScaleY(s);
+            filterTabsView.setEnabled(factor >= 0.9f);
+            filterTabsView.setClickable(factor >= 0.9f);
             filterTabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
 
             if (alphaChanged && viewPages[0] != null) {
@@ -14335,6 +14407,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         }
         updateContextViewPosition();
+        if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
+            updateFloatingButtonOffset();
+        }
     }
 
     private void checkUi_mainTabsVisible() {
@@ -14473,9 +14548,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private final ArrayList<RectF> iBlur3Positions = new ArrayList<>();
     private final RectF iBlur3PositionActionBar = new RectF();
+    private final RectF iBlur3PositionFolders = new RectF();
     private final RectF iBlur3PositionMainTabs = new RectF(); {
         iBlur3Positions.add(iBlur3PositionActionBar);
         iBlur3Positions.add(iBlur3PositionMainTabs);
+        iBlur3Positions.add(iBlur3PositionFolders);
     }
 
     private void blur3_InvalidateBlur() {
@@ -14490,7 +14567,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final int actionBarHeight = actionBar.getMeasuredHeight()
             + getIdleSearchFieldHeight()
             + dp(hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0)
-            + (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE ? filterTabsView.getMeasuredHeight() : 0)
+            + (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && !xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() ? filterTabsView.getMeasuredHeight() : 0)
             + (topPanelLayout != null && topPanelLayout.getVisibility() == View.VISIBLE ? topPanelLayout.getSumHeightOfAllVisibleChild() : 0)
             + ((int) scrollYOffset);
 
@@ -14500,22 +14577,31 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         iBlur3PositionActionBar.set(0, -additionalList, fragmentView.getMeasuredWidth(), lerp(actionBarHeight, actionBarHeightSearch, animatorSearchVisible.getFloatValue()) + additionalList );
 
-        boolean hasBottomBlur = false;
+        int validNodeCount = 1;
         if (hasMainTabs && !NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
             iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
             iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
-
-            hasBottomBlur = true;
+            validNodeCount = 2;
         } else if (commentView != null && chatInputViewsContainer != null) {
             iBlur3PositionMainTabs.set(0,
                 fragmentView.getMeasuredHeight() - calculateListViewPaddingBottom(),
                 fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
             iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
-
-            hasBottomBlur = true;
+            validNodeCount = 2;
         }
 
-        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasBottomBlur ? 2 : 1);
+        if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() && filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
+            iBlur3PositionFolders.set(
+                0,
+                filterTabsView.getY(),
+                fragmentView.getMeasuredWidth(),
+                filterTabsView.getY() + filterTabsView.getMeasuredHeight()
+            );
+            iBlur3PositionFolders.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
+            validNodeCount = 3;
+        }
+
+        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, validNodeCount);
         scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
 
         if (iBlur3SourceGlassFrosted != null) {
@@ -14534,7 +14620,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (communityId != 0) {
             return navigationBarHeight + dp(12 + 48 + 12);
         } else {
-            return navigationBarHeight + additionNavigationBarHeight;
+            int bottom = navigationBarHeight + additionNavigationBarHeight;
+            if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom() && filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
+                bottom += dp(36 + 7 + 7 + 14); // folder tab height + bottom margin
+            }
+            return bottom;
         }
     }
 

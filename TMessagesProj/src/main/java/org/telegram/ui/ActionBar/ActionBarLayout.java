@@ -971,6 +971,21 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         innerTranslationX = value;
         invalidate();
 
+        if (Build.VERSION.SDK_INT >= 31 && containerViewBack != null) {
+            if (tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool() && value > 0 && containerView != null && containerView.getMeasuredWidth() > 0) {
+                float progress = Utilities.clamp01(value / (float) containerView.getMeasuredWidth());
+                float maxRadius = Math.max(1f, AndroidUtilities.dp(tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int()));
+                float blurRadius = maxRadius * (1.0f - progress);
+                if (blurRadius > 1.0f) {
+                    containerViewBack.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(blurRadius, blurRadius, android.graphics.Shader.TileMode.CLAMP));
+                } else {
+                    containerViewBack.setRenderEffect(null);
+                }
+            } else {
+                containerViewBack.setRenderEffect(null);
+            }
+        }
+
         if (fragmentsStack.size() >= 2 && containerView.getMeasuredWidth() > 0) {
             float progress;
             if (newBackTransitions()) {
@@ -3426,6 +3441,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             transitionAnimationStartTime = 0;
             newFragment = null;
             oldFragment = null;
+            if (Build.VERSION.SDK_INT >= 31 && containerViewBack != null) {
+                containerViewBack.setRenderEffect(null);
+            }
             Runnable endRunnable = onCloseAnimationEndRunnable;
             onCloseAnimationEndRunnable = null;
             if (endRunnable != null) {
@@ -3459,6 +3477,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             transitionAnimationStartTime = 0;
             newFragment = null;
             oldFragment = null;
+            if (Build.VERSION.SDK_INT >= 31 && containerViewBack != null) {
+                containerViewBack.setRenderEffect(null);
+            }
             Runnable endRunnable = onOpenAnimationEndRunnable;
             onOpenAnimationEndRunnable = null;
             endRunnable.run();

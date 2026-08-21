@@ -121,7 +121,7 @@ public class ApplicationLoader extends Application {
 
     public static IMapsProvider getMapsProvider() {
         if (mapsProvider == null) {
-            if (NekoConfig.useOSMDroidMap.Bool())
+            if (NekoConfig.useOSMDroidMap.Bool() || NekoConfig.useOpenFreeMap.Bool())
                 mapsProvider = new OSMDroidMapsProvider();
             else {
                 mapsProvider = new GoogleMapsProvider();

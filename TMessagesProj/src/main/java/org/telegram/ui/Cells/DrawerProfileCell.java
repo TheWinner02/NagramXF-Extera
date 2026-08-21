@@ -355,13 +355,14 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     }
 
     public Integer applyBackground(boolean force) {
-        Integer currentTag = (Integer) getTag();
         int backgroundKey = Theme.hasThemeKey(Theme.key_chats_menuTopBackground) && Theme.getColor(Theme.key_chats_menuTopBackground) != 0
                 ? Theme.key_chats_menuTopBackground
                 : Theme.key_chats_menuTopBackgroundCats;
-        if (force || currentTag == null || backgroundKey != currentTag) {
-            setBackgroundColor(Theme.getColor(backgroundKey));
-            setTag(backgroundKey);
+        int color = Theme.getColor(backgroundKey);
+        Object currentTag = getTag();
+        if (force || !(currentTag instanceof Integer) || (Integer) currentTag != color) {
+            setBackgroundColor(color);
+            setTag(color);
         }
         return backgroundKey;
     }
@@ -380,7 +381,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     }
 
     public void updateColors() {
-        applyBackground(false);
+        applyBackground(true);
         updateHeaderDecoration();
         int nameColor = Theme.getColor(Theme.key_chats_menuName);
         nameTextView.setTextColor(nameColor);
@@ -620,6 +621,8 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             syncThemeToggle(Theme.isCurrentThemeDark(), false);
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.themeAccentListUpdated);
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         }
@@ -630,6 +633,8 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         super.onDetachedFromWindow();
         status.detach();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.themeAccentListUpdated);
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             NotificationCenter.getInstance(i).removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         }
@@ -650,6 +655,8 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiLoaded) {
             nameTextView.invalidate();
+        } else if (id == NotificationCenter.didSetNewTheme || id == NotificationCenter.themeAccentListUpdated) {
+            updateColors();
         } else if (id == NotificationCenter.userEmojiStatusUpdated) {
             setUser((TLRPC.User) args[0], accountsShown);
         } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {

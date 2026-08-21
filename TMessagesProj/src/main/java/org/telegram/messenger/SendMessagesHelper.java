@@ -3819,7 +3819,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             req.big = true;
         }
         // --- Ghost Mode ---
-        if (req.msg_id != 0 && NekoConfig.markReadAfterSend.Bool() && !NekoConfig.sendReadMessagePackets.Bool()) {
+        if (req.msg_id != 0 && AyuGhostController.getInstance(currentAccount).isMarkReadAfterAction() && !NekoConfig.sendReadMessagePackets.Bool()) {
             if (!AyuGhostPreferences.getGhostModeReadExclusion(AyuGhostUtils.getDialogId(req.peer))) {
                 AyuGhostUtils.markReadOnServer(req.msg_id, req.peer, false);
             }

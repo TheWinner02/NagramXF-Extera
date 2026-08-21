@@ -12,7 +12,20 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_ACCOUNTS;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_BOOSTS_FOR_USERS;
+
+import android.content.pm.PackageManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import org.telegram.ui.ActionBar.DrawerContainer;
+import org.telegram.ui.Adapters.DrawerLayoutAdapter;
+import org.telegram.ui.Cells.DrawerActionCheckCell;
+import org.telegram.ui.Cells.DrawerAddCell;
+import org.telegram.ui.Cells.DrawerProfileCell;
+import org.telegram.ui.Cells.DrawerUserCell;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SideMenultItemAnimator;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -334,6 +347,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private FireworksOverlay fireworksOverlay;
     private BottomSheetTabsOverlay bottomSheetTabsOverlay;
     public DrawerLayoutContainer drawerLayoutContainer;
+    public org.telegram.ui.ActionBar.DrawerContainer sideMenuContainer;
+    public org.telegram.ui.Components.RecyclerListView sideMenu;
+    public org.telegram.ui.Adapters.DrawerLayoutAdapter drawerLayoutAdapter;
+    public org.telegram.ui.Components.SideMenultItemAnimator itemAnimator;
     private PasscodeViewDialog passcodeDialog;
     private List<PasscodeView> overlayPasscodeViews = new ArrayList<>();
     private TermsOfServiceView termsOfServiceView;
@@ -1110,7 +1127,268 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 drawerLayoutContainer.addView(actionBarLayout.getView(), new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             }
         }
+        setupSideMenu();
         FloatingDebugController.setActive(this, SharedConfig.isFloatingDebugActive, false);
+    }
+
+    public void setupSideMenu() {
+        if (drawerLayoutContainer == null || sideMenuContainer != null) {
+            return;
+        }
+        sideMenuContainer = new DrawerContainer(this);
+        sideMenu = new RecyclerListView(this);
+        itemAnimator = new SideMenultItemAnimator(sideMenu);
+        sideMenu.setItemAnimator(itemAnimator);
+        sideMenu.setClipToPadding(false);
+        sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+        sideMenuContainer.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+        sideMenu.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        sideMenu.setAllowItemsInteractionDuringAnimation(false);
+        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator, drawerLayoutContainer));
+        drawerLayoutAdapter.setListView(sideMenu);
+        drawerLayoutAdapter.setOnPremiumDrawableClick(e -> showSelectStatusDialog());
+        sideMenuContainer.addView(sideMenu, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        drawerLayoutContainer.setDrawerLayout(sideMenuContainer, sideMenu);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sideMenuContainer.getLayoutParams();
+        if (layoutParams != null) {
+            android.graphics.Point screenSize = AndroidUtilities.getRealScreenSize();
+            layoutParams.width = AndroidUtilities.isTablet() ? AndroidUtilities.dp(320) : Math.min(AndroidUtilities.dp(320), Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56));
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
+            sideMenuContainer.setLayoutParams(layoutParams);
+        }
+        sideMenu.setOnItemClickListener((view, position, x, y) -> {
+            if (drawerLayoutAdapter.click(view, position)) {
+                drawerLayoutContainer.closeDrawer(false);
+                return;
+            }
+            if (position == 0) {
+                DrawerProfileCell profileCell = (DrawerProfileCell) view;
+                if (profileCell.isInAvatar(x, y)) {
+                    openSettings(profileCell.hasAvatar());
+                } else {
+                    drawerLayoutAdapter.setAccountsShown(!drawerLayoutAdapter.isAccountsShown(), true);
+                }
+            } else if (view instanceof DrawerUserCell) {
+                switchToAccount(((DrawerUserCell) view).getAccountNumber(), true);
+                drawerLayoutContainer.closeDrawer(false);
+            } else if (view instanceof DrawerAddCell) {
+                int freeAccounts = 0;
+                Integer availableAccount = null;
+                for (int a = UserConfig.MAX_ACCOUNT_COUNT - 1; a >= 0; a--) {
+                    if (!UserConfig.getInstance(a).isClientActivated()) {
+                        freeAccounts++;
+                        if (availableAccount == null) {
+                            availableAccount = a;
+                        }
+                    }
+                }
+                if (!UserConfig.hasPremiumOnAccounts()) {
+                    freeAccounts -= (UserConfig.MAX_ACCOUNT_COUNT - UserConfig.MAX_ACCOUNT_DEFAULT_COUNT);
+                }
+                if (freeAccounts > 0 && availableAccount != null) {
+                    presentFragment(new LoginActivity(availableAccount));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (!UserConfig.hasPremiumOnAccounts()) {
+                    if (actionBarLayout.getFragmentStack().size() > 0) {
+                        BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
+                        LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(fragment, this, TYPE_ACCOUNTS, currentAccount, null);
+                        fragment.showDialog(limitReachedBottomSheet);
+                        limitReachedBottomSheet.onShowPremiumScreenRunnable = () -> drawerLayoutContainer.closeDrawer(false);
+                    }
+                }
+            } else if (view instanceof DrawerActionCheckCell) {
+                int id = drawerLayoutAdapter.getId(position);
+                if (id == 13) {
+                    presentFragment(new ProxyListActivity());
+                    drawerLayoutContainer.closeDrawer(false);
+                }
+            } else {
+                int id = drawerLayoutAdapter.getId(position);
+                TLRPC.TL_attachMenuBot attachMenuBot = drawerLayoutAdapter.getAttachMenuBot(position);
+                if (attachMenuBot != null) {
+                    if (attachMenuBot.inactive || attachMenuBot.side_menu_disclaimer_needed) {
+                        WebAppDisclaimerAlert.show(this, (allowSendMessage) -> {
+                            TLRPC.TL_messages_toggleBotInAttachMenu botRequest = new TLRPC.TL_messages_toggleBotInAttachMenu();
+                            botRequest.bot = MessagesController.getInstance(currentAccount).getInputUser(attachMenuBot.bot_id);
+                            botRequest.enabled = true;
+                            botRequest.write_allowed = true;
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(botRequest, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                attachMenuBot.inactive = attachMenuBot.side_menu_disclaimer_needed = false;
+                                showAttachMenuBot(this, currentAccount, attachMenuBot, null, true);
+                                MediaDataController.getInstance(currentAccount).updateAttachMenuBotsInCache();
+                            }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
+                        }, null, null);
+                    } else {
+                        showAttachMenuBot(this, currentAccount, attachMenuBot, null, true);
+                    }
+                    return;
+                }
+                if (id == 2) {
+                    presentFragment(new GroupCreateActivity(new Bundle()));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 4) {
+                    Bundle args = new Bundle();
+                    args.putInt("step", 0);
+                    presentFragment(new ChannelCreateActivity(args));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 6) {
+                    Bundle args = new Bundle();
+                    args.putBoolean("needPhonebook", true);
+                    presentFragment(new ContactsActivity(args));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 8) {
+                    openSettings(false);
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 10) {
+                    presentFragment(new CallLogActivity(null));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 11) {
+                    Bundle args = new Bundle();
+                    args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+                    presentFragment(new ChatActivity(args));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 16) {
+                    Bundle args = new Bundle();
+                    args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+                    args.putBoolean("my_profile", true);
+                    presentFragment(new ProfileActivity(args));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 15) {
+                    showSelectStatusDialog();
+                } else if (id == DrawerLayoutAdapter.nkbtnSettings) {
+                    presentFragment(new tw.nekomimi.nekogram.settings.NekoSettingsActivity());
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == DrawerLayoutAdapter.nkbtnQrLogin) {
+                    if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{Manifest.permission.CAMERA}, 1000);
+                        return;
+                    }
+                    CameraScanActivity.showAsSheet(this, false, CameraScanActivity.TYPE_QR_LOGIN, new CameraScanActivity.CameraScanActivityDelegate() {
+                        @Override
+                        public void didFindQr(String text) {
+                            drawerLayoutContainer.closeDrawer(false);
+                        }
+                    });
+                } else if (id == DrawerLayoutAdapter.nkbtnArchivedChats) {
+                    Bundle args = new Bundle();
+                    args.putInt("folderId", 1);
+                    presentFragment(new DialogsActivity(args));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == DrawerLayoutAdapter.nkbtnRestartApp) {
+                    tw.nekomimi.nekogram.helpers.AppRestartHelper.triggerRebirth(ApplicationLoader.applicationContext, new Intent(ApplicationLoader.applicationContext, LaunchActivity.class));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == DrawerLayoutAdapter.nkbtnGhostMode) {
+                    String msg = tw.nekomimi.nekogram.NekoConfig.isGhostModeActive()
+                            ? LocaleController.getString(R.string.GhostModeDisabled)
+                            : LocaleController.getString(R.string.GhostModeEnabled);
+                    tw.nekomimi.nekogram.NekoConfig.toggleGhostMode();
+                    if (getLastFragment() != null) {
+                        org.telegram.ui.Components.BulletinFactory.of(getLastFragment()).createSuccessBulletin(msg).show();
+                    }
+                    drawerLayoutContainer.closeDrawer(false);
+                    NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+                } else if (id == DrawerLayoutAdapter.nkbtnBrowser) {
+                    tw.nekomimi.nekogram.utils.BrowserUtils.openBrowserHome(currentAccount, () -> drawerLayoutContainer.closeDrawer(true), true);
+                } else if (id == DrawerLayoutAdapter.nkbtnBookmarks) {
+                    presentFragment(new tw.nekomimi.nekogram.ui.BookmarkManagerActivity());
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == DrawerLayoutAdapter.nkbtnRecentChats) {
+                    presentFragment(new tw.nekomimi.nekogram.ChatHistoryActivity());
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == DrawerLayoutAdapter.nkbtnSessions) {
+                    presentFragment(new SessionsActivity(SessionsActivity.TYPE_DEVICES));
+                    drawerLayoutContainer.closeDrawer(false);
+                }
+            }
+        });
+    }
+
+    public void openSettings(boolean openAvatar) {
+        if (actionBarLayout == null) {
+            return;
+        }
+        presentFragment(new SettingsActivity());
+    }
+
+    public void showSelectStatusDialog() {
+        if (selectAnimatedEmojiDialog != null || SharedConfig.appLocked || sideMenu == null) {
+            return;
+        }
+        BaseFragment fragment = actionBarLayout != null ? actionBarLayout.getLastFragment() : null;
+        if (fragment == null) {
+            return;
+        }
+        final View profileCell = sideMenu.getChildAt(0);
+        final SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[] popup = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[1];
+        int xoff = 0, yoff = 0;
+        if (profileCell instanceof DrawerProfileCell) {
+            DrawerProfileCell profileCellCasted = (DrawerProfileCell) profileCell;
+            AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable scrimDrawable = profileCellCasted.getEmojiStatusDrawable();
+            if (scrimDrawable != null) {
+                scrimDrawable.play();
+            }
+            profileCellCasted.getEmojiStatusLocation(AndroidUtilities.rectTmp2);
+            yoff = -(profileCell.getHeight() - AndroidUtilities.rectTmp2.centerY()) - AndroidUtilities.dp(16);
+            xoff = AndroidUtilities.rectTmp2.centerX();
+        }
+        SelectAnimatedEmojiDialog popupLayout = new SelectAnimatedEmojiDialog(fragment, this, true, xoff, SelectAnimatedEmojiDialog.TYPE_EMOJI_STATUS, null) {
+            @Override
+            public void onSettings() {
+                if (drawerLayoutContainer != null) {
+                    drawerLayoutContainer.closeDrawer();
+                }
+                presentFragment(new PremiumPreviewFragment(PremiumPreviewFragment.featureTypeToServerString(PremiumPreviewFragment.PREMIUM_FEATURE_EMOJI_STATUS)));
+            }
+            @Override
+            protected void onEmojiSelected(View emojiView, Long documentId, TLRPC.Document document, org.telegram.tgnet.tl.TL_stars.TL_starGiftUnique gift, Integer until) {
+                final TLRPC.EmojiStatus emojiStatus;
+                if (documentId == null) {
+                    emojiStatus = new TLRPC.TL_emojiStatusEmpty();
+                } else if (gift != null) {
+                    final org.telegram.tgnet.tl.TL_stars.SavedStarGift savedStarGift = StarsController.getInstance(currentAccount).findUserStarGift(gift.id);
+                    if (savedStarGift != null && MessagesController.getGlobalMainSettings().getInt("statusgiftpage", 0) < 2) {
+                        MessagesController.getGlobalMainSettings().edit().putInt("statusgiftpage", MessagesController.getGlobalMainSettings().getInt("statusgiftpage", 0) + 1).apply();
+                        new StarGiftSheet(LaunchActivity.this, currentAccount, UserConfig.getInstance(currentAccount).getClientUserId(), null)
+                                .set(savedStarGift, null)
+                                .setupWearPage()
+                                .show();
+                        if (popup[0] != null) {
+                            selectAnimatedEmojiDialog = null;
+                            popup[0].dismiss();
+                        }
+                        return;
+                    }
+                    final TLRPC.TL_inputEmojiStatusCollectible status = new TLRPC.TL_inputEmojiStatusCollectible();
+                    status.collectible_id = gift.id;
+                    if (until != null) {
+                        status.flags |= 1;
+                        status.until = until;
+                    }
+                    emojiStatus = status;
+                } else {
+                    final TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
+                    status.document_id = documentId;
+                    if (until != null) {
+                        status.flags |= 1;
+                        status.until = until;
+                    }
+                    emojiStatus = status;
+                }
+                MessagesController.getInstance(currentAccount).updateEmojiStatus(emojiStatus, gift);
+                if (popup[0] != null) {
+                    selectAnimatedEmojiDialog = null;
+                    popup[0].dismiss();
+                }
+            }
+        };
+        popup[0] = selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+            @Override
+            public void dismiss() {
+                super.dismiss();
+                selectAnimatedEmojiDialog = null;
+            }
+        };
+        popup[0].showAsDropDown(profileCell, xoff, yoff);
     }
 
     public void addOnUserLeaveHintListenerCustom(Runnable callback) {
@@ -6077,12 +6355,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     public void checkAppUpdate(boolean force, Browser.Progress progress, boolean updateAlways) {
-       /*if (!ApplicationLoader.isStandaloneBuild() && !ApplicationLoader.isBetaBuild()) {
-           return;
-       }
-       if (!force && !BuildVars.CHECK_UPDATES) {
-           return;
-       }*/
+        if (!force) {
+            return;
+        }
         if (ApplicationLoader.applicationLoaderInstance.isCustomUpdate()) {
             final BetaUpdate prevUpdate = ApplicationLoader.applicationLoaderInstance.getUpdate();
             final boolean first = firstAppUpdateCheck;
@@ -7474,6 +7749,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 checkNavigationBarColor = (boolean) args[1];
             }
             checkSystemBarColors(args.length > 2 && (boolean) args[2], true, checkNavigationBarColor && !isNavigationBarColorFrozen && !actionBarLayout.isTransitionAnimationInProgress());
+            if (sideMenu != null) {
+                sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+            }
+            if (sideMenuContainer != null) {
+                sideMenuContainer.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+            }
         } else if (id == NotificationCenter.needSetDayNightTheme) {
             boolean instant = false;
             if (args[2] != null) {
@@ -8449,6 +8730,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     public boolean onBackPressed(boolean invoked) {
         if (FloatingDebugController.onBackPressed(invoked)) {
+            return false;
+        }
+        if (drawerLayoutContainer != null && drawerLayoutContainer.isDrawerOpened()) {
+            if (invoked) drawerLayoutContainer.closeDrawer(false);
             return false;
         }
         if (passcodeDialog != null && passcodeDialog.passcodeView.getVisibility() == View.VISIBLE) {

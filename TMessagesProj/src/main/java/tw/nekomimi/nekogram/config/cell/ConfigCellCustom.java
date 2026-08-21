@@ -19,6 +19,12 @@ public class ConfigCellCustom extends AbstractConfigCell implements WithKey {
     public static final int CUSTOM_ITEM_ChatListPreview = 985;
     public static final int CUSTOM_ITEM_FilterTabsPreview = 984;
     public static final int CUSTOM_ITEM_MessagePreview = 983;
+    public static final int CUSTOM_ITEM_BlurRadiusDrawer = 982;
+    public static final int CUSTOM_ITEM_BlurRadiusGlobal = 981;
+    public static final int CUSTOM_ITEM_MainTabsGlassAlpha = 980;
+    public static final int CUSTOM_ITEM_MainTabsBlurRadius = 979;
+    public static final int CUSTOM_ITEM_ActionBarGlassAlpha = 978;
+    public static final int CUSTOM_ITEM_ActionBarBlurRadius = 977;
 
     public final int type;
     public boolean enabled;

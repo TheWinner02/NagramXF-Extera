@@ -15,6 +15,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -29,6 +30,8 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -1550,6 +1553,12 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
             super.show();
         }
         setShowing(true);
+        if (getWindow() != null && Build.VERSION.SDK_INT >= 31 && tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+            WindowManager.LayoutParams params = getWindow().getAttributes();
+            params.setBlurBehindRadius(AndroidUtilities.dp(20));
+            getWindow().setAttributes(params);
+        }
         if (focusable) {
             getWindow().setSoftInputMode(focusableSoftInputMode);
         }
@@ -2103,8 +2112,44 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
     }
 
-    protected void onContainerViewTranslation() {
+    private View getBlurTargetView() {
+        if (attachedFragment != null) {
+            if (attachedFragment.getParentLayout() != null && attachedFragment.getParentLayout().getView() != null) {
+                return attachedFragment.getParentLayout().getView();
+            }
+            if (attachedFragment.getFragmentView() != null) {
+                return attachedFragment.getFragmentView();
+            }
+        }
+        Activity act = AndroidUtilities.findActivity(getContext());
+        if (act != null && act.getWindow() != null) {
+            return act.findViewById(android.R.id.content);
+        }
+        return null;
+    }
 
+    protected void onContainerViewTranslation() {
+        if (Build.VERSION.SDK_INT >= 31 && tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
+            float progress = 0;
+            if (containerView != null) {
+                if (transitionFromRight) {
+                    progress = containerView.getAlpha();
+                } else {
+                    float fullHeight = Math.max(1, getContainerViewHeight() + keyboardHeight + dp(10));
+                    progress = Utilities.clamp01(1f - containerView.getTranslationY() / fullHeight);
+                }
+            }
+            float maxRadius = Math.max(1f, AndroidUtilities.dp(tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int()));
+            float blurRadius = maxRadius * progress;
+            View targetView = getBlurTargetView();
+            if (targetView != null) {
+                if (blurRadius > 0.5f) {
+                    targetView.setRenderEffect(RenderEffect.createBlurEffect(blurRadius, blurRadius, Shader.TileMode.CLAMP));
+                } else {
+                    targetView.setRenderEffect(null);
+                }
+            }
+        }
     }
 
     @Override
@@ -2138,6 +2183,12 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
     }
 
     public void dismissInternal() {
+        if (Build.VERSION.SDK_INT >= 31) {
+            View targetView = getBlurTargetView();
+            if (targetView != null) {
+                targetView.setRenderEffect(null);
+            }
+        }
         if (attachedFragment != null) {
             attachedFragment.removeSheet(this);
             AndroidUtilities.removeFromParent(container);

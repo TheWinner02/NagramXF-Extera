@@ -268,4 +268,15 @@
     <string name="EmojiUseDefault">시스템 이모지 사용</string>
     <string name="Chat">채팅</string>
     <string name="Appearance">모양</string>
+    <string name="BlurOptions">블러 옵션</string>
+    <string name="BlurBehindDrawer">사이드 메뉴 열 때 배경 흐림 효과</string>
+    <string name="ForceChatBlur">전역 흐림 효과 강제 적용 (제한 무시)</string>
+    <string name="ForceMainTabsBlur">하단 탐색 바 흐림 효과</string>
+    <string name="ForceActionBarBlur">채팅 상단 바 흐림 효과</string>
+    <string name="BlurRadiusDrawer">사이드 메뉴 블러 강도</string>
+    <string name="BlurRadiusGlobal">전체 블러 강도</string>
+    <string name="MainTabsGlassAlpha">하단 바 글래스 불투명도</string>
+    <string name="MainTabsBlurRadius">하단 바 블러 강도</string>
+    <string name="ActionBarGlassAlpha">상단 바 글래스 불투명도</string>
+    <string name="ActionBarBlurRadius">상단 바 블러 강도</string>
 </resources>

@@ -100,6 +100,10 @@ public class DrawerActionCell extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        updateThemeColors();
+    }
+
+    public void updateThemeColors() {
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
     }
@@ -124,6 +128,8 @@ public class DrawerActionCell extends FrameLayout {
 
     private void updateContent(CharSequence text, int resId) {
         try {
+            textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.SRC_IN));
             textView.setText(text);
             imageView.setImageResource(resId);
         } catch (Throwable e) {

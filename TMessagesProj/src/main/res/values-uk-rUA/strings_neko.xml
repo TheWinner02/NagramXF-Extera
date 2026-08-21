@@ -268,4 +268,15 @@
     <string name="EmojiUseDefault">Використовувати системні емодзі</string>
     <string name="Chat">Чати</string>
     <string name="Appearance">Зовнішній вигляд</string>
+    <string name="BlurOptions">Параметри розмиття</string>
+    <string name="BlurBehindDrawer">Розмивати фон під час відкриття бічного меню</string>
+    <string name="ForceChatBlur">Примусове глобальне розмиття (в обхід обмежень)</string>
+    <string name="ForceMainTabsBlur">Розмивати нижню панель навігації</string>
+    <string name="ForceActionBarBlur">Розмивати верхню панель у чатах</string>
+    <string name="BlurRadiusDrawer">Інтенсивність розмиття бічного меню</string>
+    <string name="BlurRadiusGlobal">Глобальна інтенсивність розмиття</string>
+    <string name="MainTabsGlassAlpha">Прозорість скла нижньої панелі</string>
+    <string name="MainTabsBlurRadius">Інтенсивність розмиття нижньої панелі</string>
+    <string name="ActionBarGlassAlpha">Прозорість скла верхньої панелі</string>
+    <string name="ActionBarBlurRadius">Інтенсивність розмиття верхньої панелі</string>
 </resources>

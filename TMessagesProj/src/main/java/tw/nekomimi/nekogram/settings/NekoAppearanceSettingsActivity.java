@@ -7,12 +7,18 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.os.Parcelable;
+import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,10 +36,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.LaunchActivity;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
@@ -172,7 +180,20 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     );
     private final AbstractConfigCell dividerFolder = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerBlurOptions = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.BlurOptions)));
-    private final AbstractConfigCell forceBlurInChatRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceBlurInChat));
+
+    private final AbstractConfigCell blurBehindDrawerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.blurBehindDrawer, null, getString(R.string.BlurBehindDrawer)));
+    private final AbstractConfigCell blurRadiusDrawerRow = cellGroup.appendCell(new ConfigCellCustom("blurRadiusDrawer", ConfigCellCustom.CUSTOM_ITEM_BlurRadiusDrawer, true));
+
+    private final AbstractConfigCell forceChatBlurRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceChatBlur, null, getString(R.string.ForceChatBlur)));
+    private final AbstractConfigCell blurRadiusGlobalRow = cellGroup.appendCell(new ConfigCellCustom("blurRadiusGlobal", ConfigCellCustom.CUSTOM_ITEM_BlurRadiusGlobal, true));
+
+    private final AbstractConfigCell forceMainTabsBlurRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceMainTabsBlur, null, getString(R.string.ForceMainTabsBlur)));
+    private final AbstractConfigCell mainTabsGlassAlphaRow = cellGroup.appendCell(new ConfigCellCustom("mainTabsGlassAlpha", ConfigCellCustom.CUSTOM_ITEM_MainTabsGlassAlpha, true));
+    private final AbstractConfigCell mainTabsBlurRadiusRow = cellGroup.appendCell(new ConfigCellCustom("mainTabsBlurRadius", ConfigCellCustom.CUSTOM_ITEM_MainTabsBlurRadius, true));
+
+    private final AbstractConfigCell forceActionBarBlurRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceActionBarBlur, null, getString(R.string.ForceActionBarBlur)));
+    private final AbstractConfigCell actionBarGlassAlphaRow = cellGroup.appendCell(new ConfigCellCustom("actionBarGlassAlpha", ConfigCellCustom.CUSTOM_ITEM_ActionBarGlassAlpha, true));
+    private final AbstractConfigCell actionBarBlurRadiusRow = cellGroup.appendCell(new ConfigCellCustom("actionBarBlurRadius", ConfigCellCustom.CUSTOM_ITEM_ActionBarBlurRadius, true));
 
     @Override
     protected RecyclerListView.SelectionAdapter getListAdapter() {
@@ -237,11 +258,53 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             cellGroup.rows.add(hideAllTabIdx, ignoreUnreadCountRow);
             cellGroup.rows.add(hideAllTabIdx, tabsTitleTypeRow);
         }
+        updateBlurRows(false);
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
         checkCustomTitleRows();
         addRowsToMap(cellGroup);
+    }
+
+    private void updateBlurRows(boolean notify) {
+        cellGroup.rows.remove(blurRadiusDrawerRow);
+        cellGroup.rows.remove(blurRadiusGlobalRow);
+        cellGroup.rows.remove(mainTabsGlassAlphaRow);
+        cellGroup.rows.remove(mainTabsBlurRadiusRow);
+        cellGroup.rows.remove(actionBarGlassAlphaRow);
+        cellGroup.rows.remove(actionBarBlurRadiusRow);
+
+        int idx;
+        if (NekoConfig.blurBehindDrawer.Bool()) {
+            idx = cellGroup.rows.indexOf(blurBehindDrawerRow);
+            if (idx != -1) {
+                cellGroup.rows.add(idx + 1, blurRadiusDrawerRow);
+            }
+        }
+        if (NekoConfig.forceChatBlur.Bool()) {
+            idx = cellGroup.rows.indexOf(forceChatBlurRow);
+            if (idx != -1) {
+                cellGroup.rows.add(idx + 1, blurRadiusGlobalRow);
+            }
+        }
+        if (NekoConfig.forceMainTabsBlur.Bool()) {
+            idx = cellGroup.rows.indexOf(forceMainTabsBlurRow);
+            if (idx != -1) {
+                cellGroup.rows.add(idx + 1, mainTabsGlassAlphaRow);
+                cellGroup.rows.add(idx + 2, mainTabsBlurRadiusRow);
+            }
+        }
+        if (NekoConfig.forceActionBarBlur.Bool()) {
+            idx = cellGroup.rows.indexOf(forceActionBarBlurRow);
+            if (idx != -1) {
+                cellGroup.rows.add(idx + 1, actionBarGlassAlphaRow);
+                cellGroup.rows.add(idx + 2, actionBarBlurRadiusRow);
+            }
+        }
+
+        if (notify && listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -299,7 +362,12 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     || key.equals(NaConfig.INSTANCE.getFoldersAtBottom().getKey())
                     || key.equals(NaConfig.INSTANCE.getDisableDialogsFloatingButton().getKey())
                     || key.equals(NaConfig.INSTANCE.getDisableBotOpenButton().getKey())
-                    || key.equals(NekoConfig.navigationDrawerEnabled.getKey())) {
+                    || key.equals(NekoConfig.navigationDrawerEnabled.getKey())
+                    || key.equals(NekoConfig.blurBehindDrawer.getKey())
+                    || key.equals(NekoConfig.forceChatBlur.getKey())
+                    || key.equals(NekoConfig.forceActionBarBlur.getKey())
+                    || key.equals(NekoConfig.forceMainTabsBlur.getKey())) {
+                updateBlurRows(true);
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getSectionsSeparatedHeaders().getKey())) {
                 // Force RecyclerView to re-evaluate ListSectionsDecoration.getItemOffsets for
@@ -494,6 +562,8 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             if (row == avatarCornersInfoRow) {
                 TextInfoPrivacyCell textInfoPrivacyCell = (TextInfoPrivacyCell) holder.itemView;
                 textInfoPrivacyCell.setText(getString(R.string.SingleCornerRadiusInfo));
+            } else if (holder.itemView instanceof BlurSliderCell blurSliderCell) {
+                blurSliderCell.updateEnabledState();
             }
         }
 
@@ -510,8 +580,124 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 );
                 case ConfigCellCustom.CUSTOM_ITEM_ChatListPreview -> chatListPreviewCell = new ChatListPreviewCell(mContext);
                 case ConfigCellCustom.CUSTOM_ITEM_FilterTabsPreview -> filterTabsPreviewCell = new FilterTabsPreviewCell(mContext);
+                case ConfigCellCustom.CUSTOM_ITEM_BlurRadiusDrawer -> new BlurSliderCell(mContext, getString(R.string.BlurRadiusDrawer), "dp", 4, 32, NekoConfig.blurRadiusDrawer, NekoConfig.blurBehindDrawer, null);
+                case ConfigCellCustom.CUSTOM_ITEM_BlurRadiusGlobal -> new BlurSliderCell(mContext, getString(R.string.BlurRadiusGlobal), "dp", 4, 32, NekoConfig.blurRadiusGlobal, NekoConfig.forceChatBlur, null);
+                case ConfigCellCustom.CUSTOM_ITEM_MainTabsGlassAlpha -> new BlurSliderCell(mContext, getString(R.string.MainTabsGlassAlpha), "%", 20, 95, NekoConfig.mainTabsGlassAlpha, NekoConfig.forceMainTabsBlur, null);
+                case ConfigCellCustom.CUSTOM_ITEM_MainTabsBlurRadius -> new BlurSliderCell(mContext, getString(R.string.MainTabsBlurRadius), "dp", 4, 32, NekoConfig.mainTabsBlurRadius, NekoConfig.forceMainTabsBlur, null);
+                case ConfigCellCustom.CUSTOM_ITEM_ActionBarGlassAlpha -> new BlurSliderCell(mContext, getString(R.string.ActionBarGlassAlpha), "%", 20, 95, NekoConfig.actionBarGlassAlpha, NekoConfig.forceActionBarBlur, null);
+                case ConfigCellCustom.CUSTOM_ITEM_ActionBarBlurRadius -> new BlurSliderCell(mContext, getString(R.string.ActionBarBlurRadius), "dp", 4, 32, NekoConfig.actionBarBlurRadius, NekoConfig.forceActionBarBlur, null);
                 default -> null;
             };
+        }
+    }
+
+    public static class BlurSliderCell extends FrameLayout {
+        private final TextView titleTextView;
+        private final TextView valueTextView;
+        private final ImageView resetButton;
+        private final SeekBarView seekBarView;
+        private final String unit;
+        private final int min;
+        private final int max;
+        private final int defaultValue;
+        private final ConfigItem configItem;
+        private final ConfigItem parentSwitch;
+
+        public BlurSliderCell(Context context, String title, String unit, int min, int max, ConfigItem configItem, ConfigItem parentSwitch, Runnable onValueChange) {
+            super(context);
+            this.unit = unit;
+            this.min = min;
+            this.max = max;
+            this.configItem = configItem;
+            this.parentSwitch = parentSwitch;
+            this.defaultValue = configItem.defaultValue instanceof Integer ? (Integer) configItem.defaultValue : min;
+
+            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+
+            titleTextView = new TextView(context);
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
+            titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            titleTextView.setText(title);
+            addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 21, 8, 110, 0));
+
+            LinearLayout rightContainer = new LinearLayout(context);
+            rightContainer.setOrientation(LinearLayout.HORIZONTAL);
+            seekBarView = new SeekBarView(context);
+            seekBarView.setReportChanges(true);
+            seekBarView.setDelegate((stop, progress) -> {
+                if (parentSwitch != null && !parentSwitch.Bool()) {
+                    return;
+                }
+                int val = min + Math.round(progress * (max - min));
+                configItem.setConfigInt(val);
+                updateText(val);
+                if (onValueChange != null) {
+                    onValueChange.run();
+                }
+            });
+            addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 11, 26, 11, 6));
+
+            resetButton = new ImageView(context);
+            resetButton.setImageResource(R.drawable.msg_retry);
+            resetButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            resetButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
+            resetButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+            resetButton.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
+            resetButton.setOnClickListener(v -> {
+                if (parentSwitch != null && !parentSwitch.Bool()) {
+                    return;
+                }
+                configItem.setConfigInt(defaultValue);
+                seekBarView.setProgress((defaultValue - min) / (float) (max - min));
+                updateText(defaultValue);
+                v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                if (onValueChange != null) {
+                    onValueChange.run();
+                }
+            });
+            LinearLayout.LayoutParams resetParams = new LinearLayout.LayoutParams(AndroidUtilities.dp(20), AndroidUtilities.dp(20));
+            resetParams.rightMargin = AndroidUtilities.dp(6);
+            rightContainer.addView(resetButton, resetParams);
+
+            valueTextView = new TextView(context);
+            valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
+            valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
+            rightContainer.addView(valueTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+            addView(rightContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 7, 21, 0));
+
+            int currentVal = configItem.Int();
+            if (currentVal < min) currentVal = min;
+            if (currentVal > max) currentVal = max;
+            seekBarView.setProgress((currentVal - min) / (float) (max - min));
+            updateText(currentVal);
+            updateEnabledState();
+        }
+
+        public void updateEnabledState() {
+            boolean enabled = parentSwitch == null || parentSwitch.Bool();
+            setEnabled(enabled);
+            seekBarView.setEnabled(enabled);
+            resetButton.setEnabled(enabled);
+            float alpha = enabled ? 1.0f : 0.38f;
+            titleTextView.setAlpha(alpha);
+            valueTextView.setAlpha(alpha);
+            seekBarView.setAlpha(alpha);
+            resetButton.setAlpha(alpha);
+            int currentVal = configItem.Int();
+            resetButton.setVisibility(enabled && currentVal != defaultValue ? VISIBLE : GONE);
+        }
+
+        private void updateText(int val) {
+            valueTextView.setText(val + " " + unit);
+            boolean enabled = parentSwitch == null || parentSwitch.Bool();
+            resetButton.setVisibility(enabled && val != defaultValue ? VISIBLE : GONE);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(66), MeasureSpec.EXACTLY));
         }
     }
 }

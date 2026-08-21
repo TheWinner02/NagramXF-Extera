@@ -1445,6 +1445,12 @@ public class LocaleController {
     }
 
     private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
+        if ("AppName".equals(key)) {
+            return com.radolyn.ayugram.AyuConstants.APP_NAME;
+        }
+        if ("AppNameBeta".equals(key)) {
+            return com.radolyn.ayugram.AyuConstants.APP_NAME + " Beta";
+        }
         String value = BuildVars.USE_CLOUD_STRINGS ? localeValues.get(key) : null;
         if (value == null) {
             if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {

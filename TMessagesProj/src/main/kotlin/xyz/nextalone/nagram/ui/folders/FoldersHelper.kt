@@ -23,6 +23,7 @@ import org.telegram.ui.Components.blur3.capture.IBlur3Capture
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl
 import org.telegram.ui.DialogsActivity
 import org.telegram.ui.Stories.DialogStoriesCell
+import tw.nekomimi.nekogram.helpers.MainTabsHelper
 import xyz.nextalone.nagram.NaConfig
 
 object FoldersHelper {
@@ -65,31 +66,38 @@ object FoldersHelper {
         iBlur3FactoryFade: BlurredBackgroundDrawableViewFactory,
         showMainTabs: Boolean
     ) {
+        if (!showMainTabs) {
+            val fadeOverlay = FadeOverlayView(context)
+            fadeOverlay.isClickable = false
+            fadeOverlay.isFocusable = false
+            contentView.addView(fadeOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 300, Gravity.BOTTOM))
+
+            val fadeDrawable = BlurredBackgroundWithFadeDrawable(iBlur3FactoryFade.create(fadeOverlay, null))
+            if (!SharedConfig.chatBlurEnabled() || LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS)) {
+                fadeDrawable.setFadeHeight(AndroidUtilities.dp(40f), true)
+            }
+            fadeOverlay.fadeDrawable = fadeDrawable
+        }
+
         val tabsBackground = iBlur3FactoryLiquidGlass.create(
             filterTabsView,
-            BlurredBackgroundProviderImpl.topPanel(resourceProvider)
+            BlurredBackgroundProviderImpl.mainTabs(resourceProvider)
         )
         tabsBackground.setRadius(AndroidUtilities.dp(18f).toFloat())
         tabsBackground.setPadding(AndroidUtilities.dp(6.666f))
         filterTabsView.setPadding(0, AndroidUtilities.dp(7f), 0, AndroidUtilities.dp(7f))
         filterTabsView.setBlurredBackground(tabsBackground)
+        filterTabsView.setColors(
+            Theme.key_chats_actionBackground,
+            Theme.key_windowBackgroundWhiteBlackText,
+            Theme.key_windowBackgroundWhiteGrayText,
+            Theme.key_listSelector,
+            Theme.key_windowBackgroundWhite
+        )
         contentView.addView(
             filterTabsView,
             LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, (36 + 7 + 7).toFloat(), Gravity.BOTTOM, 4f, 0f, 4f, 14f)
         )
-
-        if (showMainTabs) {
-            return
-        }
-
-        val fadeOverlay = FadeOverlayView(context)
-        contentView.addView(fadeOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 300, Gravity.BOTTOM))
-
-        val fadeDrawable = BlurredBackgroundWithFadeDrawable(iBlur3FactoryFade.create(fadeOverlay, null))
-        if (!SharedConfig.chatBlurEnabled() || LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS)) {
-            fadeDrawable.setFadeHeight(AndroidUtilities.dp(40f), true)
-        }
-        fadeOverlay.fadeDrawable = fadeDrawable
     }
 
     @JvmStatic
@@ -200,30 +208,18 @@ object FoldersHelper {
             return
         }
 
-        val update = Runnable {
-            val tabsScrollHideOffset = getFilterTabsOffset(showMainTabs) * mainTabsScrollHideProgress.coerceIn(0f, 1f)
-            val hiddenMainTabsOffset = if (showMainTabs) {
-                0
-            } else {
-                AndroidUtilities.dp(FLOATING_BUTTONS_OFFSET_WITH_MAIN_TABS_DP - FLOATING_BUTTONS_OFFSET_WITHOUT_MAIN_TABS_DP)
-            }
-            filterTabsView.translationY = (
-                -navigationBarHeight
-                    - additionFloatingButtonOffset
-                    + hiddenMainTabsOffset
-                    + tabsScrollHideOffset
-                    - additionalFloatingTranslation
-                    - floatingButtonPanOffset
-                    - AndroidUtilities.dp(52f)
-                    - getFilterTabsOffset(showMainTabs)
-                ).toFloat()
+        val bottomOffset = navigationBarHeight +
+            (if (showMainTabs) additionFloatingButtonOffset else 0) +
+            additionalFloatingTranslation +
+            floatingButtonPanOffset
+
+        val floatingExtraTranslation = if (MainTabsHelper.getBottomBarDisplayMode() == MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
+            AndroidUtilities.dp(40f) * (1f - filterTabsView.alpha)
+        } else {
+            0f
         }
 
-        if (filterTabsView.height == 0) {
-            AndroidUtilities.runOnUIThread(update)
-        } else {
-            filterTabsView.post(update)
-        }
+        filterTabsView.translationY = -bottomOffset.toFloat() + floatingExtraTranslation
     }
 
     private class FadeOverlayView(context: Context) : View(context) {

@@ -309,8 +309,8 @@
     <string name="BackAnimationSpring">Efekt sprężyny</string>
     <string name="BackAnimationPredictive">Predictive</string>
     <string name="AddToFilter">Dodaj do filtra</string>
-    <string name="UnifiedPushNeverReceivedNotifications">Od uruchomienia Nagram X nie otrzymano powiadomień przez UnifiedPush.</string>
-    <string name="UnifiedPushLastReceivedNotification">Ostatnie powiadomienie przez UnifiedPush otrzymano %1$d s temu.\n\nOd uruchomienia Nagram X otrzymano %2$d powiadomień.</string>
+    <string name="UnifiedPushNeverReceivedNotifications">Od uruchomienia NegramXFE nie otrzymano powiadomień przez UnifiedPush.</string>
+    <string name="UnifiedPushLastReceivedNotification">Ostatnie powiadomienie przez UnifiedPush otrzymano %1$d s temu.\n\nOd uruchomienia NegramXFE otrzymano %2$d powiadomień.</string>
     <string name="UnifiedPushCurrentEndpoint">Aktualny punkt końcowy UnifiedPush to: %1$s</string>
     <string name="PlayOnce">Odtwórz raz</string>
     <string name="StorageSettings">Pamięć</string>

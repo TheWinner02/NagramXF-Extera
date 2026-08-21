@@ -45,11 +45,10 @@ public class DrawerAddCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        updateColors();
     }
 
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
+    public void updateColors() {
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
         textView.setText(LocaleController.getString(R.string.AddAccount));
         Drawable drawable = getResources().getDrawable(R.drawable.msg_add);
@@ -57,5 +56,11 @@ public class DrawerAddCell extends FrameLayout {
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
         }
         textView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        updateColors();
     }
 }

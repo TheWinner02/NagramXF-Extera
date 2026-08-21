@@ -151,6 +151,11 @@ public class LiteMode {
             // always enabled for tablets
             return true;
         }
+        if (tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
+            if (flag == FLAG_CHAT_BLUR) {
+                return true;
+            }
+        }
         return (getValue() & preprocessFlag(flag)) > 0;
     }
 

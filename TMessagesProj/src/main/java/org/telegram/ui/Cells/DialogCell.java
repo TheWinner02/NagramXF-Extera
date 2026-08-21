@@ -3781,10 +3781,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 avatarRadius = 1;
             } else if (drawCommunityAvatar) {
                 avatarRadius = dp(12);
-            } else if (chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar || !isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats) {
-                avatarRadius = dp(16);
             } else {
-                avatarRadius = dp(28);
+                boolean isForum = (chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar) || (!isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats);
+                avatarRadius = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f, isForum);
             }
 
             avatarImage.setRoundRadius(avatarRadius);

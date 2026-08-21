@@ -144,7 +144,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     public MainTabsActivity() {
         super();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && (tw.nekomimi.nekogram.NekoConfig.forceMainTabsBlur.Bool() || tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool())) {
             iBlur3SourceTabGlass = new BlurredBackgroundSourceRenderNode(null);
             iBlur3SourceTabGlass.setupRenderer(new RenderNodeWithHash.Renderer() {
                 @Override
@@ -294,6 +294,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     @Override
     public void onResume() {
         super.onResume();
+        applyTabsDisplayMode();
         blur3_updateColors();
         checkContactsTabBadge();
         checkUnreadCount(true);
@@ -331,7 +332,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final boolean compact = MainTabsHelper.isMainTabsHideTitleStyle();
         final int mainTabsMargin = MainTabsHelper.getMainTabsMargin();
         final boolean hideContacts = MainTabsHelper.isContactsTabHidden();
-        final int tabsViewWidth = MainTabsHelper.getTabsViewWidth();
+        final int tabsViewWidth = dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2);
 
         tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setClipChildren(false);
@@ -431,6 +432,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
 
         updateLayout();
+        applyTabsDisplayMode();
         checkUnreadCount(false);
         return contentView;
     }
@@ -460,7 +462,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             args.putBoolean("needFinishFragment", false);
             presentFragment(new CallLogActivity(args));
         });
-        o.setBlur(true);
+        o.setBlur(tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool());
         o.translate(0, -dp(4));
         o.setGravity(Gravity.LEFT);
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
@@ -487,7 +489,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.callTabsVisibleToggled);
             });
         }
-        o.setBlur(true);
+        o.setBlur(tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool());
         o.translate(0, -dp(4));
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
         bg.getPaint().setShadowLayer(dp(6), 0, dp(1), Theme.multAlpha(0xFF000000, 0.15f));
@@ -548,7 +550,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         o.addGap();
         addChatsMenuItems(o, anchor);
-//        o.setBlur(true);
+        o.setBlur(tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool());
         o.translate(-dp(8), -dp(4));
         o.setMaxHeight(Math.min(dp(560), Math.max(dp(320), AndroidUtilities.displaySize.y - dp(120))));
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
@@ -706,7 +708,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
 
-        o.setBlur(true);
+        o.setBlur(tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool());
         o.translate(0, -dp(4));
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
         bg.getPaint().setShadowLayer(dp(6), 0, dp(1), Theme.multAlpha(0xFF000000, 0.15f));
@@ -1072,7 +1074,79 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         } else if (id == NotificationCenter.contactsPermissionBadgeCheck) {
             checkContactsTabBadge();
+        } else if (id == NotificationCenter.mainTabsLayoutChanged) {
+            applyTabsDisplayMode();
         }
+    }
+
+    public void applyTabsDisplayMode() {
+        if (tabsViewWrapper == null || tabsView == null) {
+            return;
+        }
+        final int displayMode = tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode();
+        final boolean hideTitles = tw.nekomimi.nekogram.helpers.MainTabsHelper.isMainTabsHideTitleStyle();
+        final boolean hideContacts = tw.nekomimi.nekogram.helpers.MainTabsHelper.isContactsTabHidden();
+        final boolean showCalls = getUserConfig().showCallsTab;
+
+        if (tabs != null) {
+            for (GlassTabView tab : tabs) {
+                if (tab != null) {
+                    tab.setMainTabsCompact(hideTitles);
+                }
+            }
+            if (tabs[INDEX_CHATS] != null) {
+                tabsView.setViewVisible(tabs[INDEX_CHATS], tw.nekomimi.nekogram.helpers.MainTabsHelper.getChatsPosition() >= 0, false);
+            }
+            if (tabs[INDEX_CONTACTS] != null) {
+                tabsView.setViewVisible(tabs[INDEX_CONTACTS], !hideContacts && tw.nekomimi.nekogram.helpers.MainTabsHelper.getContactsPosition() >= 0, false);
+            }
+            if (tabs[INDEX_SETTINGS] != null) {
+                tabsView.setViewVisible(tabs[INDEX_SETTINGS], !showCalls, false);
+            }
+            if (tabs[INDEX_CALLS] != null) {
+                tabsView.setViewVisible(tabs[INDEX_CALLS], showCalls, false);
+            }
+            if (tabs[INDEX_PROFILE] != null) {
+                tabsView.setViewVisible(tabs[INDEX_PROFILE], tw.nekomimi.nekogram.helpers.MainTabsHelper.getProfilePosition() >= 0, false);
+            }
+        }
+
+        if (displayMode == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_HIDE) {
+            tabsViewWrapper.setVisibility(View.GONE);
+            if (fadeView != null) {
+                fadeView.setVisibility(View.GONE);
+            }
+        } else {
+            tabsViewWrapper.setVisibility(View.VISIBLE);
+            if (fadeView != null) {
+                fadeView.setVisibility(View.VISIBLE);
+            }
+            final int mainTabsMargin = tw.nekomimi.nekogram.helpers.MainTabsHelper.getMainTabsMargin();
+            final int tabsViewWidth = dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2);
+            tabsView.setMaxWidth(tabsViewWidth);
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
+            if (lp != null) {
+                lp.width = tabsViewWidth;
+                lp.height = dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS);
+                lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+                tabsView.setLayoutParams(lp);
+            }
+            final int paddingH = dp(mainTabsMargin + 4);
+            final int paddingV = dp(mainTabsMargin + 4);
+            tabsView.setPadding(paddingH, paddingV, paddingH, paddingV);
+            if (tabsViewBackground != null) {
+                tabsViewBackground.setRadius(dp(tw.nekomimi.nekogram.helpers.MainTabsHelper.getMainTabsHeight() / 2f));
+                tabsViewBackground.setPadding(dp(mainTabsMargin - 0.334f));
+                tabsViewBackground.invalidateSelf();
+            }
+        }
+        animatorTabsVisible.setValue(true, false);
+        checkUi_tabsPosition();
+        checkUi_fadeView();
+        tabsView.requestLayout();
+        tabsView.invalidate();
+        tabsViewWrapper.requestLayout();
+        tabsViewWrapper.invalidate();
     }
 
     private NotificationCenter.ObserversGroup observersGroup;
@@ -1094,7 +1168,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         globalObserversGroup = NotificationCenter.getGlobalInstance().createObserversGroup(this)
             .add(NotificationCenter.appUpdateAvailable)
             .add(NotificationCenter.appUpdateLoading)
-            .add(NotificationCenter.needSetDayNightTheme);
+            .add(NotificationCenter.needSetDayNightTheme)
+            .add(NotificationCenter.mainTabsLayoutChanged);
 
         return super.onFragmentCreate();
     }
@@ -1103,16 +1178,22 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     public void onFragmentDestroy() {
         Bulletin.removeDelegate(this);
         Bulletin.removeDelegate(contentView);
-
-        if (observersGroup != null) {
-            observersGroup.removeAllObservers();
-            observersGroup = null;
-        }
-        if (globalObserversGroup != null) {
-            globalObserversGroup.removeAllObservers();
-            globalObserversGroup = null;
-        }
         super.onFragmentDestroy();
+    }
+
+    @Override
+    public void onTransitionAnimationProgress(boolean isOpen, float progress) {
+        super.onTransitionAnimationProgress(isOpen, progress);
+    }
+
+    @Override
+    public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
+        super.onTransitionAnimationStart(isOpen, backward);
+    }
+
+    @Override
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        super.onTransitionAnimationEnd(isOpen, backward);
     }
 
     @Override
@@ -1124,14 +1205,20 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void checkUi_fadeView() {
-        if (viewPager == null || fadeView == null || NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
+        if (viewPager == null || fadeView == null) {
+            return;
+        }
+        final int displayMode = tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode();
+        if (displayMode == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_HIDE || NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
+            fadeView.setVisibility(View.GONE);
             return;
         }
 
         final float animatedPosition = viewPager.getPositionAnimated();
         final float isProfile = 1f - MathUtils.clamp(Math.abs(MainTabsHelper.getProfilePosition() - animatedPosition), 0, 1);
         final float hide = 1f - AndroidUtilities.getNavigationBarThirdButtonsFactor(0, 1f, navigationBarHeight);
-        float alpha = (1f - isProfile * hide) * animatorTabsVisible.getFloatValue();
+        final float factor = animatorTabsVisible.getFloatValue();
+        float alpha = (1f - isProfile * hide) * factor;
         if (tabletLayout) {
             alpha = 0.0f;
         }
@@ -1142,22 +1229,24 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void checkUi_tabsPosition() {
-        if (tabsView == null) return;
-        if (NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
+        if (tabsView == null || tabsViewWrapper == null) return;
+        final int displayMode = tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode();
+        if (displayMode == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_HIDE || NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
             tabsView.setVisibility(View.GONE);
+            tabsViewWrapper.setVisibility(View.GONE);
             return;
         }
+        tabsViewWrapper.setVisibility(View.VISIBLE);
         final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
         final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
         final int normalY = -(updateLayoutHeight);
-        final int hiddenY = normalY + dp(MainTabsHelper.isMainTabsHideTitleStyle() ? 30 : 40);
+        final int hiddenY = normalY + dp(tw.nekomimi.nekogram.helpers.MainTabsHelper.getMainTabsHeightWithMargins() + 30);
 
         final float factor = animatorTabsVisible.getFloatValue();
-        final float scale = lerp(0.85f, 1f, factor);
 
         tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
-        tabsView.setClickable(factor > 1);
-        tabsView.setEnabled(factor > 1);
+        tabsView.setClickable(factor > 0.1f);
+        tabsView.setEnabled(factor > 0.1f);
         tabsView.setAlpha(factor);
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
     }
@@ -1185,7 +1274,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private class MainTabsActivityControllerImpl implements MainTabsActivityController {
         @Override
         public void setTabsVisible(boolean visible) {
-            animatorTabsVisible.setValue(visible, true);
+            final int displayMode = tw.nekomimi.nekogram.helpers.MainTabsHelper.getBottomBarDisplayMode();
+            if (displayMode == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
+                animatorTabsVisible.setValue(visible, true);
+            } else if (displayMode == tw.nekomimi.nekogram.helpers.MainTabsHelper.BOTTOM_BAR_MODE_SHOW) {
+                animatorTabsVisible.setValue(true, false);
+            }
         }
     }
 
@@ -1388,7 +1482,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void setupPopupMenuStyle(ItemOptions options) {
-        options.setBlur(true);
+        options.setBlur(tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool());
         options.translate(0, -dp(4));
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
         bg.getPaint().setShadowLayer(dp(6), 0, dp(1), Theme.multAlpha(0xFF000000, 0.15f));

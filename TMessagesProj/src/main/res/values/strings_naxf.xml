@@ -143,6 +143,16 @@
     <string name="SingleCornerRadius">Unified corner radius</string>
     <string name="SingleCornerRadiusInfo">Topic groups will use the same avatar shape as chat messages.</string>
     <string name="BlurOptions">Blur Options</string>
+    <string name="BlurBehindDrawer">Blur background on Home Drawer</string>
+    <string name="BlurRadiusDrawer">Drawer blur intensity</string>
+    <string name="ForceChatBlur">Force global blur (Bypass limits)</string>
+    <string name="BlurRadiusGlobal">Global blur intensity</string>
+    <string name="ForceMainTabsBlur">Blur bottom navigation bar</string>
+    <string name="MainTabsGlassAlpha">Navbar glass opacity</string>
+    <string name="MainTabsBlurRadius">Navbar blur intensity</string>
+    <string name="ForceActionBarBlur">Blur chat top bar</string>
+    <string name="ActionBarGlassAlpha">Topbar glass opacity</string>
+    <string name="ActionBarBlurRadius">Topbar blur intensity</string>
     <string name="AyuMoments" translatable="false">Ayugram</string>
     <string name="AyuMomentsPreviewMessage">Do your best, leave the rest to fate</string>
     <string name="NagramExtera" translatable="false">Nagram Extera</string>
@@ -155,7 +165,7 @@
     <string name="NagramExteraSourceCode">Source Code</string>
     <string name="NagramExteraSourceNagramXF" translatable="false">Nagram XF</string>
     <string name="NagramExteraSourceAyugram" translatable="false">Ayugram</string>
-    <string name="NagramExteraInfo">Nagram Extera</string>
+    <string name="NagramExteraInfo">NegramXFE</string>
     <string name="AyuSpySettings">Spy Settings</string>
     <string name="AyuMomentsCustomHeader">Custom</string>
     <string name="SaveAttachmentsCardTitle">Save Attachments</string>

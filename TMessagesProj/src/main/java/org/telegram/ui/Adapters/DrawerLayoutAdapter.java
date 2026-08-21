@@ -48,6 +48,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
     private boolean accountsShown;
     private DrawerProfileCell profileCell;
     private SideMenultItemAnimator itemAnimator;
+    private RecyclerListView listView;
 
     public static int nkbtnSettings = 1001;
     public static int nkbtnQrLogin = 1002;
@@ -58,12 +59,31 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
     public static int nkbtnBookmarks = 1008;
     public static int nkbtnRecentChats = 1009;
     public static int nkbtnSessions = 1010;
+    private final DrawerLayoutContainer mDrawerLayoutContainer;
+    public View.OnClickListener onPremiumDrawableClick;
+
+    public void setOnPremiumDrawableClick(View.OnClickListener listener) {
+        onPremiumDrawableClick = listener;
+    }
+
     public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, DrawerLayoutContainer drawerLayoutContainer) {
         mContext = context;
         itemAnimator = animator;
+        mDrawerLayoutContainer = drawerLayoutContainer;
         accountsShown = MessagesController.getGlobalMainSettings().getBoolean("accountsShown", true);
         Theme.createCommonDialogResources(context);
         resetItems();
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.themeAccentListUpdated);
+    }
+
+    public void onDetach() {
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.themeAccentListUpdated);
+    }
+
+    public void setListView(RecyclerListView listView) {
+        this.listView = listView;
     }
 
     private int getAccountRowsCount() {
@@ -113,8 +133,27 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.proxySettingsChanged) {
+        if (id == NotificationCenter.proxySettingsChanged || id == NotificationCenter.mainUserInfoChanged || id == NotificationCenter.currentUserPremiumStatusChanged || id == NotificationCenter.reloadInterface || id == NotificationCenter.mainTabsLayoutChanged) {
             notifyDataSetChanged();
+        } else if (id == NotificationCenter.didSetNewTheme || id == NotificationCenter.themeAccentListUpdated) {
+            updateThemeColors();
+        }
+    }
+
+    public void updateThemeColors() {
+        if (listView == null) return;
+        listView.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View child = listView.getChildAt(i);
+            if (child instanceof DrawerProfileCell) {
+                ((DrawerProfileCell) child).updateColors();
+            } else if (child instanceof DrawerActionCell) {
+                ((DrawerActionCell) child).updateThemeColors();
+            } else if (child instanceof DrawerUserCell) {
+                ((DrawerUserCell) child).setAccount(((DrawerUserCell) child).getAccountNumber());
+            } else if (child instanceof DrawerAddCell) {
+                ((DrawerAddCell) child).updateColors();
+            }
         }
     }
 
@@ -135,7 +174,14 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         View view;
         switch (viewType) {
             case 0:
-                view = new EmptyCell(mContext, 0);
+                view = profileCell = new DrawerProfileCell(mContext, mDrawerLayoutContainer) {
+                    @Override
+                    protected void onPremiumClick() {
+                        if (onPremiumDrawableClick != null) {
+                            onPremiumDrawableClick.onClick(this);
+                        }
+                    }
+                };
                 break;
             case 2:
                 view = new DrawerDividerCell(mContext);
@@ -161,6 +207,11 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
+            case 0: {
+                DrawerProfileCell profileCell = (DrawerProfileCell) holder.itemView;
+                profileCell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShown);
+                break;
+            }
             case 3: {
                 DrawerActionCell drawerActionCell = (DrawerActionCell) holder.itemView;
                 position -= 2;
@@ -350,6 +401,9 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         }
         if (showNSettings) {
             items.add(new Item(nkbtnSettings, LocaleController.getString(R.string.NekoSettings), R.drawable.nagramx_outline));
+        }
+        if (NekoConfig.showGhostInDrawer.Bool()) {
+            items.add(new Item(nkbtnGhostMode, LocaleController.getString(R.string.GhostMode), R.drawable.ayu_ghost));
         }
         if (showBrowser) {
             items.add(new Item(nkbtnBrowser, LocaleController.getString(R.string.InappBrowser), R.drawable.web_browser));

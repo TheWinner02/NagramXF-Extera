@@ -201,7 +201,7 @@ public abstract class LocaleUtils {
     }
 
     public static String getAppName() {
-        return "exteraGram";
+        return com.radolyn.ayugram.AyuConstants.APP_NAME;
     }
 
     public static void parseMarkdownLinks(CharSequence[] charSequenceArr) {

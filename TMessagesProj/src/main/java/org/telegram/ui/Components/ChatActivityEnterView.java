@@ -4822,9 +4822,12 @@ public class ChatActivityEnterView extends FrameLayout implements
         if (allowBlur) {
             backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
             if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
+                int alpha = (int) (255 * (tw.nekomimi.nekogram.NekoConfig.mainTabsGlassAlpha.Int() / 100f));
+                backgroundPaint.setAlpha(alpha);
                 blurBounds.set(0, bottom, getWidth(), getHeight());
                 sizeNotifierLayout.drawBlurRect(canvas, getTop(), blurBounds, backgroundPaint, false);
             } else {
+                backgroundPaint.setAlpha(255);
                 canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
             }
         } else {

@@ -268,4 +268,15 @@
     <string name="EmojiUseDefault">Użyj systemowych emoji</string>
     <string name="Chat">Czaty</string>
     <string name="Appearance">Wygląd</string>
+    <string name="BlurOptions">Opcje rozmycia</string>
+    <string name="BlurBehindDrawer">Rozmycie tła przy otwieraniu menu bocznego</string>
+    <string name="ForceChatBlur">Wymuś globalne rozmycie (pomiń limity)</string>
+    <string name="ForceMainTabsBlur">Rozmycie dolnego paska nawigacji</string>
+    <string name="ForceActionBarBlur">Rozmycie górnego paska na czatach</string>
+    <string name="BlurRadiusDrawer">Intensywność rozmycia menu bocznego</string>
+    <string name="BlurRadiusGlobal">Globalna intensywność rozmycia</string>
+    <string name="MainTabsGlassAlpha">Przezroczystość szkła dolnego paska</string>
+    <string name="MainTabsBlurRadius">Intensywność rozmycia dolnego paska</string>
+    <string name="ActionBarGlassAlpha">Przezroczystość szkła górnego paska</string>
+    <string name="ActionBarBlurRadius">Intensywność rozmycia górnego paska</string>
 </resources>

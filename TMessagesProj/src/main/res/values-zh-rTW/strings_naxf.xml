@@ -79,9 +79,12 @@
     <string name="RegexFiltersImportPeers">**%1$d** 個未知對話待解析</string>
     <string name="MessageSavingSaveMediaHintExtera">設定聊天與限制</string>
     <string name="AppWillRestartInSeconds">應用程式將在 %1$d 秒後重新啟動。</string>
-    <string name="MessagePreviewDialogMessage">我能吞下玻璃而不傷身體。</string>
     <string name="RemoveMessageTail">移除訊息氣泡尾巴</string>
     <string name="BlurOptions">模糊選項</string>
+    <string name="BlurBehindDrawer">展開側邊欄時背景模糊</string>
+    <string name="ForceChatBlur">強制全域模糊 (繞過效能限制)</string>
+    <string name="ForceMainTabsBlur">底部導覽列模糊</string>
+    <string name="ForceActionBarBlur">聊天頂欄模糊</string>
     <string name="AyuSpySettings">間諜設定</string>
     <string name="AyuMomentsCustomHeader">自定義</string>
     <string name="AyuMomentsPreviewMessage">盡人事，聽天命</string>
@@ -295,4 +298,10 @@
     <!-- 附件相機 -->
     <string name="MoveAttachCameraToBottom">底部相機快捷入口</string>
     <string name="MoveAttachCameraToBottomNotice">在底部附件欄顯示相機入口，而不是顯示在相簿網格中。</string>
+    <string name="BlurRadiusDrawer">側邊欄模糊強度</string>
+    <string name="BlurRadiusGlobal">全域模糊強度</string>
+    <string name="MainTabsGlassAlpha">底欄毛玻璃不透明度</string>
+    <string name="MainTabsBlurRadius">底欄模糊強度</string>
+    <string name="ActionBarGlassAlpha">頂欄毛玻璃不透明度</string>
+    <string name="ActionBarBlurRadius">頂欄模糊強度</string>
 </resources>

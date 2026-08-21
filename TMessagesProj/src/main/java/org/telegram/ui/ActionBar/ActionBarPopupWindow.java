@@ -11,6 +11,7 @@ package org.telegram.ui.ActionBar;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
+import android.os.Build;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
@@ -789,9 +790,17 @@ public class ActionBarPopupWindow extends PopupWindow {
         Context context = getContentView().getContext();
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
-        p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-        p.dimAmount = amount;
-        wm.updateViewLayout(container, p);
+        if (p != null) {
+            p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+            p.dimAmount = amount;
+            if (Build.VERSION.SDK_INT >= 31 && tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
+                p.flags |= WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
+                p.setBlurBehindRadius(AndroidUtilities.dp(20));
+            }
+            try {
+                wm.updateViewLayout(container, p);
+            } catch (Exception ignore) {}
+        }
     }
 
     public void setFocusableFlag(boolean enable) {
@@ -835,6 +844,9 @@ public class ActionBarPopupWindow extends PopupWindow {
         try {
             super.showAsDropDown(anchor, xoff, yoff);
             registerListener(anchor);
+            if (Build.VERSION.SDK_INT >= 31 && tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
+                dimBehind(0.2f);
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -1026,6 +1038,9 @@ public class ActionBarPopupWindow extends PopupWindow {
     public void showAtLocation(View parent, int gravity, int x, int y) {
         super.showAtLocation(parent, gravity, x, y);
         unregisterListener();
+        if (Build.VERSION.SDK_INT >= 31 && tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
+            dimBehind(0.2f);
+        }
     }
 
     @Override

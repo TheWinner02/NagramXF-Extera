@@ -309,8 +309,8 @@
     <string name="BackAnimationSpring">Пружна</string>
     <string name="BackAnimationPredictive">Прогнозована</string>
     <string name="AddToFilter">Додати до фільтра</string>
-    <string name="UnifiedPushNeverReceivedNotifications">З моменту запуску Nagram X сповіщень через UnifiedPush не надходило.</string>
-    <string name="UnifiedPushLastReceivedNotification">Останнє сповіщення через UnifiedPush надійшло %1$d сек. тому.\n\nВи отримали %2$d сповіщень з моменту запуску Nagram X.</string>
+    <string name="UnifiedPushNeverReceivedNotifications">З моменту запуску NegramXFE сповіщень через UnifiedPush не надходило.</string>
+    <string name="UnifiedPushLastReceivedNotification">Останнє сповіщення через UnifiedPush надійшло %1$d сек. тому.\n\nВи отримали %2$d сповіщень з моменту запуску NegramXFE.</string>
     <string name="UnifiedPushCurrentEndpoint">Поточна кінцева точка UnifiedPush: %1$s</string>
     <string name="PlayOnce">Відтворити один раз</string>
     <string name="StorageSettings">Сховище</string>

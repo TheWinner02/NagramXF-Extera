@@ -270,4 +270,15 @@
     <string name="EmojiUseDefault">Gunakan emoji sistem</string>
     <string name="Chat">Obrolan</string>
     <string name="Appearance">Tampilan</string>
+    <string name="BlurOptions">Opsi Buram</string>
+    <string name="BlurBehindDrawer">Buramkan latar belakang saat menu samping dibuka</string>
+    <string name="ForceChatBlur">Paksa buram global (abaikan batas)</string>
+    <string name="ForceMainTabsBlur">Buramkan bilah navigasi bawah</string>
+    <string name="ForceActionBarBlur">Buramkan bilah atas obrolan</string>
+    <string name="BlurRadiusDrawer">Intensitas buram menu samping</string>
+    <string name="BlurRadiusGlobal">Intensitas buram global</string>
+    <string name="MainTabsGlassAlpha">Opasitas kaca bilah bawah</string>
+    <string name="MainTabsBlurRadius">Intensitas buram bilah bawah</string>
+    <string name="ActionBarGlassAlpha">Opasitas kaca bilah atas</string>
+    <string name="ActionBarBlurRadius">Intensitas buram bilah atas</string>
 </resources>

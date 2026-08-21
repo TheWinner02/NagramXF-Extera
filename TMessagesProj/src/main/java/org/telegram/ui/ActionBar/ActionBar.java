@@ -405,7 +405,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             canvas.clipRect(0, -getTranslationY() + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0), getMeasuredWidth(), getMeasuredHeight());
         }
         boolean result = super.drawChild(canvas, child, drawingTime);
-        if (supportsHolidayImage && !titleOverlayShown && !LocaleController.isRTL && (child == titleTextView[0] || child == titleTextView[1] || child == titlesContainer && useContainerForTitles)) {
+        if ((supportsHolidayImage || xyz.nextalone.nagram.NaConfig.INSTANCE.getForceSnowfall().Bool()) && !titleOverlayShown && !LocaleController.isRTL && (child == titleTextView[0] || child == titleTextView[1] || child == titlesContainer && useContainerForTitles)) {
             Drawable drawable = Theme.getCurrentHolidayDrawable();
             if (drawable != null) {
                 SimpleTextView titleView = child == titlesContainer ? titleTextView[0] : (SimpleTextView) child;
@@ -435,7 +435,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 if (fireworksEffect == null) {
                     fireworksEffect = new FireworksEffect();
                 }
-            } else if (NekoConfig.actionBarDecoration.Int() == 1 || Theme.canStartHolidayAnimation()) {
+            } else if (NekoConfig.actionBarDecoration.Int() == 1 || Theme.canStartHolidayAnimation() || xyz.nextalone.nagram.NaConfig.INSTANCE.getForceSnowfall().Bool()) {
                 if (snowflakesEffect == null) {
                     snowflakesEffect = new SnowflakesEffect(0);
                 }
@@ -2152,6 +2152,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     public void setDrawBlurBackground(SizeNotifierFrameLayout contentView) {
+        if (!tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool() && !tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
+            return;
+        }
         blurredBackground = true;
         this.contentView = contentView;
         contentView.blurBehindViews.add(this);

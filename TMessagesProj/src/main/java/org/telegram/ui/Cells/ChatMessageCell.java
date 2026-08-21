@@ -6941,10 +6941,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             if (currentMessagesGroup == null || currentMessagesGroup.isDocuments) {
                 drawPinnedTop = pinnedTop;
-                drawPinnedBottom = pinnedBottom;
+                drawPinnedBottom = pinnedBottom || NaConfig.INSTANCE.getRemoveMessageTail().Bool();
             } else {
                 drawPinnedTop = pinnedTop && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0);
-                drawPinnedBottom = pinnedBottom && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0);
+                drawPinnedBottom = (pinnedBottom && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0)) || NaConfig.INSTANCE.getRemoveMessageTail().Bool();
             }
 
             boolean wasPlayingRound = isPlayingRound;
