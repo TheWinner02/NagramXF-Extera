@@ -332,6 +332,7 @@
     <string name="TabletModeOn">켜짐</string>
     <string name="TabletModeOff">꺼짐</string>
     <string name="HideDialogsSearchField">검색 상자 숨기기</string>
+    <string name="HideHomeSearchField">검색 상자 숨기기</string>
     <string name="DeepLTranslateKey">DeepL API 키</string>
     <string name="DeepLTranslateKeyNotice">DeepL API 키를 구성하세요. 비워 두면 내장 자격 증명을 사용합니다.</string>
     <string name="DefaultScheduleDelay">기본 지연</string>

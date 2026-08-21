@@ -306,5 +306,7 @@
     <string name="TabletModeOn">Bật</string>
     <string name="TabletModeOff">Tắt</string>
     <string name="DefaultScheduleDelay">Độ trể mặc định</string>
+    <string name="HideDialogsSearchField">Ẩn hộp tìm kiếm</string>
+    <string name="HideHomeSearchField">Ẩn hộp tìm kiếm</string>
     <string name="DisableSwipeToNext">Tắt tính năng vuốt để chuyển sang mục tiếp theo</string>
 </resources>

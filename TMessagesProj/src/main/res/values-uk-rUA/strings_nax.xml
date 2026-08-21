@@ -332,6 +332,7 @@
     <string name="TabletModeOn">Увімкнено</string>
     <string name="TabletModeOff">Вимкнено</string>
     <string name="HideDialogsSearchField">Приховати поле пошуку</string>
+    <string name="HideHomeSearchField">Приховати поле пошуку</string>
     <string name="DeepLTranslateKey">DeepL API ключ</string>
     <string name="DeepLTranslateKeyNotice">Налаштуйте ключ DeepL API, залиште поле порожнім, щоб використовувати вбудовані облікові дані.</string>
     <string name="DefaultScheduleDelay">Затримка за замовчуванням</string>

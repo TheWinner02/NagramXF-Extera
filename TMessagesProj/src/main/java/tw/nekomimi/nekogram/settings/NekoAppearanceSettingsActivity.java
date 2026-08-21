@@ -418,6 +418,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
             } else if (key.equals(NaConfig.INSTANCE.getHideHomeSearchField().getKey())) {
                 getNotificationCenter().postNotificationName(NotificationCenter.updateSearchSettings);
+                getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
             } else if (key.equals(NaConfig.INSTANCE.getCustomTitleUserName().getKey())) {
                 checkCustomTitleRows();
                 if (chatListPreviewCell != null) {

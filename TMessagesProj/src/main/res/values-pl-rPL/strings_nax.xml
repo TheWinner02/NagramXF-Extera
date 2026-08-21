@@ -332,6 +332,7 @@
     <string name="TabletModeOn">Wł</string>
     <string name="TabletModeOff">Wył</string>
     <string name="HideDialogsSearchField">Ukryj pole wyszukiwania</string>
+    <string name="HideHomeSearchField">Ukryj pole wyszukiwania</string>
     <string name="DeepLTranslateKey">Klucz API DeepL</string>
     <string name="DeepLTranslateKeyNotice">Skonfiguruj klucz API DeepL, pozostaw puste, aby użyć wbudowanych danych uwierzytelniających.</string>
     <string name="DefaultScheduleDelay">Domyślne opóźnienie</string>

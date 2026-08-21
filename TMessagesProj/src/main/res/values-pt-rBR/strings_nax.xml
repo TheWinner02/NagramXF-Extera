@@ -331,6 +331,7 @@
     <string name="TabletModeOn">Ativado</string>
     <string name="TabletModeOff">Desativado</string>
     <string name="HideDialogsSearchField">Ocultar barra de pesquisa</string>
+    <string name="HideHomeSearchField">Ocultar barra de pesquisa</string>
     <string name="DeepLTranslateKey">Chave da API do DeepL</string>
     <string name="DeepLTranslateKeyNotice">Configure sua chave da API do DeepL; deixe em branco para usar as credenciais integradas.</string>
     <string name="DefaultScheduleDelay">Atraso padrão</string>

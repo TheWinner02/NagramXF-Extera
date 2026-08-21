@@ -332,6 +332,7 @@
     <string name="TabletModeOn">روشن</string>
     <string name="TabletModeOff">خاموش</string>
     <string name="HideDialogsSearchField">مخفی کردن کادر جستجو</string>
+    <string name="HideHomeSearchField">مخفی کردن کادر جستجو</string>
     <string name="DeepLTranslateKey">کلید API سرویس DeepL</string>
     <string name="DeepLTranslateKeyNotice">کلید رابط برنامه‌نویسی DeepL را پیکربندی کنید، برای استفاده از اعتبارنامه‌های داخلی آن را خالی بگذارید.</string>
     <string name="DefaultScheduleDelay">تاخیر پیش‌فرض</string>

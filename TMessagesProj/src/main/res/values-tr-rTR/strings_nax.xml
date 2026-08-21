@@ -331,4 +331,5 @@
     <string name="TabletModeOn">Açık</string>
     <string name="TabletModeOff">Kapalı</string>
     <string name="HideDialogsSearchField">Arama Kutusunu Gizle</string>
+    <string name="HideHomeSearchField">Arama Kutusunu Gizle</string>
 </resources>

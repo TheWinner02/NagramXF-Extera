@@ -32,7 +32,15 @@ import me.vkryl.android.animator.FactorAnimator;
 
 @SuppressLint("ViewConstructor")
 public class FragmentFloatingButton extends FrameLayout implements FactorAnimator.Target {
-    public static void notifyShapeChanged() {}
+    private static final java.util.Set<FragmentFloatingButton> activeButtons = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+
+    public static void notifyShapeChanged() {
+        for (FragmentFloatingButton button : activeButtons) {
+            if (button != null) {
+                button.updateColors();
+            }
+        }
+    }
     private final int ANIMATOR_ID_BUTTON_VISIBLE = 0;
     private final int ANIMATOR_ID_PROGRESS_VISIBLE = 1;
 
@@ -55,6 +63,7 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
     public FragmentFloatingButton(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, boolean isSubButton) {
         super(context);
+        activeButtons.add(this);
 
         this.resourcesProvider = resourcesProvider;
         this.isSubButton = isSubButton;
@@ -71,7 +80,6 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
         ScaleStateListAnimator.apply(this);
         if (!isSubButton) {
-            setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
             setTranslationZ(dpf2(0.5f));
         }
 
@@ -164,10 +172,20 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
         } else {
             imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
             progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
-            setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
-                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
-            ));
+            boolean isSquare = xyz.nextalone.nagram.NaConfig.INSTANCE.getSquareFloatingButton().Bool();
+            if (isSquare) {
+                setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(16)));
+                setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(16),
+                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
+                    Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
+                ));
+            } else {
+                setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
+                setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
+                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
+                    Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
+                ));
+            }
         }
     }
 

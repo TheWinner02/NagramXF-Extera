@@ -7237,6 +7237,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         floatingButtonHidden = false;
         updateFloatingButtonVisibility(true);
+        checkUi_searchFieldVisibility();
         if (parentLayout != null && parentLayout.getDrawerLayoutContainer() != null) {
             boolean allowDrawer = folderId == 0 && communityId == 0 && !onlySelect && tw.nekomimi.nekogram.NekoConfig.navigationDrawerEnabled.Bool();
             parentLayout.getDrawerLayoutContainer().setAllowOpenDrawer(allowDrawer, false);
@@ -10806,6 +10807,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
                 filterTabsView.checkTabsCounter();
+            }
+            checkUi_searchFieldVisibility();
+            if (fragmentView != null) {
+                fragmentView.requestLayout();
             }
             slowedReloadAfterDialogClick = false;
         } else if (id == NotificationCenter.topicsDidLoaded) {
@@ -14857,7 +14862,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean shouldShowIdleSearchField() {
-        return !NaConfig.INSTANCE.getHideDialogsSearchField().Bool();
+        return !NaConfig.INSTANCE.getHideDialogsSearchField().Bool() && !NaConfig.INSTANCE.getHideHomeSearchField().Bool();
     }
 
     private int getIdleSearchFieldHeight() {
