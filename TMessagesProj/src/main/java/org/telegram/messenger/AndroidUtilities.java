@@ -2492,7 +2492,10 @@ public class AndroidUtilities {
         }
         try {
             InputMethodManager inputManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            return inputManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+            if (!inputManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)) {
+                return inputManager.showSoftInput(view, 0);
+            }
+            return true;
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -6107,6 +6110,10 @@ public class AndroidUtilities {
     }
 
     public static boolean makingGlobalBlurBitmap;
+    public static void makeGlobalBlurBitmap(Utilities.Callback<Bitmap> onBitmapDone) {
+        makeGlobalBlurBitmap(onBitmapDone, (float) tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int());
+    }
+
     public static void makeGlobalBlurBitmap(Utilities.Callback<Bitmap> onBitmapDone, float amount) {
         makeGlobalBlurBitmap(onBitmapDone, amount, (int) amount, null, null);
     }

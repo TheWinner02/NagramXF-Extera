@@ -1284,7 +1284,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     window.setBackgroundDrawable(shapeDrawable);
                     if (blurBehind) {
                         params.flags |= WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
-                        params.setBlurBehindRadius(20);
+                        params.setBlurBehindRadius(AndroidUtilities.dp(tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int()));
                     }
                 }
             } else {

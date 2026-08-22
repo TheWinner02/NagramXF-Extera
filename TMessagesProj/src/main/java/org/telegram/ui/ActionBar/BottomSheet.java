@@ -1556,7 +1556,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         if (getWindow() != null && Build.VERSION.SDK_INT >= 31 && tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
             WindowManager.LayoutParams params = getWindow().getAttributes();
-            params.setBlurBehindRadius(AndroidUtilities.dp(20));
+            params.setBlurBehindRadius(AndroidUtilities.dp(tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int()));
             getWindow().setAttributes(params);
         }
         if (focusable) {

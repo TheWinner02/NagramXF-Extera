@@ -7,12 +7,14 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.os.Parcelable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -27,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -258,7 +261,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             cellGroup.rows.add(hideAllTabIdx, ignoreUnreadCountRow);
             cellGroup.rows.add(hideAllTabIdx, tabsTitleTypeRow);
         }
-        updateBlurRows(false);
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
@@ -266,44 +268,17 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         addRowsToMap(cellGroup);
     }
 
-    private void updateBlurRows(boolean notify) {
-        cellGroup.rows.remove(blurRadiusDrawerRow);
-        cellGroup.rows.remove(blurRadiusGlobalRow);
-        cellGroup.rows.remove(mainTabsGlassAlphaRow);
-        cellGroup.rows.remove(mainTabsBlurRadiusRow);
-        cellGroup.rows.remove(actionBarGlassAlphaRow);
-        cellGroup.rows.remove(actionBarBlurRadiusRow);
-
-        int idx;
-        if (NekoConfig.blurBehindDrawer.Bool()) {
-            idx = cellGroup.rows.indexOf(blurBehindDrawerRow);
-            if (idx != -1) {
-                cellGroup.rows.add(idx + 1, blurRadiusDrawerRow);
+    private void updateSliderEnabledState(AbstractConfigCell row) {
+        if (listView != null && cellGroup != null) {
+            int index = cellGroup.rows.indexOf(row);
+            if (index >= 0) {
+                RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(index);
+                if (holder != null && holder.itemView instanceof BlurSliderCell blurSliderCell) {
+                    blurSliderCell.updateEnabledState(true);
+                } else if (listAdapter != null) {
+                    listAdapter.notifyItemChanged(index);
+                }
             }
-        }
-        if (NekoConfig.forceChatBlur.Bool()) {
-            idx = cellGroup.rows.indexOf(forceChatBlurRow);
-            if (idx != -1) {
-                cellGroup.rows.add(idx + 1, blurRadiusGlobalRow);
-            }
-        }
-        if (NekoConfig.forceMainTabsBlur.Bool()) {
-            idx = cellGroup.rows.indexOf(forceMainTabsBlurRow);
-            if (idx != -1) {
-                cellGroup.rows.add(idx + 1, mainTabsGlassAlphaRow);
-                cellGroup.rows.add(idx + 2, mainTabsBlurRadiusRow);
-            }
-        }
-        if (NekoConfig.forceActionBarBlur.Bool()) {
-            idx = cellGroup.rows.indexOf(forceActionBarBlurRow);
-            if (idx != -1) {
-                cellGroup.rows.add(idx + 1, actionBarGlassAlphaRow);
-                cellGroup.rows.add(idx + 2, actionBarBlurRadiusRow);
-            }
-        }
-
-        if (notify && listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
         }
     }
 
@@ -351,6 +326,16 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 // without a restart. The preview cell observes the same broadcast
                 // and rebuilds itself, so no explicit refresh() is needed.
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
+            } else if (key.equals(NekoConfig.blurBehindDrawer.getKey())) {
+                updateSliderEnabledState(blurRadiusDrawerRow);
+            } else if (key.equals(NekoConfig.forceChatBlur.getKey())) {
+                updateSliderEnabledState(blurRadiusGlobalRow);
+            } else if (key.equals(NekoConfig.forceMainTabsBlur.getKey())) {
+                updateSliderEnabledState(mainTabsGlassAlphaRow);
+                updateSliderEnabledState(mainTabsBlurRadiusRow);
+            } else if (key.equals(NekoConfig.forceActionBarBlur.getKey())) {
+                updateSliderEnabledState(actionBarGlassAlphaRow);
+                updateSliderEnabledState(actionBarBlurRadiusRow);
             } else if (key.equals(NaConfig.INSTANCE.getNotificationIcon().getKey())
                     || key.equals(NekoConfig.tabletMode.getKey())
                     || key.equals(NaConfig.INSTANCE.getHideDividers().getKey())
@@ -362,12 +347,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     || key.equals(NaConfig.INSTANCE.getFoldersAtBottom().getKey())
                     || key.equals(NaConfig.INSTANCE.getDisableDialogsFloatingButton().getKey())
                     || key.equals(NaConfig.INSTANCE.getDisableBotOpenButton().getKey())
-                    || key.equals(NekoConfig.navigationDrawerEnabled.getKey())
-                    || key.equals(NekoConfig.blurBehindDrawer.getKey())
-                    || key.equals(NekoConfig.forceChatBlur.getKey())
-                    || key.equals(NekoConfig.forceActionBarBlur.getKey())
-                    || key.equals(NekoConfig.forceMainTabsBlur.getKey())) {
-                updateBlurRows(true);
+                    || key.equals(NekoConfig.navigationDrawerEnabled.getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getSectionsSeparatedHeaders().getKey())) {
                 // Force RecyclerView to re-evaluate ListSectionsDecoration.getItemOffsets for
@@ -565,6 +545,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 textInfoPrivacyCell.setText(getString(R.string.SingleCornerRadiusInfo));
             } else if (holder.itemView instanceof BlurSliderCell blurSliderCell) {
                 blurSliderCell.updateEnabledState();
+                blurSliderCell.setNeedDivider(cellGroup.needSetDivider(row));
             }
         }
 
@@ -613,7 +594,8 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             this.parentSwitch = parentSwitch;
             this.defaultValue = configItem.defaultValue instanceof Integer ? (Integer) configItem.defaultValue : min;
 
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            setFocusable(false);
+            setFocusableInTouchMode(false);
 
             titleTextView = new TextView(context);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
@@ -639,6 +621,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 11, 26, 11, 6));
 
             resetButton = new ImageView(context);
+            resetButton.setFocusable(false);
             resetButton.setImageResource(R.drawable.msg_retry);
             resetButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             resetButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
@@ -672,27 +655,71 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             if (currentVal > max) currentVal = max;
             seekBarView.setProgress((currentVal - min) / (float) (max - min));
             updateText(currentVal);
-            updateEnabledState();
+            updateEnabledState(false);
         }
 
-        public void updateEnabledState() {
+        public void updateEnabledState(boolean animate) {
             boolean enabled = parentSwitch == null || parentSwitch.Bool();
             setEnabled(enabled);
             seekBarView.setEnabled(enabled);
             resetButton.setEnabled(enabled);
-            float alpha = enabled ? 1.0f : 0.38f;
-            titleTextView.setAlpha(alpha);
-            valueTextView.setAlpha(alpha);
-            seekBarView.setAlpha(alpha);
-            resetButton.setAlpha(alpha);
+            float targetAlpha = enabled ? 1.0f : 0.38f;
+            if (animate) {
+                titleTextView.animate().alpha(targetAlpha).setDuration(180).start();
+                valueTextView.animate().alpha(targetAlpha).setDuration(180).start();
+                seekBarView.animate().alpha(targetAlpha).setDuration(180).start();
+                resetButton.animate().alpha(targetAlpha).setDuration(180).start();
+            } else {
+                titleTextView.setAlpha(targetAlpha);
+                valueTextView.setAlpha(targetAlpha);
+                seekBarView.setAlpha(targetAlpha);
+                resetButton.setAlpha(targetAlpha);
+            }
             int currentVal = configItem.Int();
-            resetButton.setVisibility(enabled && currentVal != defaultValue ? VISIBLE : GONE);
+            resetButton.setVisibility(currentVal != defaultValue ? VISIBLE : INVISIBLE);
+        }
+
+        public void updateEnabledState() {
+            updateEnabledState(false);
         }
 
         private void updateText(int val) {
             valueTextView.setText(val + " " + unit);
-            boolean enabled = parentSwitch == null || parentSwitch.Bool();
-            resetButton.setVisibility(enabled && val != defaultValue ? VISIBLE : GONE);
+            resetButton.setVisibility(val != defaultValue ? VISIBLE : INVISIBLE);
+        }
+
+        private boolean needDivider;
+
+        public void setNeedDivider(boolean needDivider) {
+            if (this.needDivider != needDivider) {
+                this.needDivider = needDivider;
+                setWillNotDraw(!needDivider);
+                invalidate();
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (needDivider) {
+                canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(21), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(21) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            }
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent ev) {
+            if (parentSwitch != null && !parentSwitch.Bool()) {
+                return true;
+            }
+            return super.onInterceptTouchEvent(ev);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (parentSwitch != null && !parentSwitch.Bool()) {
+                return false;
+            }
+            return super.onTouchEvent(event);
         }
 
         @Override

@@ -747,6 +747,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     private int keyboardHeight;
     private int keyboardHeightLand;
     private boolean keyboardVisible;
+    private boolean keyboardIsClosing;
     private int emojiPadding;
     private boolean sendByEnter;
     private long lastTypingTimeSend;
@@ -2757,7 +2758,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 showRestrictedHint();
                 return;
             }
-            if (!isPopupShowing() || currentPopupContentType != 0) {
+            if (!isPopupShowing() || currentPopupContentType != 0 || keyboardVisible) {
                 showPopup(1, POPUP_CONTENT_EMOJI_KEYBOARD);
                 emojiView.onOpen(messageEditText != null && messageEditText.length() > 0, parentFragment != null && parentFragment.groupEmojiPackHintWasVisible());
             } else {
@@ -4539,6 +4540,10 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
         botCommandsMenuButton = new BotCommandsMenuView(getContext());
         botCommandsMenuButton.setOnClickListener(view -> {
+            if (isPopupShowing()) {
+                openKeyboardInternal();
+                return;
+            }
             boolean open = !botCommandsMenuButton.isOpened();
             botCommandsMenuButton.setOpened(open);
             try {
@@ -6274,6 +6279,8 @@ public class ChatActivityEnterView extends FrameLayout implements
                     return clickMaybe;
                 } else {
                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        keyboardIsClosing = false;
+                        waitingForKeyboardOpen = true;
                         if (delegate != null) {
                             fixHandlesColor();
                             delegate.onKeyboardRequested();
@@ -13698,6 +13705,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             return;
         }
         if (show == 1) {
+            keyboardIsClosing = true;
+            waitingForKeyboardOpen = false;
             if (contentType == 0) {
                 if (parentActivity == null && emojiView == null) {
                     return;
@@ -13820,7 +13829,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (emojiView != null) {
                 if (show != 2 || AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow) {
                     if (smoothKeyboard && !keyboardVisible && !stickersExpanded) {
-                        if (emojiViewVisible = true) {
+                        if (emojiViewVisible) {
                             animatingContentType = 0;
                         }
                         emojiView.setShowing(false);
@@ -14115,7 +14124,8 @@ public class ChatActivityEnterView extends FrameLayout implements
         if (hasBotWebView() && botCommandsMenuIsShowing() || BaseFragment.hasSheets(parentFragment)) {
             return;
         }
-        showPopup(AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow || parentFragment != null && parentFragment.isInBubbleMode() || isPaused ? 0 : 2, POPUP_CONTENT_EMOJI_KEYBOARD);
+        keyboardIsClosing = false;
+        showPopup(0, POPUP_CONTENT_EMOJI_KEYBOARD, true, true);
         if (delegate != null) {
             delegate.onKeyboardRequested();
         }
@@ -14315,8 +14325,11 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         boolean oldValue = keyboardVisible;
         keyboardVisible = height > 0;
+        if (!keyboardVisible) {
+            keyboardIsClosing = false;
+        }
         checkBotMenu();
-        if (keyboardVisible && isPopupShowing() && stickersExpansionAnim == null) {
+        if (keyboardVisible && isPopupShowing() && stickersExpansionAnim == null && !keyboardIsClosing) {
             showPopup(0, currentPopupContentType);
         } else if (!keyboardVisible && !isPopupShowing() && botButtonsMessageObject != null && replyingMessageObject != botButtonsMessageObject && (!hasBotWebView() && !botCommandsMenuIsShowing() && !BaseFragment.hasSheets(parentFragment)) && (messageEditText == null || TextUtils.isEmpty(messageEditText.getText())) && botReplyMarkup != null && !botReplyMarkup.rows.isEmpty()) {
             if (sizeNotifierLayout.adjustPanLayoutHelper.animationInProgress()) {

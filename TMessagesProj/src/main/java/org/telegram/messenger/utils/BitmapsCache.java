@@ -545,6 +545,7 @@ public class BitmapsCache {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            cachedFile = null;
         }
     }
 
@@ -577,15 +578,17 @@ public class BitmapsCache {
     }
 
     public void recycle() {
-        if (cachedFile != null) {
-            try {
-                cachedFile.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            cachedFile = null;
-        }
+        closeCachedFile();
         recycled = true;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            recycle();
+        } finally {
+            super.finalize();
+        }
     }
 
     public int getFrameCount() {

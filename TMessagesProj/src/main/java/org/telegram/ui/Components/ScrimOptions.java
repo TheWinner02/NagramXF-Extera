@@ -362,7 +362,7 @@ public class ScrimOptions extends Dialog {
 
             bitmap.recycle();
             bitmaps.run(bitmapBg, bitmapOptions);
-        }, 15);
+        }, tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int());
     }
 
     public static void makeGlobalBlurBitmaps(View cutToContainer, Utilities.Callback2<Bitmap, Bitmap> bitmaps) {
@@ -397,7 +397,7 @@ public class ScrimOptions extends Dialog {
 
             bitmap.recycle();
             bitmaps.run(bitmapBg, bitmapOptions);
-        }, 15);
+        }, tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int());
     }
 
     private void checkBitmapMatrix() {

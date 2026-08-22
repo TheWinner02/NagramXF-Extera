@@ -2133,6 +2133,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     containerView.invalidate();
                 }
                 super.setTranslationY(translationY - currentPanTranslationY);
+                onContainerViewTranslation();
                 if (currentSheetAnimationType != 1) {
                     currentAttachLayout.onContainerTranslationUpdated(currentPanTranslationY);
                 }
@@ -5388,6 +5389,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             appearSpringAnimation.cancel();
         }
         appearSpringAnimation = new SpringAnimation(super.containerView, DynamicAnimation.TRANSLATION_Y, 0);
+        appearSpringAnimation.addUpdateListener((animation, value, velocity) -> onContainerViewTranslation());
         if (editingMessageObject != null) {
             appearSpringAnimation.getSpring().setDampingRatio(0.75f);
             appearSpringAnimation.getSpring().setStiffness(350.0f);
@@ -6086,6 +6088,27 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         for (int i = 0; i < botAttachLayouts.size(); i++) {
             botAttachLayouts.valueAt(i).setMeasureOffsetY(0);
         }
+        if (actionBarAnimation != null) {
+            actionBarAnimation.cancel();
+            actionBarAnimation = null;
+        }
+        updateActionBarVisibility(false, false);
+        actionBar.setTag(null);
+        actionBar.setAlpha(0.0f);
+        if (searchItem != null) {
+            searchItem.setAlpha(0.0f);
+            searchItem.setVisibility(View.INVISIBLE);
+        }
+        if (selectedMenuItem != null) {
+            selectedMenuItem.setAlpha(0.0f);
+            selectedMenuItem.setVisibility(View.INVISIBLE);
+        }
+        pinnedToTop = false;
+        if (photoLayout != null) {
+            scrollOffsetY[0] = photoLayout.getListTopPadding() - dp(11);
+            scrollOffsetY[1] = scrollOffsetY[0];
+        }
+        previousScrollOffsetY = scrollOffsetY[0];
 
         TLRPC.Chat chat = null;
         TLRPC.User user = null;
@@ -6099,6 +6122,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             }
         }
+
+        photosEnabled = true;
+        videosEnabled = true;
+        musicEnabled = true;
+        pollsEnabled = true;
+        todoEnabled = true;
+        plainTextEnabled = true;
+        documentsEnabled = true;
 
         if (baseFragment instanceof ChatActivity && avatarPicker != 2 || (chat != null || user != null)) {
             if (chat != null) {
@@ -6207,6 +6238,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             setCaptionAbove(captionAbove, false);
             updateDoneItemEnabled();
+        } else {
+            layoutToSet.onShow(null);
+            layoutToSet.onShown();
         }
         if (currentAttachLayout != photoLayout) {
             photoLayout.setCheckCameraWhenShown(true);
@@ -6957,6 +6991,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             appearSpringAnimation.cancel();
                         }
                         appearSpringAnimation = new SpringAnimation(super.containerView, DynamicAnimation.TRANSLATION_Y, 0);
+                        appearSpringAnimation.addUpdateListener((animation, value, velocity) -> onContainerViewTranslation());
                         appearSpringAnimation.getSpring().setDampingRatio(1.5f);
                         appearSpringAnimation.getSpring().setStiffness(1500.0f);
                         appearSpringAnimation.start();

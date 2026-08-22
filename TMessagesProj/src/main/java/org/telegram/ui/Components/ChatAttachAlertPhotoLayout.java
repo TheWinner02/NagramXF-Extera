@@ -3680,12 +3680,22 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             progressView.setTranslationY(0);
             return Integer.MAX_VALUE;
         }
-        View child = gridView.getChildAt(0);
-        RecyclerListView.Holder holder = (RecyclerListView.Holder) gridView.findContainingViewHolder(child);
-        int top = child.getTop() - listAdditionalH;
+        int minTop = Integer.MAX_VALUE;
+        boolean hasFirstRow = false;
+        for (int a = 0; a < gridView.getChildCount(); a++) {
+            View child = gridView.getChildAt(a);
+            RecyclerView.ViewHolder holder = gridView.findContainingViewHolder(child);
+            if (holder != null && holder.getAdapterPosition() >= 0 && holder.getAdapterPosition() < itemsPerRow) {
+                int top = child.getTop() - listAdditionalH;
+                if (top < minTop) {
+                    minTop = top;
+                }
+                hasFirstRow = true;
+            }
+        }
         int newOffset = dp(7);
-        if (top >= dp(7) && holder != null && holder.getAdapterPosition() == 0) {
-            newOffset = top;
+        if (hasFirstRow && minTop >= dp(7)) {
+            newOffset = minTop;
         }
         progressView.setTranslationY(newOffset + (getMeasuredHeight() - newOffset - dp(50) - progressView.getMeasuredHeight()) / 2f);
         gridView.setTopGlowOffset(newOffset);
@@ -3773,6 +3783,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
         }
         updateAlbumsDropDown();
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -3843,14 +3856,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (!(previousLayout instanceof ChatAttachAlertPhotoLayoutPreview)) {
             clearSelectedPhotos();
             dropDown.setAlpha(1);
+            layoutManager.scrollToPositionWithOffset(0, 1000000);
+            cameraPhotoLayoutManager.scrollToPositionWithOffset(0, 1000000);
         } else {
             headerAnimator = dropDown.animate().alpha(1f).setDuration(150).setInterpolator(CubicBezierInterpolator.EASE_BOTH);
             headerAnimator.start();
-        }
-        parentAlert.actionBar.setTitle("");
-
-        layoutManager.scrollToPositionWithOffset(0, 0);
-        if (previousLayout instanceof ChatAttachAlertPhotoLayoutPreview) {
+            layoutManager.scrollToPositionWithOffset(0, 1000000);
             Runnable setScrollY = () -> {
                 int currentItemTop = previousLayout.getCurrentItemTop(),
                     paddingTop = previousLayout.getListTopPadding();
@@ -3858,6 +3869,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             };
             gridView.post(setScrollY);
         }
+        parentAlert.actionBar.setTitle("");
 
         checkCameraViewPosition();
 

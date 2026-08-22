@@ -14345,8 +14345,9 @@ public class ChatActivity extends BaseFragment implements
         createChatAttachView();
         chatAttachAlert.restrictEphemeralMessageTypes = isEphemeralMessage;
         chatAttachAlert.getPhotoLayout().loadGalleryPhotos();
-        if (Build.VERSION.SDK_INT == 21 || Build.VERSION.SDK_INT == 22) {
+        if (chatActivityEnterView != null) {
             chatActivityEnterView.closeKeyboard();
+            chatActivityEnterView.hidePopup(true);
         }
         if (currentChat != null && messageSuggestionParams != null || isEphemeralMessage) {
             chatAttachAlert.setMaxSelectedPhotos(1, true);
@@ -14369,8 +14370,9 @@ public class ChatActivity extends BaseFragment implements
         }
         createChatAttachView();
         chatAttachAlert.getPhotoLayout().loadGalleryPhotos();
-        if (Build.VERSION.SDK_INT == 21 || Build.VERSION.SDK_INT == 22) {
+        if (chatActivityEnterView != null) {
             chatActivityEnterView.closeKeyboard();
+            chatActivityEnterView.hidePopup(true);
         }
         chatAttachAlert.setMaxSelectedPhotos(1, false);
         chatAttachAlert.setOpenWithFrontFaceCamera(true);

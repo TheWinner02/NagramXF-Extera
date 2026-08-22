@@ -110,10 +110,31 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
 
         listView = createListView(context);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutAnimation(null);
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+            @Override
+            public boolean supportsPredictiveItemAnimations() {
+                return false;
+            }
+        });
 
-        DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
-        itemAnimator.setChangeDuration(350);
+        DefaultItemAnimator itemAnimator = new DefaultItemAnimator() {
+            @Override
+            protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                listView.invalidate();
+            }
+
+            @Override
+            protected void onAddAnimationUpdate(RecyclerView.ViewHolder holder) {
+                listView.invalidate();
+            }
+
+            @Override
+            protected void onRemoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                listView.invalidate();
+            }
+        };
+        itemAnimator.setDurations(350);
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         itemAnimator.setDelayAnimations(false);
         itemAnimator.setSupportsChangeAnimations(false);
@@ -124,6 +145,8 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         tooltip = new UndoView(context);
         frameLayout.addView(tooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
 
+        listView.setClipToPadding(false);
+        listView.setPadding(0, 0, 0, dp(80));
         listView.setSections(true);
         actionBar.setAdaptiveBackground(listView);
         return fragmentView;
@@ -148,7 +171,7 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
 
     @Override
     public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom);
+        listView.setPadding(0, 0, 0, bottom + dp(80));
         listView.setClipToPadding(false);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) tooltip.getLayoutParams();
         layoutParams.setMargins(dp(8), 0, dp(8), dp(8) + bottom);

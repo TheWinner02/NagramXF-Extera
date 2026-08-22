@@ -795,7 +795,7 @@ public class ActionBarPopupWindow extends PopupWindow {
             p.dimAmount = amount;
             if (Build.VERSION.SDK_INT >= 31 && tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
                 p.flags |= WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
-                p.setBlurBehindRadius(AndroidUtilities.dp(20));
+                p.setBlurBehindRadius(AndroidUtilities.dp(tw.nekomimi.nekogram.NekoConfig.blurRadiusGlobal.Int()));
             }
             try {
                 wm.updateViewLayout(container, p);

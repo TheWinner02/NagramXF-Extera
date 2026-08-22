@@ -208,6 +208,9 @@ public final class AnimatedFileDrawable extends BitmapDrawable implements Animat
                 unusedBuffers.get(i).recycle();
             }
             unusedBuffers.clear();
+            if (bitmapsCache != null) {
+                bitmapsCache.recycle();
+            }
             invalidateInternal();
         }
     }
@@ -717,6 +720,9 @@ public final class AnimatedFileDrawable extends BitmapDrawable implements Animat
             if (decodeQueue != null) {
                 decodeQueue.recycle();
                 decodeQueue = null;
+            }
+            if (bitmapsCache != null) {
+                bitmapsCache.recycle();
             }
             getPaint().setShader(null);
             AndroidUtilities.recycleBitmaps(bitmapToRecycle);
