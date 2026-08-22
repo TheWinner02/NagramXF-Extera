@@ -2758,7 +2758,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 showRestrictedHint();
                 return;
             }
-            if (!isPopupShowing() || currentPopupContentType != 0 || keyboardVisible) {
+            if (!isPopupShowing() || currentPopupContentType != 0) {
                 showPopup(1, POPUP_CONTENT_EMOJI_KEYBOARD);
                 emojiView.onOpen(messageEditText != null && messageEditText.length() > 0, parentFragment != null && parentFragment.groupEmojiPackHintWasVisible());
             } else {
