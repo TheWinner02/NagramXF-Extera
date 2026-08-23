@@ -305,4 +305,6 @@
     <string name="ActionBarBlurRadius">上部バーのぼかし強度</string>
     <string name="TranslatorModeAppend">追記 (Append)</string>
     <string name="TranslatorModeInline">置き換え (Inline)</string>
+    <string name="AppIconMonetTelegram">モネ (Telegram)</string>
+    <string name="AppIconMonetNegram">モネ (Negram)</string>
 </resources>

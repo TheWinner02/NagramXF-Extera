@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/monet_icon_background"/>
+    <item android:drawable="@drawable/ic_launcher_monet_telegram_foreground"/>
+</layer-list>

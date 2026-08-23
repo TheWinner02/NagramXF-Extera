@@ -306,4 +306,6 @@
     <string name="ActionBarBlurRadius">頂欄模糊強度</string>
     <string name="TranslatorModeAppend">追加 (Append)</string>
     <string name="TranslatorModeInline">替換 (Inline)</string>
+    <string name="AppIconMonetTelegram">莫奈 (Telegram)</string>
+    <string name="AppIconMonetNegram">莫奈 (Negram)</string>
 </resources>

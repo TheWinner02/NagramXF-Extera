@@ -14,4 +14,7 @@
     <color name="monetRedDark">#F2B8B5</color>
     <color name="monetRedCall">#EF5350</color>
     <color name="monetGreenCall">#4CAF50</color>
+
+    <color name="monet_icon_background">#E2E2E9</color>
+    <color name="monet_icon_foreground">#191C20</color>
 </resources>

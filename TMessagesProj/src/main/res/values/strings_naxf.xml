@@ -320,6 +320,8 @@
     <string name="ReplaceBlockedMyInfoDescription">Replace blocked user info with custom message</string>
     <string name="TranslatorModeAppend">Append</string>
     <string name="TranslatorModeInline">Inline</string>
+    <string name="AppIconMonetTelegram">Monet (Telegram)</string>
+    <string name="AppIconMonetNegram">Monet (Negram)</string>
     <string name="CurrentNax">NagramX</string>
     <string name="SwitchAccountNax">Switch Account</string>
     <string name="NagramXForkChannel">NagramX Fork Channel</string>
