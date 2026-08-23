@@ -304,4 +304,6 @@
     <string name="MainTabsBlurRadius">底欄模糊強度</string>
     <string name="ActionBarGlassAlpha">頂欄毛玻璃不透明度</string>
     <string name="ActionBarBlurRadius">頂欄模糊強度</string>
+    <string name="TranslatorModeAppend">追加 (Append)</string>
+    <string name="TranslatorModeInline">替換 (Inline)</string>
 </resources>

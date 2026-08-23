@@ -327,7 +327,9 @@ Non possiamo aiutarti in questo caso; se hai problemi di accesso, contatta il Su
     <string name="StickerCopied">Sticker copiato negli appunti.</string>
     <string name="StrokeOnViews">Effetti di riflesso</string>
     <string name="HideBottomNavigationBar">Nascondi barra di navigazione inferiore</string>
-    <string name="TranslatorMode">Con il testo originale</string>
+    <string name="TranslatorMode">Modalità di traduzione</string>
+    <string name="TranslatorModeAppend">Aggiungi (Append)</string>
+    <string name="TranslatorModeInline">Sostituisci (Inline)</string>
     <string name="TranslatorWithOriginalTextOff">Disattivato</string>
     <string name="TranslatorWithOriginalTextManualOnly">Solo manuale</string>
     <string name="TranslatorWithOriginalTextOn">Attivo</string>

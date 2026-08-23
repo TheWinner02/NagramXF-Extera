@@ -121,7 +121,7 @@ public class MessageHelper extends BaseController {
     }
 
     public static boolean shouldKeepOriginalForDisplay(int mode, boolean manual, boolean auto) {
-        return manual || auto;
+        return (manual || auto) && mode == 0;
     }
 
     public void loadLastMessageSkippingFilteredAsync(long dialogId, Utilities.Callback<MessageObject> callback) {}
@@ -164,11 +164,11 @@ public class MessageHelper extends BaseController {
     }
 
     public static boolean shouldKeepOriginalForManualTranslation(int mode) {
-        return shouldKeepOriginalForManualTranslation(mode, false, false);
+        return mode == 0;
     }
 
     public static boolean shouldKeepOriginalForManualTranslation(int mode, boolean manual, boolean auto) {
-        return manual || auto;
+        return mode == 0;
     }
 
     public static CharSequence buildTranslatedDisplayText(CharSequence text, CharSequence translated, boolean keepOriginal) {

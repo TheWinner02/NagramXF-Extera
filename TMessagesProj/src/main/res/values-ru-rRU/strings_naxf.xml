@@ -301,4 +301,6 @@
     <string name="MainTabsBlurRadius">Интенсивность размытия нижней панели</string>
     <string name="ActionBarGlassAlpha">Прозрачность стекла верхней панели</string>
     <string name="ActionBarBlurRadius">Интенсивность размытия верхней панели</string>
+    <string name="TranslatorModeAppend">Добавить (Append)</string>
+    <string name="TranslatorModeInline">Заменить (Inline)</string>
 </resources>
