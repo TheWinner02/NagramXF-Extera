@@ -215,8 +215,9 @@ public class AyuState {
                     int i2 = i - 1;
                     this.resetAfter = i2;
                     boolean z = this.val;
-                    if (i2 == 0) {
+                    if (i2 <= 0) {
                         this.val = false;
+                        this.resetAfter = 0;
                     }
                     return z;
                 } catch (Throwable th) {
