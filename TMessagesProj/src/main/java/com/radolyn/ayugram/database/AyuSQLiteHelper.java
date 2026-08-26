@@ -192,8 +192,29 @@ public class AyuSQLiteHelper extends SQLiteOpenHelper {
     public synchronized void deleteDeletedMessage(long userId, long dialogId, int messageId) {
         try {
             SQLiteDatabase db = getWritableDatabase();
+            db.delete("DeletedMessageReaction", "deletedMessageId = ?", new String[]{String.valueOf(messageId)});
             db.delete("DeletedMessage", "userId = ? AND dialogId = ? AND messageId = ?",
                     new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(messageId)});
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
+    }
+
+    public synchronized void clearDeletedMessagesForDialog(long userId, long dialogId, Long messageId) {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            if (messageId == null) {
+                db.execSQL("DELETE FROM DeletedMessageReaction WHERE deletedMessageId IN (SELECT messageId FROM DeletedMessage WHERE userId = " + userId + " AND dialogId = " + dialogId + ")");
+                db.delete("DeletedMessage", "userId = ? AND dialogId = ?",
+                        new String[]{String.valueOf(userId), String.valueOf(dialogId)});
+                db.delete("DeletedDialog", "userId = ? AND dialogId = ?",
+                        new String[]{String.valueOf(userId), String.valueOf(dialogId)});
+            } else {
+                db.delete("DeletedMessageReaction", "deletedMessageId = ?",
+                        new String[]{String.valueOf(messageId)});
+                db.delete("DeletedMessage", "userId = ? AND dialogId = ? AND messageId = ?",
+                        new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(messageId)});
+            }
         } catch (Throwable th) {
             FileLog.e(th);
         }
@@ -204,9 +225,76 @@ public class AyuSQLiteHelper extends SQLiteOpenHelper {
             SQLiteDatabase db = getWritableDatabase();
             db.delete("DeletedMessage", null, null);
             db.delete("DeletedMessageReaction", null, null);
+            db.delete("DeletedDialog", null, null);
         } catch (Throwable th) {
             FileLog.e(th);
         }
+    }
+
+    public synchronized void deleteDeletedDialog(long userId, long dialogId) {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            db.delete("DeletedDialog", "userId = ? AND dialogId = ?",
+                    new String[]{String.valueOf(userId), String.valueOf(dialogId)});
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
+    }
+
+    public synchronized void deleteAllDeletedDialogs() {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            db.delete("DeletedDialog", null, null);
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
+    }
+
+    public synchronized long insertDeletedDialog(DeletedDialog dialog) {
+        if (dialog == null) return 0;
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            ContentValues cv = new ContentValues();
+            cv.put("userId", dialog.userId);
+            cv.put("dialogId", dialog.dialogId);
+            cv.put("peerId", dialog.peerId);
+            if (dialog.folderId != null) cv.put("folderId", dialog.folderId);
+            cv.put("topMessage", dialog.topMessage);
+            cv.put("lastMessageDate", dialog.lastMessageDate);
+            cv.put("flags", dialog.flags);
+            cv.put("entityCreateDate", dialog.entityCreateDate);
+            return db.insertWithOnConflict("DeletedDialog", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        } catch (Throwable th) {
+            FileLog.e(th);
+            return 0;
+        }
+    }
+
+    public synchronized List<DeletedDialog> getAllDeletedDialogs(long userId) {
+        List<DeletedDialog> list = new ArrayList<>();
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT * FROM DeletedDialog WHERE userId = ?",
+                    new String[]{String.valueOf(userId)});
+            while (c.moveToNext()) {
+                DeletedDialog d = new DeletedDialog();
+                d.fakeId = c.getLong(c.getColumnIndexOrThrow("fakeId"));
+                d.userId = c.getLong(c.getColumnIndexOrThrow("userId"));
+                d.dialogId = c.getLong(c.getColumnIndexOrThrow("dialogId"));
+                d.peerId = c.getLong(c.getColumnIndexOrThrow("peerId"));
+                int folderIdx = c.getColumnIndexOrThrow("folderId");
+                if (!c.isNull(folderIdx)) d.folderId = c.getInt(folderIdx);
+                d.topMessage = c.getInt(c.getColumnIndexOrThrow("topMessage"));
+                d.lastMessageDate = c.getInt(c.getColumnIndexOrThrow("lastMessageDate"));
+                d.flags = c.getInt(c.getColumnIndexOrThrow("flags"));
+                d.entityCreateDate = c.getInt(c.getColumnIndexOrThrow("entityCreateDate"));
+                list.add(d);
+            }
+            c.close();
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
+        return list;
     }
 
     public synchronized int getDeletedMessagesCount(long userId, long dialogId, long topicId, String query) {

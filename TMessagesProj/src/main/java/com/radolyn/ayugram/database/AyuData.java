@@ -76,7 +76,10 @@ public class AyuData {
         }
         if (deletedMessageDao == null) {
             deletedMessageDao = new DeletedMessageDao() {
-                @Override public void clearForDialog(long j, long j2, Long l) {}
+                @Override public void clearForDialog(long j, long j2, Long l) {
+                    AyuSQLiteHelper helper = getHelper();
+                    if (helper != null) helper.clearDeletedMessagesForDialog(j, j2, l);
+                }
                 @Override public void delete(long j, long j2, int i) {
                     AyuSQLiteHelper helper = getHelper();
                     if (helper != null) helper.deleteDeletedMessage(j, j2, i);
@@ -132,14 +135,40 @@ public class AyuData {
         }
         if (deletedDialogDao == null) {
             deletedDialogDao = new DeletedDialogDao() {
-                @Override public void delete(long j, long j2) {}
-                @Override public void delete(com.radolyn.ayugram.database.entities.DeletedDialog deletedDialog) {}
-                @Override public void deleteAll() {}
-                @Override public void deleteExisting(long j, List<Long> list) {}
+                @Override public void delete(long j, long j2) {
+                    AyuSQLiteHelper helper = getHelper();
+                    if (helper != null) helper.deleteDeletedDialog(j, j2);
+                }
+                @Override public void delete(com.radolyn.ayugram.database.entities.DeletedDialog deletedDialog) {
+                    if (deletedDialog != null) {
+                        AyuSQLiteHelper helper = getHelper();
+                        if (helper != null) helper.deleteDeletedDialog(deletedDialog.userId, deletedDialog.dialogId);
+                    }
+                }
+                @Override public void deleteAll() {
+                    AyuSQLiteHelper helper = getHelper();
+                    if (helper != null) helper.deleteAllDeletedDialogs();
+                }
+                @Override public void deleteExisting(long j, List<Long> list) {
+                    if (list != null) {
+                        AyuSQLiteHelper helper = getHelper();
+                        if (helper != null) {
+                            for (Long dialogId : list) {
+                                if (dialogId != null) helper.deleteDeletedDialog(j, dialogId);
+                            }
+                        }
+                    }
+                }
                 @Override public com.radolyn.ayugram.database.entities.DeletedDialog get(long j, long j2) { return null; }
-                @Override public List<com.radolyn.ayugram.database.entities.DeletedDialog> getAll(long j) { return new ArrayList<>(); }
+                @Override public List<com.radolyn.ayugram.database.entities.DeletedDialog> getAll(long j) {
+                    AyuSQLiteHelper helper = getHelper();
+                    return helper != null ? helper.getAllDeletedDialogs(j) : new ArrayList<>();
+                }
                 @Override public int getDeletedCount() { return 0; }
-                @Override public long insert(com.radolyn.ayugram.database.entities.DeletedDialog deletedDialog) { return 0; }
+                @Override public long insert(com.radolyn.ayugram.database.entities.DeletedDialog deletedDialog) {
+                    AyuSQLiteHelper helper = getHelper();
+                    return helper != null ? helper.insertDeletedDialog(deletedDialog) : 0;
+                }
                 @Override public void updateDialogsFolder(long j, List<Long> list, int i) {}
             };
         }
