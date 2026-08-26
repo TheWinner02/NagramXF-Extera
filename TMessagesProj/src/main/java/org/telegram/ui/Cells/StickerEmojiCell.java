@@ -264,7 +264,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
             }
 
             if (emoji != null) {
-                emojiTextView.setText(emoji);
+                emojiTextView.setText(Emoji.replaceEmoji(emoji, emojiTextView.getPaint().getFontMetricsInt(), false));
                 emojiTextView.setVisibility(VISIBLE);
             } else if (showEmoji) {
                 boolean set = false;
@@ -272,14 +272,14 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
                     TLRPC.DocumentAttribute attribute = document.attributes.get(a);
                     if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
                         if (attribute.alt != null && attribute.alt.length() > 0) {
-                            emojiTextView.setText(attribute.alt);
+                            emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), false));
                             set = true;
                         }
                         break;
                     }
                 }
                 if (!set) {
-                    emojiTextView.setText(MediaDataController.getInstance(currentAccount).getEmojiForSticker(sticker.id));
+                    emojiTextView.setText(Emoji.replaceEmoji(MediaDataController.getInstance(currentAccount).getEmojiForSticker(sticker.id), emojiTextView.getPaint().getFontMetricsInt(), false));
                 }
                 emojiTextView.setVisibility(VISIBLE);
             } else {

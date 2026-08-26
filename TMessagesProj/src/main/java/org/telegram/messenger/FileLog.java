@@ -55,6 +55,7 @@ public class FileLog {
     private File networkFile = null;
     private File tonlibFile = null;
     private boolean initied;
+    private boolean initiing;
     public static boolean databaseIsMalformed = false;
 
     private OutputStreamWriter tlStreamWriter = null;
@@ -72,17 +73,17 @@ public class FileLog {
                 localInstance = Instance;
                 if (localInstance == null) {
                     Instance = localInstance = new FileLog();
+                    if (BuildVars.LOGS_ENABLED) {
+                        localInstance.init();
+                    }
                 }
             }
         }
         return localInstance;
     }
 
-    public FileLog() {
-        if (!BuildVars.LOGS_ENABLED) {
-            return;
-        }
-        init();
+    private FileLog() {
+
     }
 
 
@@ -297,12 +298,19 @@ public class FileLog {
         }
     }
 
-    public void init() {
+    private void init() {
         if (initied) {
             return;
         }
-        dateFormat = FastDateFormat.getInstance("yyyy_MM_dd-HH_mm_ss.SSS", Locale.US);
-        fileDateFormat = FastDateFormat.getInstance("yyyy_MM_dd-HH_mm_ss", Locale.US);
+        if (initiing) {
+            if (BuildVars.DEBUG_VERSION) {
+                throw new IllegalStateException("double init call");
+            }
+        }
+        initiing = true;
+
+        dateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss.SSS", Locale.US);
+        fileDateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss", Locale.US);
         String date = fileDateFormat.format(System.currentTimeMillis());
         try {
             File dir = AndroidUtilities.getLogsDir();
@@ -485,7 +493,7 @@ public class FileLog {
         }
     }
 
-    private void dumpANR() {
+    public static void dumpANR() {
         StringBuilder sb = new StringBuilder();
         Map<Thread, StackTraceElement[]> allThreads = Thread.getAllStackTraces();
 
@@ -501,7 +509,7 @@ public class FileLog {
         }
 
         FileLog.e("ANR thread dump\n" + sb.toString());
-        dumpMemory(false);
+        getInstance().dumpMemory(false);
     }
 
     public static void fatal(final Throwable e, boolean logToAppCenter) {

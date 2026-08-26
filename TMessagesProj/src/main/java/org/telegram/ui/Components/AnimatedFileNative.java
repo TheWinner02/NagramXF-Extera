@@ -113,7 +113,7 @@ public class AnimatedFileNative {
 
     private void checkNotDestroyed() {
         if (mRecycled.get()) {
-            if (BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG_PRIVATE_VERSION) {
                 throw new IllegalStateException("Called method on a destroyed AnimatedFileNative instance");
             }
         }

@@ -91,14 +91,7 @@ public class RadioButtonCell extends LinearLayout {
 
     public int itemId;
 
-    public void setTextAndValue(String text, boolean divider, boolean checked) {
-        textView.setText(text);
-        valueTextView.setVisibility(GONE);
-        radioButton.setChecked(checked, false);
-        needDivider = divider;
-    }
-
-    public void setTextAndValueAndCheck(String text, String value, boolean divider, boolean checked) {
+    public void setTextAndValue(String text, String value, boolean divider, boolean checked) {
         textView.setText(text);
         valueTextView.setText(value);
         valueTextView.setVisibility(VISIBLE);

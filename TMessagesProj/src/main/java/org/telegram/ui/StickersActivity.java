@@ -853,7 +853,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 listView.allowReorder(true);
                 if (!SharedConfig.stickersReorderingHintUsed && currentType != MediaDataController.TYPE_EMOJIPACKS) {
                     SharedConfig.setStickersReorderingHintUsed(true);
-                    String stickersReorderHint = getString(R.string.StickersReorderHint);
+                    String stickersReorderHint = LocaleController.getString(R.string.StickersReorderHint);
                     Bulletin.make(this, new ReorderingBulletinLayout(getContext(), stickersReorderHint, null), ReorderingHintDrawable.DURATION * 2 + 250).show();
                 }
             }
@@ -989,7 +989,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                 }
             });
             shareAlert.show();
-        } else if (which == MENU_EXPORT || which == MENU_ARCHIVE || which == MENU_DELETE) {
+        } else if (which == MENU_ARCHIVE || which == MENU_DELETE) {
             ArrayList<TLRPC.StickerSet> stickerSetList = new ArrayList<>(selectedSets.size());
             for (int i = 0, size = sets.size(); i < size; i++) {
                 final TLRPC.TL_messages_stickerSet stickerSet = sets.get(i);

@@ -84,7 +84,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
+import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 import androidx.viewpager.widget.PagerAdapter;
@@ -2387,7 +2387,7 @@ public class EmojiView extends FrameLayout implements
             stickerSearchHeader.setVisibility(View.GONE);
             stickerSearchHeader.setOnBackClickListener(v -> stickersSearchGridAdapter.resetSelectedPackId());
             stickersContainer.addView(stickerSearchHeader, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, searchFieldHeight));
-
+            
             stickersTab = new DraggableScrollSlidingTabStrip(context, resourcesProvider) {
                 @Override
                 protected void updatePosition() {

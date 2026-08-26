@@ -16,7 +16,7 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
     private TransitState animatingState;
     private final int sizeDp;
 
-    private Map<TransitState, RLottieDrawable> stateMap = new HashMap<TransitState, RLottieDrawable>() {
+    private final Map<TransitState, RLottieDrawable> stateMap = new HashMap<TransitState, RLottieDrawable>() {
         @Nullable
         @Override
         public RLottieDrawable get(@Nullable Object key) {
@@ -24,7 +24,9 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
             if (obj == null) {
                 TransitState state = (TransitState) key;
                 int res = state.resource;
-                return new RLottieDrawable(res, String.valueOf(res), AndroidUtilities.dp(sizeDp), AndroidUtilities.dp(sizeDp));
+                RLottieDrawable rLottieDrawable = new RLottieDrawable(res, String.valueOf(res), AndroidUtilities.dp(sizeDp), AndroidUtilities.dp(sizeDp));
+                put(state, rLottieDrawable);
+                return rLottieDrawable;
             }
             return obj;
         }
@@ -54,9 +56,8 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
                 if (drawable == null) return;
                 drawable.stop();
 
-                drawable.setProgress(state == State.VOICE ? 0.5f : 0, false);
-                setAnimation(drawable);
-            }
+            drawable.setProgress(state == State.VOICE ? 0.5f : 0, false);
+            setAnimation(drawable);
         } else {
             TransitState transitState = getState(fromState, currentState);
             if (transitState == animatingState) {

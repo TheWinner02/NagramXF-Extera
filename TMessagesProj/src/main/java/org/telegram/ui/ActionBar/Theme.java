@@ -102,6 +102,7 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_account;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.BlurSettingsBottomSheet;
 import org.telegram.ui.Cells.BaseCell;
 import org.telegram.ui.ChatActivity;
@@ -141,7 +142,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1493,6 +1493,14 @@ public class Theme {
                         currentColors.put(key, newColor);
                     }
                 }
+                for (int key : myMessagesAccentExtraKeys) {
+                    final int index = currentColorsNoAccent.indexOfKey(key);
+                    final int color = index < 0 ? defaultColors[key] : currentColorsNoAccent.valueAt(index);
+                    final int newColor = changeColorAccent(hsvTemp1, hsvTemp2, color, isDarkTheme, color);
+                    if (newColor != color) {
+                        currentColors.put(key, newColor);
+                    }
+                }
 
                 if (changeMyMessagesColors) {
                     Color.colorToHSV(myMessagesAccent, hsvTemp2);
@@ -1736,6 +1744,8 @@ public class Theme {
             } else {
                 currentColors.put(key_chat_outCodeBackground, codeBackground(outBubble, isDarkTheme));
             }
+            applyCalculatedTableColors(currentColorsNoAccent, currentColors, isDarkTheme);
+            applyCalculatedArticleCodeColors(currentColorsNoAccent, currentColors, isDarkTheme);
 
             return !isMyMessagesGradientColorsNear;
         }
@@ -2636,12 +2646,12 @@ public class Theme {
                 }
 
                 //override default themes
-                if (isHome(themeAccent) && name.equals("Dark Blue") || name.equals("Night") || name.equals("AMOLED")) {
+                if (isHome(themeAccent) && name.equals("Dark Blue") || name.equals("Night")) {
                     themeAccent.myMessagesAccentColor = 0xff258DE5;
                     themeAccent.myMessagesGradientAccentColor1 = 0xff4272DF;
                     themeAccent.myMessagesGradientAccentColor2 = 0xff8146D7;
                     themeAccent.myMessagesGradientAccentColor3 = 0xff9F3EAA;
-                    if (name.equals("Night") || name.equals("AMOLED")) {
+                    if (name.equals("Night")) {
                         themeAccent.patternIntensity = -0.57f;
                         themeAccent.backgroundOverrideColor = 0xff6c7fa6;
                         themeAccent.backgroundGradientOverrideColor1 = 0xff2e344b;
@@ -3966,6 +3976,37 @@ public class Theme {
     public static final int key_chat_editMediaButton = colorsCount++;
     public static final int key_chat_recentDialogsSidebarBackground = colorsCount++;
 
+    public static final int key_chat_msgIvButtonDefaultIn = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInText = colorsCount++;
+    public static final int key_chat_msgIvButtonPrimaryIn = colorsCount++;
+    public static final int key_chat_msgIvButtonPrimaryInPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonPrimaryInText = colorsCount++;
+    public static final int key_chat_msgIvButtonDangerIn = colorsCount++;
+    public static final int key_chat_msgIvButtonDangerInPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonDangerInText = colorsCount++;
+    public static final int key_chat_msgIvButtonSuccessIn = colorsCount++;
+    public static final int key_chat_msgIvButtonSuccessInPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonSuccessInText = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInlineIn = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInlineInPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInlineInText = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultOut = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultOutPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultOutText = colorsCount++;
+    public static final int key_chat_msgIvButtonPrimaryOut = colorsCount++;
+    public static final int key_chat_msgIvButtonPrimaryOutPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonPrimaryOutText = colorsCount++;
+    public static final int key_chat_msgIvButtonDangerOut = colorsCount++;
+    public static final int key_chat_msgIvButtonDangerOutPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonDangerOutText = colorsCount++;
+    public static final int key_chat_msgIvButtonSuccessOut = colorsCount++;
+    public static final int key_chat_msgIvButtonSuccessOutPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonSuccessOutText = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInlineOut = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInlineOutPressed = colorsCount++;
+    public static final int key_chat_msgIvButtonDefaultInlineOutText = colorsCount++;
+
     public static final int key_voipgroup_listSelector = colorsCount++;
     public static final int key_voipgroup_inviteMembersBackground = colorsCount++;
     public static final int key_voipgroup_actionBar = colorsCount++;
@@ -4213,6 +4254,23 @@ public class Theme {
 
     public static final int key_chat_inCodeBackground = colorsCount++;
     public static final int key_chat_outCodeBackground = colorsCount++;
+    public static final int key_chat_inTableBackground = colorsCount++;
+    public static final int key_chat_outTableBackground = colorsCount++;
+    public static final int key_chat_inTableBorder = colorsCount++;
+    public static final int key_chat_outTableBorder = colorsCount++;
+    public static final int key_chat_inDivider = colorsCount++;
+    public static final int key_chat_outDivider = colorsCount++;
+    public static final int key_chat_inArticleCodeBackground = colorsCount++;
+    public static final int key_chat_outArticleCodeBackground = colorsCount++;
+    public static final int key_chat_inArticleCodeScrollbarBackground = colorsCount++;
+    public static final int key_chat_inArticleCodeScrollbar = colorsCount++;
+    public static final int key_chat_outArticleCodeScrollbarBackground = colorsCount++;
+    public static final int key_chat_outArticleCodeScrollbar = colorsCount++;
+    public static final int key_chat_inArticleDetailsArrow = colorsCount++;
+    public static final int key_chat_outArticleDetailsArrow = colorsCount++;
+    public static final int key_chat_inArticleDetailsLine = colorsCount++;
+    public static final int key_chat_outArticleDetailsLine = colorsCount++;
+    private static final int[] myMessagesAccentExtraKeys = { key_chat_outDivider };
     public static final int key_code_keyword = colorsCount++;
     public static final int key_code_operator = colorsCount++;
     public static final int key_code_constant = colorsCount++;
@@ -4322,7 +4380,7 @@ public class Theme {
     private static SparseIntArray currentColorsNoAccent;
     private static SparseIntArray currentColors;
     private static SparseIntArray animatingColors;
-    private static boolean shouldDrawGradientIcons;
+    public static boolean shouldDrawGradientIcons;
 
     private static final ThreadLocal<float[]> hsvTemp1Local = new ThreadLocal<>();
     private static final ThreadLocal<float[]> hsvTemp2Local = new ThreadLocal<>();
@@ -4514,6 +4572,74 @@ public class Theme {
 
         fallbackKeys.put(key_table_background, key_graySection);
         fallbackKeys.put(key_table_border, key_divider);
+        fallbackKeys.put(key_chat_inTableBackground, key_table_background);
+        fallbackKeys.put(key_chat_outTableBackground, key_chat_outCodeBackground);
+        fallbackKeys.put(key_chat_inTableBorder, key_table_border);
+        fallbackKeys.put(key_chat_outTableBorder, key_table_border);
+        fallbackKeys.put(key_chat_outArticleCodeBackground, key_chat_outCodeBackground);
+
+        fallbackKeys.put(key_share_icon, key_windowBackgroundWhiteBlackText);
+        fallbackKeys.put(key_share_linkBackground, key_windowBackgroundGray);
+        fallbackKeys.put(key_share_linkText, key_windowBackgroundWhiteBlackText);
+        fallbackKeys.put(key_glass_defaultIcon, Theme.key_chat_messagePanelIcons);
+        fallbackKeys.put(key_glass_defaultText, Theme.key_chat_messagePanelText);
+        fallbackKeys.put(key_glass_targetMainTabs, Theme.key_dialogBackground);
+        fallbackKeys.put(key_glass_targetMainTopPanel, Theme.key_dialogBackground);
+        fallbackKeys.put(key_glass_tabSelected, Theme.key_chat_messagePanelSend);
+        fallbackKeys.put(key_glass_tabSelectedText, Theme.key_chat_messagePanelSend);
+        fallbackKeys.put(key_glass_tabUnselected, Theme.key_windowBackgroundWhiteBlackText);
+        fallbackKeys.put(key_actionBarDefaultTitle, key_windowBackgroundWhiteBlackText);
+        fallbackKeys.put(key_telegram_color_dialogsLogo, key_windowBackgroundWhiteBlackText);
+        fallbackKeys.put(key_profile_title, key_windowBackgroundWhiteBlackText);
+        fallbackKeys.put(key_telegram_color, Theme.key_chat_messagePanelSend);
+        fallbackKeys.put(key_telegram_color_text, Theme.key_windowBackgroundWhiteBlueText4);
+
+
+
+
+        // fallbackKeys.put(key_chat_msgIvButtonDefaultIn, );
+        // fallbackKeys.put(key_chat_msgIvButtonDefaultInPressed, );
+        fallbackKeys.put(key_chat_msgIvButtonDefaultInText, key_chat_messageTextIn);
+
+        fallbackKeys.put(key_chat_msgIvButtonPrimaryIn, key_featuredStickers_addButton);
+        fallbackKeys.put(key_chat_msgIvButtonPrimaryInPressed, key_featuredStickers_addButtonPressed);
+        fallbackKeys.put(key_chat_msgIvButtonPrimaryInText,  key_featuredStickers_buttonText);
+
+        // fallbackKeys.put(key_chat_msgIvButtonDangerIn, );
+        // fallbackKeys.put(key_chat_msgIvButtonDangerInPressed, );
+        fallbackKeys.put(key_chat_msgIvButtonDangerInText, key_avatar_nameInMessageRed);
+
+        // fallbackKeys.put(key_chat_msgIvButtonSuccessIn, );
+        // fallbackKeys.put(key_chat_msgIvButtonSuccessInPressed,  );
+        fallbackKeys.put(key_chat_msgIvButtonSuccessInText, key_avatar_nameInMessageGreen );
+
+        //fallbackKeys.put(key_chat_msgIvButtonDefaultInlineIn, );
+        //fallbackKeys.put(key_chat_msgIvButtonDefaultInlineInPressed,  );
+        fallbackKeys.put(key_chat_msgIvButtonDefaultInlineInText, key_telegram_color_text);
+
+
+
+        // fallbackKeys.put(key_chat_msgIvButtonDefaultOut,  );
+        // fallbackKeys.put(key_chat_msgIvButtonDefaultOutPressed,  );
+        fallbackKeys.put(key_chat_msgIvButtonDefaultOutText, key_chat_messageTextOut);
+
+        fallbackKeys.put(key_chat_msgIvButtonPrimaryOut, key_featuredStickers_addButton);
+        fallbackKeys.put(key_chat_msgIvButtonPrimaryOutPressed, key_featuredStickers_addButtonPressed);
+        fallbackKeys.put(key_chat_msgIvButtonPrimaryOutText, key_featuredStickers_buttonText);
+
+        // fallbackKeys.put(key_chat_msgIvButtonDangerOut, );
+        // fallbackKeys.put(key_chat_msgIvButtonDangerOutPressed, );
+        fallbackKeys.put(key_chat_msgIvButtonDangerOutText, key_avatar_nameInMessageRed );
+
+        // fallbackKeys.put(key_chat_msgIvButtonSuccessOut,  );
+        // fallbackKeys.put(key_chat_msgIvButtonSuccessOutPressed, );
+        fallbackKeys.put(key_chat_msgIvButtonSuccessOutText, key_avatar_nameInMessageGreen );
+
+        // fallbackKeys.put(key_chat_msgIvButtonDefaultInlineOut, );
+        // fallbackKeys.put(key_chat_msgIvButtonDefaultInlineOutPressed, );
+        fallbackKeys.put(key_chat_msgIvButtonDefaultInlineOutText, key_telegram_color_text);
+
+
 
         fallbackKeys.put(key_share_icon, key_windowBackgroundWhiteBlackText);
         fallbackKeys.put(key_share_linkBackground, key_windowBackgroundGray);
@@ -4554,6 +4680,21 @@ public class Theme {
         themeAccentExclusionKeys.add(key_statisticChartLine_orange);
         themeAccentExclusionKeys.add(key_statisticChartLine_indigo);
         themeAccentExclusionKeys.add(key_chat_inCodeBackground);
+        themeAccentExclusionKeys.add(key_chat_inTableBackground);
+        themeAccentExclusionKeys.add(key_chat_outTableBackground);
+        themeAccentExclusionKeys.add(key_chat_inTableBorder);
+        themeAccentExclusionKeys.add(key_chat_outTableBorder);
+        themeAccentExclusionKeys.add(key_chat_inDivider);
+        themeAccentExclusionKeys.add(key_chat_inArticleCodeBackground);
+        themeAccentExclusionKeys.add(key_chat_outArticleCodeBackground);
+        themeAccentExclusionKeys.add(key_chat_inArticleCodeScrollbarBackground);
+        themeAccentExclusionKeys.add(key_chat_inArticleCodeScrollbar);
+        themeAccentExclusionKeys.add(key_chat_outArticleCodeScrollbarBackground);
+        themeAccentExclusionKeys.add(key_chat_outArticleCodeScrollbar);
+        themeAccentExclusionKeys.add(key_chat_inArticleDetailsArrow);
+        themeAccentExclusionKeys.add(key_chat_outArticleDetailsArrow);
+        themeAccentExclusionKeys.add(key_chat_inArticleDetailsLine);
+        themeAccentExclusionKeys.add(key_chat_outArticleDetailsLine);
 
         themeAccentExclusionKeys.add(key_voipgroup_checkMenu);
         themeAccentExclusionKeys.add(key_voipgroup_muteButton);
@@ -6751,6 +6892,142 @@ public class Theme {
         return lightness > 0.705f || lightness2 > 0.705f;
     }
 
+    private static int calculatedTableBackground(int bubbleColor, boolean isDarkTheme, boolean isOut) {
+        if (isDarkTheme && isOut) {
+            return multAlpha(Color.WHITE, .07f);
+        }
+        float[] hsv = getTempHsv(3);
+        Color.colorToHSV(bubbleColor, hsv);
+        if (isDarkTheme) {
+            hsv[2] = Math.min(1f, hsv[2] + .07f);
+            if (isOut) {
+                hsv[1] = Math.min(1f, hsv[1] + .02f);
+            }
+        } else {
+            hsv[2] = Math.max(0f, hsv[2] - (isOut ? .06f : .03f));
+            if (isOut && hsv[1] > .02f) {
+                hsv[1] = Math.min(1f, hsv[1] + .02f);
+            }
+        }
+        return Color.HSVToColor(Color.alpha(bubbleColor), hsv);
+    }
+
+    private static int calculatedTableBorder(int bubbleColor, boolean isDarkTheme, boolean isOut) {
+        if (isDarkTheme && isOut) {
+            return multAlpha(Color.WHITE, .14f);
+        }
+        float[] hsv = getTempHsv(3);
+        Color.colorToHSV(bubbleColor, hsv);
+        if (isDarkTheme) {
+            hsv[2] = Math.min(1f, hsv[2] + .14f);
+            if (isOut) {
+                hsv[1] = Math.min(1f, hsv[1] + .03f);
+            }
+        } else {
+            hsv[2] = Math.max(0f, hsv[2] - (isOut ? .14f : .12f));
+            if (isOut && hsv[1] > .02f) {
+                hsv[1] = Math.min(1f, hsv[1] + .04f);
+            }
+        }
+        return Color.HSVToColor(Color.alpha(bubbleColor), hsv);
+    }
+
+    private static int tableOutBubble(SparseIntArray colors) {
+        int r = 0, g = 0, b = 0, count = 0;
+        final int[] keys = {
+            key_chat_outBubble, key_chat_outBubbleGradient1,
+            key_chat_outBubbleGradient2, key_chat_outBubbleGradient3
+        };
+        for (int key : keys) {
+            if (key != key_chat_outBubble && colors.indexOfKey(key) < 0) {
+                continue;
+            }
+            final int color = colors.get(key, defaultColors[key]);
+            r += Color.red(color);
+            g += Color.green(color);
+            b += Color.blue(color);
+            count++;
+        }
+        return Color.rgb(r / count, g / count, b / count);
+    }
+
+    private static void applyCalculatedTableColors(SparseIntArray sourceColors, SparseIntArray colors, boolean isDarkTheme) {
+        final int inBubble = colors.get(key_chat_inBubble, defaultColors[key_chat_inBubble]);
+        final int outBubble = tableOutBubble(colors);
+        if (sourceColors.indexOfKey(key_chat_inTableBackground) < 0) {
+            colors.put(key_chat_inTableBackground, calculatedTableBackground(inBubble, isDarkTheme, false));
+        }
+        if (sourceColors.indexOfKey(key_chat_outTableBackground) < 0) {
+            colors.put(key_chat_outTableBackground, calculatedTableBackground(outBubble, isDarkTheme, true));
+        }
+        if (sourceColors.indexOfKey(key_chat_inTableBorder) < 0) {
+            colors.put(key_chat_inTableBorder, calculatedTableBorder(inBubble, isDarkTheme, false));
+        }
+        if (sourceColors.indexOfKey(key_chat_outTableBorder) < 0) {
+            colors.put(key_chat_outTableBorder, calculatedTableBorder(outBubble, isDarkTheme, true));
+        }
+        if (sourceColors.indexOfKey(key_chat_outDivider) < 0) {
+            final int replyLine = colors.get(key_chat_outReplyLine, defaultColors[key_chat_outReplyLine]);
+            colors.put(key_chat_outDivider, multAlpha(replyLine, .2f));
+        }
+        if (isDarkTheme && sourceColors.indexOfKey(key_chat_inDivider) < 0) {
+            final int replyText = colors.get(key_chat_inReplyMessageText, defaultColors[key_chat_inReplyMessageText]);
+            colors.put(key_chat_inDivider, multAlpha(replyText, .2f));
+        }
+    }
+
+    private static void applyCalculatedArticleCodeColors(SparseIntArray sourceColors, SparseIntArray colors, boolean isDarkTheme) {
+        if (isDarkTheme && sourceColors.indexOfKey(key_chat_inArticleCodeBackground) < 0) {
+            colors.put(key_chat_inArticleCodeBackground, multAlpha(Color.WHITE, .10f));
+        }
+        final int inBubble = colors.get(key_chat_inBubble, defaultColors[key_chat_inBubble]);
+        final int outBubble = tableOutBubble(colors);
+        if (sourceColors.indexOfKey(key_chat_inArticleCodeScrollbarBackground) < 0) {
+            colors.put(key_chat_inArticleCodeScrollbarBackground, calculatedArticleCodeScrollbar(inBubble, isDarkTheme, false));
+        }
+        if (sourceColors.indexOfKey(key_chat_inArticleCodeScrollbar) < 0) {
+            colors.put(key_chat_inArticleCodeScrollbar, calculatedArticleCodeScrollbar(inBubble, isDarkTheme, true));
+        }
+        if (sourceColors.indexOfKey(key_chat_outArticleCodeScrollbarBackground) < 0) {
+            colors.put(key_chat_outArticleCodeScrollbarBackground, calculatedArticleCodeScrollbar(outBubble, isDarkTheme, false));
+        }
+        if (sourceColors.indexOfKey(key_chat_outArticleCodeScrollbar) < 0) {
+            colors.put(key_chat_outArticleCodeScrollbar, calculatedArticleCodeScrollbar(outBubble, isDarkTheme, true));
+        }
+        if (sourceColors.indexOfKey(key_chat_inArticleDetailsArrow) < 0) {
+            colors.put(key_chat_inArticleDetailsArrow, calculatedArticleDetailsColor(inBubble, isDarkTheme, false, true));
+        }
+        if (sourceColors.indexOfKey(key_chat_outArticleDetailsArrow) < 0) {
+            colors.put(key_chat_outArticleDetailsArrow, calculatedArticleDetailsColor(outBubble, isDarkTheme, true, true));
+        }
+        if (sourceColors.indexOfKey(key_chat_inArticleDetailsLine) < 0) {
+            colors.put(key_chat_inArticleDetailsLine, calculatedArticleDetailsColor(inBubble, isDarkTheme, false, false));
+        }
+        if (sourceColors.indexOfKey(key_chat_outArticleDetailsLine) < 0) {
+            colors.put(key_chat_outArticleDetailsLine, calculatedArticleDetailsColor(outBubble, isDarkTheme, true, false));
+        }
+    }
+
+    private static int calculatedArticleDetailsColor(int bubbleColor, boolean isDarkTheme, boolean isOut, boolean arrow) {
+        if (isDarkTheme) {
+            return multAlpha(Color.WHITE, arrow ? .62f : .18f);
+        }
+        final int baseColor = arrow ? 0xff9ea4a8 : 0xffd8d8d8;
+        final float[] hsv = getTempHsv(3);
+        Color.colorToHSV(bubbleColor, hsv);
+        return isOut && hsv[1] > .02f ? adaptHue(baseColor, bubbleColor) : baseColor;
+    }
+
+    private static int calculatedArticleCodeScrollbar(int bubbleColor, boolean isDarkTheme, boolean thumb) {
+        if (isDarkTheme) {
+            return multAlpha(Color.WHITE, thumb ? .22f : .12f);
+        }
+        final int baseColor = thumb ? 0xffc5cdd5 : 0xffe1e6eb;
+        final float[] hsv = getTempHsv(3);
+        Color.colorToHSV(bubbleColor, hsv);
+        return hsv[1] > .02f ? adaptHue(baseColor, bubbleColor) : baseColor;
+    }
+
     public static void refreshThemeColors() {
         refreshThemeColors(false, false);
     }
@@ -6762,6 +7039,8 @@ public class Theme {
         if (accent != null) {
             shouldDrawGradientIcons = accent.fillAccentColors(currentColorsNoAccent, currentColors);
         }
+        applyCalculatedTableColors(currentColorsNoAccent, currentColors, currentTheme.isDark());
+        applyCalculatedArticleCodeColors(currentColorsNoAccent, currentColors, currentTheme.isDark());
         if (!messages) {
             boolean async = !(LaunchActivity.getLastFragment() instanceof ChatActivity);
             reloadWallpaper(async);
@@ -8387,7 +8666,7 @@ public class Theme {
             }
             dialogs_archiveAvatarDrawable = new RLottieDrawable(R.raw.chats_archiveavatar, "chats_archiveavatar", dp(36), dp(36), false, null);
             dialogs_archiveDrawable = new RLottieDrawable(R.raw.chats_archive, "chats_archive", dp(36), dp(36), false, null);
-            dialogs_unarchiveDrawable = new RLottieDrawable(R.raw.chats_unarchive, "chats_unarchive", dp(dp(36)), dp(36), false, null);
+            dialogs_unarchiveDrawable = new RLottieDrawable(R.raw.chats_unarchive, "chats_unarchive", dp(36), dp(36), false, null);
             dialogs_pinArchiveDrawable = new RLottieDrawable(R.raw.chats_hide, "chats_hide", dp(36), dp(36), false, null);
             dialogs_unpinArchiveDrawable = new RLottieDrawable(R.raw.chats_unhide, "chats_unhide", dp(36), dp(36), false, null);
             dialogs_hidePsaDrawable = new RLottieDrawable(R.raw.chat_audio_record_delete, "chats_psahide", dp(30), dp(30), false, null);
@@ -8418,45 +8697,45 @@ public class Theme {
         }
 
         dialogs_archiveAvatarDrawable.beginApplyLayerColors();
-        dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", getNonAnimatedColor(key_avatar_backgroundArchived));
-        dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", getNonAnimatedColor(key_avatar_backgroundArchived));
-        dialogs_archiveAvatarDrawable.setLayerColor("Box2.**", getNonAnimatedColor(key_avatar_text));
-        dialogs_archiveAvatarDrawable.setLayerColor("Box1.**", getNonAnimatedColor(key_avatar_text));
+        dialogs_archiveAvatarDrawable.setLayerColor("Arrow1", getNonAnimatedColor(key_avatar_backgroundArchived));
+        dialogs_archiveAvatarDrawable.setLayerColor("Arrow2", getNonAnimatedColor(key_avatar_backgroundArchived));
+        dialogs_archiveAvatarDrawable.setLayerColor("Box2", getNonAnimatedColor(key_avatar_text));
+        dialogs_archiveAvatarDrawable.setLayerColor("Box1", getNonAnimatedColor(key_avatar_text));
         dialogs_archiveAvatarDrawable.commitApplyLayerColors();
         dialogs_archiveAvatarDrawableRecolored = false;
         dialogs_archiveAvatarDrawable.setAllowDecodeSingleFrame(true);
 
         dialogs_pinArchiveDrawable.beginApplyLayerColors();
-        dialogs_pinArchiveDrawable.setLayerColor("Arrow.**", getNonAnimatedColor(key_chats_archiveIcon));
-        dialogs_pinArchiveDrawable.setLayerColor("Line.**", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_pinArchiveDrawable.setLayerColor("Arrow", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_pinArchiveDrawable.setLayerColor("Line", getNonAnimatedColor(key_chats_archiveIcon));
         dialogs_pinArchiveDrawable.commitApplyLayerColors();
 
         dialogs_unpinArchiveDrawable.beginApplyLayerColors();
-        dialogs_unpinArchiveDrawable.setLayerColor("Arrow.**", getNonAnimatedColor(key_chats_archiveIcon));
-        dialogs_unpinArchiveDrawable.setLayerColor("Line.**", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_unpinArchiveDrawable.setLayerColor("Arrow", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_unpinArchiveDrawable.setLayerColor("Line", getNonAnimatedColor(key_chats_archiveIcon));
         dialogs_unpinArchiveDrawable.commitApplyLayerColors();
 
         dialogs_hidePsaDrawable.beginApplyLayerColors();
-        dialogs_hidePsaDrawable.setLayerColor("Line 1.**", getNonAnimatedColor(key_chats_archiveBackground));
-        dialogs_hidePsaDrawable.setLayerColor("Line 2.**", getNonAnimatedColor(key_chats_archiveBackground));
-        dialogs_hidePsaDrawable.setLayerColor("Line 3.**", getNonAnimatedColor(key_chats_archiveBackground));
-        dialogs_hidePsaDrawable.setLayerColor("Cup Red.**", getNonAnimatedColor(key_chats_archiveIcon));
-        dialogs_hidePsaDrawable.setLayerColor("Box.**", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_hidePsaDrawable.setLayerColor("Line 1", getNonAnimatedColor(key_chats_archiveBackground));
+        dialogs_hidePsaDrawable.setLayerColor("Line 2", getNonAnimatedColor(key_chats_archiveBackground));
+        dialogs_hidePsaDrawable.setLayerColor("Line 3", getNonAnimatedColor(key_chats_archiveBackground));
+        dialogs_hidePsaDrawable.setLayerColor("Cup Red", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_hidePsaDrawable.setLayerColor("Box", getNonAnimatedColor(key_chats_archiveIcon));
         dialogs_hidePsaDrawable.commitApplyLayerColors();
         dialogs_hidePsaDrawableRecolored = false;
 
         dialogs_archiveDrawable.beginApplyLayerColors();
-        dialogs_archiveDrawable.setLayerColor("Arrow.**", getNonAnimatedColor(key_chats_archiveBackground));
-        dialogs_archiveDrawable.setLayerColor("Box2.**", getNonAnimatedColor(key_chats_archiveIcon));
-        dialogs_archiveDrawable.setLayerColor("Box1.**", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_archiveDrawable.setLayerColor("Arrow", getNonAnimatedColor(key_chats_archiveBackground));
+        dialogs_archiveDrawable.setLayerColor("Box2", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_archiveDrawable.setLayerColor("Box1", getNonAnimatedColor(key_chats_archiveIcon));
         dialogs_archiveDrawable.commitApplyLayerColors();
         dialogs_archiveDrawableRecolored = false;
 
         dialogs_unarchiveDrawable.beginApplyLayerColors();
-        dialogs_unarchiveDrawable.setLayerColor("Arrow1.**", getNonAnimatedColor(key_chats_archiveIcon));
-        dialogs_unarchiveDrawable.setLayerColor("Arrow2.**", getNonAnimatedColor(key_chats_archivePinBackground));
-        dialogs_unarchiveDrawable.setLayerColor("Box2.**", getNonAnimatedColor(key_chats_archiveIcon));
-        dialogs_unarchiveDrawable.setLayerColor("Box1.**", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_unarchiveDrawable.setLayerColor("Arrow1", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_unarchiveDrawable.setLayerColor("Arrow2", getNonAnimatedColor(key_chats_archivePinBackground));
+        dialogs_unarchiveDrawable.setLayerColor("Box2", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_unarchiveDrawable.setLayerColor("Box1", getNonAnimatedColor(key_chats_archiveIcon));
         dialogs_unarchiveDrawable.commitApplyLayerColors();
 
         chat_animatedEmojiTextColorFilter = new PorterDuffColorFilter(getColor(key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN);
@@ -9607,6 +9886,10 @@ public class Theme {
     public static int getDefaultColor(int key) {
         int value = defaultColors[key];
         if (value == 0) {
+            int fallbackKey = fallbackKeys.get(key, -1);
+            if (fallbackKey != -1) {
+                return getDefaultColor(fallbackKey);
+            }
             if (isMyMessagesBubbles(key) || key == key_chats_menuTopShadow || key == key_chats_menuTopBackground || key == key_chats_menuTopShadowCats || key == key_chat_wallpaper_gradient_to2 || key == key_chat_wallpaper_gradient_to3) {
                 return 0;
             }
@@ -9660,6 +9943,10 @@ public class Theme {
             return provider.getColor(key);
         }
         return getColor(key);
+    }
+
+    public static int getCurrentColor(int key) {
+        return currentColors.get(key);
     }
 
     public static int getColor(int key) {
@@ -10743,6 +11030,66 @@ public class Theme {
             selectedAutoNightType = AUTO_NIGHT_TYPE_NONE;
             saveAutoNightThemeConfig();
             cancelAutoNightThemeCallbacks();
+        }
+    }
+
+    public enum IvButtonColors {
+        DEFAULT(
+                Theme.key_chat_msgIvButtonDefaultIn, Theme.key_chat_msgIvButtonDefaultInPressed, Theme.key_chat_msgIvButtonDefaultInText,
+                Theme.key_chat_msgIvButtonDefaultOut, Theme.key_chat_msgIvButtonDefaultOutPressed, Theme.key_chat_msgIvButtonDefaultOutText
+        ),
+        PRIMARY(
+                Theme.key_chat_msgIvButtonPrimaryIn, Theme.key_chat_msgIvButtonPrimaryInPressed, Theme.key_chat_msgIvButtonPrimaryInText,
+                Theme.key_chat_msgIvButtonPrimaryOut, Theme.key_chat_msgIvButtonPrimaryOutPressed, Theme.key_chat_msgIvButtonPrimaryOutText
+        ),
+        DANGER(
+                Theme.key_chat_msgIvButtonDangerIn, Theme.key_chat_msgIvButtonDangerInPressed, Theme.key_chat_msgIvButtonDangerInText,
+                Theme.key_chat_msgIvButtonDangerOut, Theme.key_chat_msgIvButtonDangerOutPressed, Theme.key_chat_msgIvButtonDangerOutText
+        ),
+        SUCCESS(
+                Theme.key_chat_msgIvButtonSuccessIn, Theme.key_chat_msgIvButtonSuccessInPressed, Theme.key_chat_msgIvButtonSuccessInText,
+                Theme.key_chat_msgIvButtonSuccessOut, Theme.key_chat_msgIvButtonSuccessOutPressed, Theme.key_chat_msgIvButtonSuccessOutText
+        ),
+        DEFAULT_IN_TEXT(
+                Theme.key_chat_msgIvButtonDefaultInlineIn, Theme.key_chat_msgIvButtonDefaultInlineInPressed, Theme.key_chat_msgIvButtonDefaultInlineInText,
+                Theme.key_chat_msgIvButtonDefaultInlineOut, Theme.key_chat_msgIvButtonDefaultInlineOutPressed, Theme.key_chat_msgIvButtonDefaultInlineOutText
+        );
+
+        private final int backgroundIn, backgroundInPressed, textIn;
+        private final int backgroundOut, backgroundOutPressed, textOut;
+
+        IvButtonColors(int backgroundIn, int backgroundInPressed, int textIn, int backgroundOut, int backgroundOutPressed, int textOut) {
+            this.backgroundIn = backgroundIn;
+            this.backgroundInPressed = backgroundInPressed;
+            this.textIn = textIn;
+            this.backgroundOut = backgroundOut;
+            this.backgroundOutPressed = backgroundOutPressed;
+            this.textOut = textOut;
+        }
+
+        public int getBackgroundKey(boolean out) {
+            return out ? backgroundOut : backgroundIn;
+        }
+
+        public int getBackgroundPressedKey(boolean out) {
+            return out ? backgroundOutPressed : backgroundInPressed;
+        }
+
+        public int getTextKey(boolean out) {
+            return out ? textOut : textIn;
+        }
+
+        public static IvButtonColors of(TL_keyboard.RichButtonStyle style) {
+            if (style != null) {
+                if (style.bg_primary) {
+                    return PRIMARY;
+                } else if (style.bg_danger) {
+                    return DANGER;
+                } else if (style.bg_success) {
+                    return SUCCESS;
+                }
+            }
+            return DEFAULT;
         }
     }
 

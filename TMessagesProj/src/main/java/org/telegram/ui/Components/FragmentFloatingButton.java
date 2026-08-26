@@ -80,6 +80,7 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
         ScaleStateListAnimator.apply(this);
         if (!isSubButton) {
+            setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
             setTranslationZ(dpf2(0.5f));
         }
 

@@ -3805,10 +3805,17 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             month = null;
             year = null;
         }
-        String cardNumber = inputFields[FIELD_CARD].getText().toString();
-        String cvc = inputFields[FIELD_CVV].getText().toString();
-        CardBrand brand = CardUtils.getPossibleCardBrand(cardNumber);
-        cardName = brand.getDisplayName() + " *" + (cardNumber.length() > 4 ? cardNumber.substring(cardNumber.length() - 4) : "");
+        Card card = new Card(
+                inputFields[FIELD_CARD].getText().toString(),
+                month,
+                year,
+                inputFields[FIELD_CVV].getText().toString(),
+                inputFields[FIELD_CARDNAME].getText().toString(),
+                null, null, null, null,
+                inputFields[FIELD_CARD_POSTCODE].getText().toString(),
+                inputFields[FIELD_CARD_COUNTRY].getText().toString(),
+                null);
+        cardName = card.getBrand() + " *" + card.getLast4();
 
         boolean skipDateCheck = false;
         if (month != null && year != null) {
@@ -3821,10 +3828,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             }
         }
 
-        if (!validateCardNumber(cardNumber)) {
+        if (!card.validateNumber()) {
             shakeField(FIELD_CARD);
             return false;
-        } else if (!skipDateCheck && (!validateExpMonth(month) || !validateExpYear(year) || !validateExpiryDate(month, year))) {
+        } else if (!skipDateCheck && (!card.validateExpMonth() || !card.validateExpYear() || !card.validateExpiryDate())) {
             shakeField(FIELD_EXPIRE_DATE);
             return false;
         } else if (need_card_name && inputFields[FIELD_CARDNAME].length() == 0) {

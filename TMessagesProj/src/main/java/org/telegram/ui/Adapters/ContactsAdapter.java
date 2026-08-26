@@ -448,7 +448,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                 break;
             }
             case USER_CELL: {
-                UserCell cell = new UserCell(mContext, 58, 1, false, false, null, true);
+                UserCell cell = new UserCell(mContext, 58, 1, false);
                 cell.setCallCellStyle(58);
                 view = cell;
                 break;

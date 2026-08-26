@@ -438,6 +438,28 @@ public class TimelineView extends View {
                 try {
                     if (!NekoConfig.disableVibration.Bool()) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
                 } catch (Exception e) {}
+            } else if (pressType == 3 && pressCollageIndex >= 0 && pressCollageIndex < collageTracks.size()) {
+                final Track track = collageTracks.get(pressCollageIndex);
+                SliderView slider =
+                    new SliderView(getContext(), SliderView.TYPE_VOLUME)
+                        .setMinMax(0, 1.5f)
+                        .setValue(track.volume)
+                        .setOnValueChange(volume -> {
+                            track.volume = volume;
+                            if (delegate != null) {
+                                delegate.onVideoVolumeChange(track.index, volume);
+                            }
+                        });
+                ItemOptions itemOptions = ItemOptions.makeOptions(container, resourcesProvider, this)
+                        .addView(slider)
+                        .setGravity(Gravity.RIGHT)
+                        .forceTop(true)
+                        .translate(dp(18), track.bounds.top)
+                        .show();
+                itemOptions.setBlurBackground(blurManager, -previewContainer.getX(), -previewContainer.getY());
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                } catch (Exception e) {}
             }
         };
     }

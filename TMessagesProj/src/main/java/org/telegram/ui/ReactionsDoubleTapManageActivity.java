@@ -112,12 +112,7 @@ public class ReactionsDoubleTapManageActivity extends BaseFragment implements No
                         break;
                     case 2:
                         TextInfoPrivacyCell cell = new TextInfoPrivacyCell(context);
-                        cell.setText(AndroidUtilities.replaceArrows(
-                            AndroidUtilities.replaceSingleTag(
-                                getString(R.string.DoubleTapPreviewRational) + "\n\n" + "**" + getString(R.string.DoubleTapAction) + " >**",
-                                () -> Browser.openUrl(getContext(), "https://t.me/nasettings/chat?r=DoubleTapIncoming")
-                            ), true
-                        ));
+                        cell.setText(LocaleController.getString(R.string.DoubleTapPreviewRational));
                         view = cell;
                         break;
                     case 3:

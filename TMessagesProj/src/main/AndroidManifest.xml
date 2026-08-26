@@ -621,7 +621,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- <receiver
+        <receiver
             android:name=".SmsReceiver"
             android:exported="true">
             <intent-filter>
@@ -781,6 +781,8 @@
             </intent-filter>
         </service>
 
+        <receiver android:name=".StopLiveLocationReceiver" android:enabled="true"/>
+
         <receiver android:name=".StopLiveLocationReceiver" android:enabled="true" android:exported="false"/>
 
         <receiver android:name=".PopupReplyReceiver" android:enabled="true" android:exported="false"/>
@@ -930,7 +932,7 @@
             android:value="5" />
         -->
 
-        <!--<meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face,barcode" />-->
+        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="face,barcode" />
 
         <meta-data android:name="android.max_aspect" android:value="2.5" />
         <meta-data

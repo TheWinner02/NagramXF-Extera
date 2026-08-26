@@ -643,16 +643,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                         containerView.invalidate();
                     }
                 }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
             });
         }
         videoPlayer.preparePlayer(Uri.fromFile(file), "other");
@@ -982,8 +972,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                 WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-        /*windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
-        AndroidUtilities.logFlagSecure();*/
+        windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+        AndroidUtilities.logFlagSecure();
         centerImage.setParentView(containerView);
         centerImage.setForceCrossfade(true);
 

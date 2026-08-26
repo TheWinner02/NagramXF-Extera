@@ -196,6 +196,19 @@ public class TextStyleSpan extends MetricAffectingSpan {
         }
     }
 
+    private void applySubSuper(TextPaint p) {
+        if (!hasFlag(style.flags, FLAG_STYLE_SUBSCRIPT | FLAG_STYLE_SUPERSCRIPT)) {
+            return;
+        }
+        float base = p.getTextSize();
+        p.setTextSize(base * 0.75f);
+        if (hasFlag(style.flags, FLAG_STYLE_SUPERSCRIPT)) {
+            p.baselineShift -= (int) (base * 0.35f);
+        } else if (hasFlag(style.flags, FLAG_STYLE_SUBSCRIPT)) {
+            p.baselineShift += (int) (base * 0.12f);
+        }
+    }
+
     @Override
     public void updateMeasureState(TextPaint p) {
         if (textSize != 0) {

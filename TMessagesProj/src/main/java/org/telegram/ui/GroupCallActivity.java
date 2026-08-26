@@ -10684,7 +10684,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         final float heightOfInputView = animatorMessageInputHeight.getFactor();
         final float heightOfKeyboard = windowInsetsStateHolder.getAnimatedMaxBottomInset() - containerView.getPaddingBottom();
         final float reactionsLayoutHeight = dp(68) * animatorMessageIsEmpty.getFloatValue();
-
+        
         final float imeOffset = -(heightOfKeyboard + heightOfInputView + reactionsLayoutHeight + dp(10));
         final float defaultOffset;
 

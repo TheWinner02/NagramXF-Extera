@@ -82,6 +82,7 @@ import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -737,7 +738,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             button = new ButtonWithCounterView(getContext(), getResourceProvider());
             button.setRound();
             button.text.setHacks(true, true, true);
-            button.setText(isChannel ? buttonUnlocked : (!getUserConfig().isPremiumOrLocal() ? buttonLocked : (selectedEmojiCollectible != null ? buttonCollectible : buttonUnlocked)), false);
+            button.setText(isChannel ? buttonUnlocked : (!getUserConfig().isPremium() ? buttonLocked : (selectedEmojiCollectible != null ? buttonCollectible : buttonUnlocked)), false);
             button.setOnClickListener(v -> buttonClick());
             buttonContainer.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 14, 14.66f, 14, 14));
 
@@ -1233,7 +1234,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     button.setSubText(null, animated);
                 }
             } else {
-                button.setText(!getUserConfig().isPremiumOrLocal() && !isChannel ? buttonLocked : (selectedEmojiCollectible != null ? buttonCollectible : buttonUnlocked), animated);
+                button.setText(!getUserConfig().isPremium() && !isChannel ? buttonLocked : (selectedEmojiCollectible != null ? buttonCollectible : buttonUnlocked), animated);
                 button.setSubText(null, animated);
             }
         }
@@ -1335,7 +1336,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
     private Theme.ResourcesProvider parentResourcesProvider;
     private final SparseIntArray currentColors = new SparseIntArray();
-    private final Theme.MessageDrawable msgInDrawable, msgInDrawableSelected;
+    private final MessageDrawable msgInDrawable, msgInDrawableSelected;
 
     public void updateThemeColors() {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
@@ -1448,8 +1449,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 return isDark;
             }
         };
-        msgInDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, false, resourceProvider);
-        msgInDrawableSelected = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, true, resourceProvider);
+        msgInDrawable = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, false, resourceProvider);
+        msgInDrawableSelected = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, true, resourceProvider);
     }
 
     @Override
@@ -1642,10 +1643,10 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         }
         sunDrawable.beginApplyLayerColors();
         int color = Theme.getColor(Theme.key_chats_menuName);
-        sunDrawable.setLayerColor("Sunny.**", color);
-        sunDrawable.setLayerColor("Path 6.**", color);
-        sunDrawable.setLayerColor("Path.**", color);
-        sunDrawable.setLayerColor("Path 5.**", color);
+        sunDrawable.setLayerColor("Sunny", color);
+        sunDrawable.setLayerColor("Path 6", color);
+        sunDrawable.setLayerColor("Path", color);
+        sunDrawable.setLayerColor("Path 5", color);
         sunDrawable.commitApplyLayerColors();
 
         dayNightItem = new ImageView(context);
@@ -1683,7 +1684,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
     @Override
     public boolean onBackPressed(boolean invoked) {
-        if (!isChannel && hasUnsavedChanged() && getUserConfig().isPremiumOrLocal()) {
+        if (!isChannel && hasUnsavedChanged() && getUserConfig().isPremium()) {
             if (invoked) showUnsavedAlert();
             return false;
         }
@@ -1875,6 +1876,26 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     me.profile_color.background_emoji_id = 0;
                 }
                 if (getUserConfig().isPremium()) getConnectionsManager().sendRequest(req, null);
+            }
+            if (!eq(me.emoji_status, profilePage.selectedEmojiCollectible) && (profilePage.selectedEmojiCollectible != null || DialogObject.isEmojiStatusCollectible(me.emoji_status))) {
+                TLRPC.EmojiStatus new_emoji_status = new TLRPC.TL_emojiStatusEmpty();
+                TL_stars.TL_starGiftUnique gift = null;
+                if (profilePage.selectedEmojiCollectible != null) {
+                    final long id = profilePage.selectedEmojiCollectible.collectible_id;
+                    for (int i = 0; i < profilePage.uniqueGifts.size(); ++i) {
+                        final TL_stars.TL_starGiftUnique g = profilePage.uniqueGifts.get(i);
+                        if (g.id == id) {
+                            gift = g;
+                            break;
+                        }
+                    }
+                }
+                if (gift != null) {
+                    TLRPC.TL_inputEmojiStatusCollectible status = new TLRPC.TL_inputEmojiStatusCollectible();
+                    status.collectible_id = gift.id;
+                    new_emoji_status = status;
+                }
+                getMessagesController().updateEmojiStatus(0, new_emoji_status, gift);
             }
             if (!eq(me.emoji_status, profilePage.selectedEmojiCollectible) && (profilePage.selectedEmojiCollectible != null || DialogObject.isEmojiStatusCollectible(me.emoji_status))) {
                 TLRPC.EmojiStatus new_emoji_status = new TLRPC.TL_emojiStatusEmpty();
@@ -3620,10 +3641,5 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         return a.collectible_id == b.collectible_id;
-    }
-
-    @Override
-    public boolean isActionBarCrossfadeEnabled() {
-        return false;
     }
 }

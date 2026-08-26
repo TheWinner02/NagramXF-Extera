@@ -174,14 +174,10 @@ public class ColoredImageSpan extends ReplacementSpan {
             if (rotate != 1f) {
                 canvas.rotate(rotate, drawable.getBounds().centerX(), drawable.getBounds().centerY());
             }
-            if (ignorePaintAlpha) {
-                drawable.setAlpha((int) (alpha * 255));
+            if (drawableColorIsPaintColor) {
+                drawable.setAlpha((int) (0xFF * alpha * (paint.getAlpha() / (float) Color.alpha(drawableColor))));
             } else {
-                if (drawableColorIsPaintColor) {
-                    drawable.setAlpha((int) (0xFF * alpha * (paint.getAlpha() / (float) Color.alpha(drawableColor))));
-                } else {
-                    drawable.setAlpha((int) (paint.getAlpha() * alpha));
-                }
+                drawable.setAlpha((int) (paint.getAlpha() * alpha));
             }
             drawable.draw(canvas);
         }

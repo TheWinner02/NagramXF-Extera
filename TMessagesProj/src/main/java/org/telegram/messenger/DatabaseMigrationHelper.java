@@ -1433,7 +1433,7 @@ public class DatabaseMigrationHelper {
         }
 
         if (version == 143) {
-            database.executeFast("ALTER TABLE dialog_filter_neko ADD COLUMN color INTEGER default -1").stepThis().dispose();
+            database.executeFast("ALTER TABLE dialog_filter ADD COLUMN color INTEGER default -1").stepThis().dispose();
             database.executeFast("PRAGMA user_version = 144").stepThis().dispose();
             version = 144;
         }
@@ -1541,13 +1541,13 @@ public class DatabaseMigrationHelper {
         }
 
         if (version == 159) {
-            database.executeFast("ALTER TABLE dialog_filter_neko ADD COLUMN entities BLOB").stepThis().dispose();
+            database.executeFast("ALTER TABLE dialog_filter ADD COLUMN entities BLOB").stepThis().dispose();
             database.executeFast("PRAGMA user_version = 160").stepThis().dispose();
             version = 160;
         }
 
         if (version == 160) {
-            database.executeFast("ALTER TABLE dialog_filter_neko ADD COLUMN noanimate INTEGER").stepThis().dispose();
+            database.executeFast("ALTER TABLE dialog_filter ADD COLUMN noanimate INTEGER").stepThis().dispose();
             database.executeFast("PRAGMA user_version = 161").stepThis().dispose();
             version = 161;
         }
@@ -1679,6 +1679,15 @@ public class DatabaseMigrationHelper {
             database.executeFast("PRAGMA user_version = 176").stepThis().dispose();
             version = 176;
         }
+        if (version == 176) {
+            database.executeFast("CREATE TABLE welcome_messages(mid INTEGER, dialog_id INTEGER, send_state INTEGER, date INTEGER, data BLOB, ttl INTEGER, replydata BLOB, reply_to_message_id INTEGER, PRIMARY KEY(mid, dialog_id))").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_welcome_messages ON welcome_messages(mid, send_state, date);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS dialog_date_idx_welcome_messages ON welcome_messages(dialog_id, date);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS reply_to_idx_welcome_messages ON welcome_messages(mid, reply_to_message_id);").stepThis().dispose();
+            database.executeFast("CREATE INDEX IF NOT EXISTS idx_to_reply_welcome_messages ON welcome_messages(reply_to_message_id, mid);").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 177").stepThis().dispose();
+            version = 177;
+        }
 
         return version;
     }
@@ -1746,7 +1755,7 @@ public class DatabaseMigrationHelper {
             excludeTables.add("media_counts_v2");
             excludeTables.add("media_counts_topics");
             excludeTables.add("dialogs");
-            excludeTables.add("dialog_filter_neko");
+            excludeTables.add("dialog_filter");
             excludeTables.add("dialog_filter_ep");
             excludeTables.add("dialog_filter_pin_v2");
 

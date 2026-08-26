@@ -24,7 +24,7 @@ import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -46,6 +46,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -216,6 +217,32 @@ public class ReactionsLayoutInBubble {
                         includeEmptyStarButton = true;
                     }
                 }
+                boolean includeEmptyStarButton = false;
+                boolean includeEmptyLikeButton = forceLikeDislikeReactions;
+                boolean includeEmptyDislikeButton = forceLikeDislikeReactions;
+
+                final TLRPC.ChatFull chatInfo = MessagesController.getInstance(currentAccount).getChatFull(-messageObject.getDialogId());
+                if (!isSmall && !messageObject.messageOwner.reactions.results.isEmpty() && chatInfo != null && chatInfo.paid_reactions_available) {
+                    boolean hasPaidReaction = false;
+                    for (int i = 0; i < messageObject.messageOwner.reactions.results.size(); i++) {
+                        TLRPC.ReactionCount reactionCount = messageObject.messageOwner.reactions.results.get(i);
+                        if (reactionCount.reaction instanceof TLRPC.TL_reactionPaid) {
+                            hasPaidReaction = true;
+                        }
+                        if (reactionCount.reaction instanceof TLRPC.TL_reactionEmoji) {
+                            String emoji = ((TLRPC.TL_reactionEmoji) reactionCount.reaction).emoticon;
+                            if (TextUtils.equals("\uD83D\uDC4D", emoji)) {
+                                includeEmptyLikeButton = false;
+                            }
+                            if (TextUtils.equals("\uD83D\uDC4E", emoji)) {
+                                includeEmptyDislikeButton = false;
+                            }
+                        }
+                    }
+                    if (!hasPaidReaction) {
+                        includeEmptyStarButton = true;
+                    }
+                }
 
                 ArrayList<TLRPC.Reaction> forcedReactions = new ArrayList<>();
                 if (includeEmptyStarButton) {
@@ -232,7 +259,7 @@ public class ReactionsLayoutInBubble {
                     forcedReactions.add(emoji);
                 }
 
-                for (int i = (-forcedReactions.size()); i < visibleReactionCounts.size(); i++) {
+                for (int i = (-forcedReactions.size()); i < messageObject.messageOwner.reactions.results.size(); i++) {
                     TLRPC.ReactionCount reactionCount;
                     if (i < 0) {
                         reactionCount = new TLRPC.TL_reactionCount();
@@ -240,7 +267,7 @@ public class ReactionsLayoutInBubble {
                         reactionCount.chosen = false;
                         reactionCount.count = 0;
                     } else {
-                        reactionCount = visibleReactionCounts.get(i);
+                        reactionCount = messageObject.messageOwner.reactions.results.get(i);
                     }
                     ReactionButton old = null;
                     if (!NaConfig.INSTANCE.getPremiumItemStarInReactions().Bool() && reactionCount.reaction instanceof TLRPC.TL_reactionPaid) {
@@ -1133,7 +1160,7 @@ public class ReactionsLayoutInBubble {
                 paint2.setAlpha(oldAlpha2);
             }
             if (drawOverlayScrim && getDrawServiceShaderBackground() < 1 && parentView instanceof ChatMessageCell) {
-                Theme.MessageDrawable messageBackground = ((ChatMessageCell) parentView).getCurrentBackgroundDrawable(false);
+                MessageDrawable messageBackground = ((ChatMessageCell) parentView).getCurrentBackgroundDrawable(false);
                 if (messageBackground != null && !isTag) {
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, messageBackground.getPaint());
                 }

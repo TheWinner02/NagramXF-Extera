@@ -464,7 +464,7 @@ public class AvatarPreviewer {
                 avatarView.setOutlineAmbientShadowColor(0x80000000);
             }
 
-            menu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, R.drawable.popup_fixed_alert4, resourcesProvider, 0);
+            menu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, R.drawable.popup_fixed_alert, resourcesProvider, 0);
             menu.setBackground(iBlur3Factory.create(menu)
                 .setColorProvider(BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider))
                 .setPadding(dp(8))

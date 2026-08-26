@@ -187,8 +187,6 @@ public class ItemOptions {
     private int foregroundIndex;
     private ActionBarPopupWindow.ActionBarPopupWindowLayout lastLayout;
 
-    public ActionBarMenuSubItem subItem;
-
     public boolean swipeback, shownFromBottom, useScrollView;
 
     private static BaseFragment downFragment(BaseFragment fragment) {
@@ -210,7 +208,7 @@ public class ItemOptions {
     }
 
     private ItemOptions(BaseFragment fragment, View scrimView, boolean swipeback, boolean useScrollView, boolean shownFromBottom) {
-        if (fragment == null || fragment.getContext() == null) {
+        if (fragment.getContext() == null) {
             return;
         }
         fragment = downFragment(fragment);
@@ -350,7 +348,7 @@ public class ItemOptions {
     }
 
     public ItemOptions add(Drawable icon, CharSequence text, Runnable onClickListener) {
-        return add(0, icon, text, Theme.key_actionBarDefaultSubmenuItemIcon, Theme.key_actionBarDefaultSubmenuItem, null, onClickListener);
+        return add(0, icon, text, Theme.key_actionBarDefaultSubmenuItemIcon, Theme.key_actionBarDefaultSubmenuItem, onClickListener);
     }
 
     public ItemOptions add(int iconResId, CharSequence text, boolean isRed, Runnable onClickListener) {
@@ -397,7 +395,332 @@ public class ItemOptions {
             if (onClickListener != null) {
                 onClickListener.run();
             }
-            dismiss();
+            if (dismissWithButtons) dismiss();
+        });
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return this;
+    }
+
+    public ActionBarMenuSubItem add() {
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        add(subItem);
+        return subItem;
+    }
+
+    public void add(ActionBarMenuSubItem subItem) {
+        AndroidUtilities.removeFromParent(subItem);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+        subItem.setSelectorColor(Theme.getColor(Theme.key_groupcreate_sectionText, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
+
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+    }
+
+    public ItemOptions addCheckedIf(boolean condition, boolean checked, CharSequence text, Runnable onClickListener) {
+        if (!condition) return this;
+        return addChecked(checked, text, onClickListener);
+    }
+
+    public ItemOptions addChecked(boolean checked, CharSequence text, Runnable onClickListener) {
+        return addChecked(checked, text, onClickListener, null);
+    }
+
+    public ItemOptions addChecked(boolean checked, int iconResId, CharSequence text, Runnable onClickListener) {
+        return addChecked(checked, iconResId, text, onClickListener, null);
+    }
+    public ItemOptions addChecked(boolean checked, Drawable icon, CharSequence text, Runnable onClickListener) {
+        return addChecked(checked, 0, icon, text, onClickListener, null);
+    }
+
+
+    public ItemOptions addCheckedIf(boolean condition, boolean checked, CharSequence text, Runnable onClickListener, Runnable onLongClickRunnable) {
+        if (!condition) return this;
+        return addChecked(checked, text, onClickListener, onLongClickRunnable);
+    }
+
+    public ItemOptions addChecked(boolean checked, CharSequence text, Runnable onClickListener, Runnable onLongClickRunnable) {
+        return addChecked(checked, 0, text, onClickListener, onLongClickRunnable);
+    }
+
+    public ItemOptions addChecked(boolean checked, int iconResId, CharSequence text, Runnable onClickListener, Runnable onLongClickRunnable) {
+        return addChecked(checked, iconResId, null, text, onClickListener, onLongClickRunnable);
+    }
+    public ItemOptions addChecked(boolean checked, int iconResId, Drawable icon, CharSequence text, Runnable onClickListener, Runnable onLongClickRunnable) {
+        if (context == null) {
+            return this;
+        }
+
+        final int textColorKey = Theme.key_actionBarDefaultSubmenuItem;
+        final int iconColorKey = Theme.key_actionBarDefaultSubmenuItemIcon;
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, iconResId != 0 || icon != null ? 2 : 1, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+        if (icon != null) {
+            subItem.setTextAndIcon(text, 0, icon);
+        } else if (iconResId != 0) {
+            subItem.setTextAndIcon(text, iconResId);
+        } else {
+            subItem.setText(text);
+        }
+        subItem.setChecked(checked);
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+
+        subItem.setOnClickListener(view1 -> {
+            if (onClickListener != null) {
+                onClickListener.run();
+            }
+            if (dismissWithButtons) dismiss();
+        });
+        if (onLongClickRunnable != null) {
+            subItem.setOnLongClickListener(view1 -> {
+                if (onLongClickRunnable != null) {
+                    onLongClickRunnable.run();
+                }
+                if (dismissWithButtons) dismiss();
+                return true;
+            });
+        }
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return this;
+    }
+
+    public ActionBarMenuSubItem addChecked() {
+
+        final int textColorKey = Theme.key_actionBarDefaultSubmenuItem;
+        final int iconColorKey = Theme.key_actionBarDefaultSubmenuItemIcon;
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, true, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return subItem;
+    }
+
+    public boolean dismissWithButtons = true;
+    public ItemOptions setDismissWithButtons(boolean enable) {
+        this.dismissWithButtons = enable;
+        return this;
+    }
+
+    public ItemOptions addBot(TLRPC.TL_attachMenuBot bot, Runnable onClickListener, Runnable onLongClickRunnable) {
+        if (context == null) {
+            return this;
+        }
+
+        final int iconColorKey = Theme.key_actionBarDefaultSubmenuItemIcon;
+        final int textColorKey = Theme.key_actionBarDefaultSubmenuItem;
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+
+        CharSequence text;
+        if (bot.side_menu_disclaimer_needed) {
+            text = TextCell.applyNewSpan(bot.short_name);
+        } else {
+            text = bot.short_name;
+        }
+
+        TLRPC.TL_attachMenuBotIcon botIcon = MediaDataController.getSideAttachMenuBotIcon(bot);
+        if (botIcon != null) {
+            Drawable svgThumb = DocumentObject.getSvgThumb(botIcon.icon,  Theme.key_emptyListPlaceholder, 1);
+            if (svgThumb != null) {
+                svgThumb.setColorFilter(new PorterDuffColorFilter(iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            }
+            subItem.setTextAndIcon(text, ImageLocation.getForDocument(botIcon.icon), "24_24", svgThumb, bot);
+            subItem.setImageSize(24, 24);
+        } else {
+            subItem.setTextAndIcon(text, R.drawable.msg_bot);
+        }
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setIconColorImage(iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+
+        subItem.setOnClickListener(view1 -> {
+            if (onClickListener != null) {
+                onClickListener.run();
+            }
+            if (dismissWithButtons) dismiss();
+        });
+        subItem.setOnLongClickListener(view1 -> {
+            if (onLongClickRunnable != null) {
+                onLongClickRunnable.run();
+            }
+            if (dismissWithButtons) dismiss();
+            return true;
+        });
+
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return this;
+    }
+
+    public ItemOptions addChat(TLObject obj, boolean checked, Runnable onClickListener) {
+        if (context == null) {
+            return this;
+        }
+
+        final int textColorKey = Theme.key_actionBarDefaultSubmenuItem;
+        final int iconColorKey = Theme.key_actionBarDefaultSubmenuItemIcon;
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+        if (obj instanceof TLRPC.Chat) {
+            TLRPC.Chat chat = (TLRPC.Chat) obj;
+            subItem.setText(chat == null ? "" : chat.title);
+            subItem.setSubtext(ChatObject.isChannelAndNotMegaGroup(chat) ? getString(R.string.DiscussChannel) : getString(R.string.AccDescrGroup).toLowerCase());
+        } else if (obj instanceof TLRPC.User) {
+            TLRPC.User user = (TLRPC.User) obj;
+            subItem.setText(UserObject.getUserName(user));
+            if (user.id == UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()) {
+                subItem.setSubtext(getString(R.string.VoipGroupPersonalAccount));
+            } else if (UserObject.isBot(user)) {
+                subItem.setSubtext(getString(R.string.Bot));
+            }
+        }
+
+        subItem.setClipToPadding(false);
+        subItem.textView.setPadding(subItem.checkViewLeft ? (subItem.checkView != null ? dp(43) : 0) : dp(43), 0, subItem.checkViewLeft ? dp(43) : (subItem.checkView != null ? dp(43) : 0), 0);
+        BackupImageView imageView = new BackupImageView(context);
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        avatarDrawable.setInfo(obj);
+        imageView.setRoundRadius(dp(34));
+        imageView.setForUserOrChat(obj, avatarDrawable);
+        imageView.setScaleX(checked ? 0.84f : 1.0f);
+        imageView.setScaleY(checked ? 0.84f : 1.0f);
+        subItem.addView(imageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), -5, 0, -5, 0));
+
+        if (checked) {
+            final float strokeWidth = 2;
+            View checkView = new View(context);
+            checkView.setBackground(Theme.createOutlineCircleDrawable(dp(34), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), dp(strokeWidth)));
+            subItem.addView(checkView, LayoutHelper.createFrame(34 + strokeWidth, 34 + strokeWidth, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), -5 - strokeWidth / 2.0f, 0, -5, 0));
+        }
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+
+        subItem.setOnClickListener(view1 -> {
+            if (onClickListener != null) {
+                onClickListener.run();
+            }
+            if (dismissWithButtons) dismiss();
+        });
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return this;
+    }
+
+    public ItemOptions addAccount(int account, boolean checked, Runnable onClickListener) {
+        if (context == null) {
+            return this;
+        }
+
+        final int textColorKey = Theme.key_actionBarDefaultSubmenuItem;
+        final int iconColorKey = Theme.key_actionBarDefaultSubmenuItemIcon;
+
+        final TLRPC.User user = UserConfig.getInstance(account).getCurrentUser();
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+        subItem.setText(UserObject.getUserName(user));
+
+        subItem.setClipToPadding(false);
+        subItem.textView.setPadding(subItem.checkViewLeft ? (subItem.checkView != null ? dp(43) : 0) : dp(43), 0, subItem.checkViewLeft ? dp(43) : (subItem.checkView != null ? dp(43) : 0), 0);
+        BackupImageView imageView = new BackupImageView(context);
+        imageView.getImageReceiver().setCurrentAccount(account);
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        avatarDrawable.setInfo(user);
+        imageView.setRoundRadius(dp(34));
+        imageView.setForUserOrChat(user, avatarDrawable);
+        imageView.setScaleX(checked ? 0.84f : 1.0f);
+        imageView.setScaleY(checked ? 0.84f : 1.0f);
+        subItem.addView(imageView, LayoutHelper.createFrame(34, 34, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), -5, 0, -5, 0));
+
+        if (checked) {
+            final float strokeWidth = 2;
+            View checkView = new View(context);
+            checkView.setBackground(Theme.createOutlineCircleDrawable(dp(34), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), dp(strokeWidth)));
+            subItem.addView(checkView, LayoutHelper.createFrame(34 + strokeWidth, 34 + strokeWidth, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), -5 - strokeWidth / 2.0f, 0, -5, 0));
+        }
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+
+        subItem.setOnClickListener(view1 -> {
+            if (onClickListener != null) {
+                onClickListener.run();
+            }
+            if (dismissWithButtons) dismiss();
+        });
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        return this;
+    }
+
+    public ItemOptions add(CharSequence text, CharSequence subtext, Runnable onClickListener) {
+        if (context == null) {
+            return this;
+        }
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+        subItem.setText(text);
+        subItem.setSubtext(subtext);
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
+
+        subItem.setOnClickListener(view1 -> {
+            if (onClickListener != null) {
+                onClickListener.run();
+            }
+            if (dismissWithButtons) dismiss();
         });
         if (onLongClickListener != null) {
             subItem.setOnLongClickListener(view1 -> {
@@ -1693,6 +2016,21 @@ public class ItemOptions {
         return this;
     }
 
+    public static void setGapBackgroundColor(ViewGroup viewGroup, int color) {
+        if (viewGroup == null) {
+            return;
+        }
+
+        for (int j = 0; j < viewGroup.getChildCount(); ++j) {
+            final View child = viewGroup.getChildAt(j);
+            if (child instanceof ActionBarPopupWindow.GapView) {
+                ((ActionBarPopupWindow.GapView) child).setColor(color);
+            } else if (child instanceof ViewGroup) {
+                setGapBackgroundColor((ViewGroup) child, color);
+            }
+        }
+    }
+    
     private Integer gapBackgroundColor;
     public ItemOptions setGapBackgroundColor(int color) {
         gapBackgroundColor = color;

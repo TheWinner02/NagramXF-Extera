@@ -1,27 +1,15 @@
 package org.telegram.ui.ActionBar;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.os.Build;
 import android.graphics.Paint;
-import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
-import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.Insets;
@@ -31,46 +19,12 @@ import androidx.core.view.WindowInsetsCompat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
 
 public class DrawerLayoutContainer extends FrameLayout {
 
-    private static final int MIN_DRAWER_MARGIN = 64;
-
-    private FrameLayout drawerLayout;
-    private View drawerListView;
     private INavigationLayout parentActionBarLayout;
     private ActionBarLayout actionBarLayout;
-
-    private boolean maybeStartTracking;
-    private boolean startedTracking;
-    private int startedTrackingX;
-    private int startedTrackingY;
-    private int startedTrackingPointerId;
-    private VelocityTracker velocityTracker;
-    private boolean beginTrackingSent;
-    private AnimatorSet currentAnimation;
-
-    private final Rect rect = new Rect();
-
-    private final Paint scrimPaint = new Paint();
-    private final Paint internalNavbarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
     private boolean inLayout;
-    private final int minDrawerMargin;
-    private float scrimOpacity;
-    private final Drawable shadowLeft;
-    private boolean allowOpenDrawer = true;
-    private boolean allowOpenDrawerBySwipe = true;
-
-    private float drawerPosition;
-    private boolean drawerOpened;
-    public boolean allowDrawContent = true;
-
-    private @Nullable WindowInsetsCompat lastWindowInsetsCompat;
-    private @NonNull Insets systemAndCutoutInsets = Insets.NONE;
-    private @NonNull Insets systemAndCutoutAndImeInsets = Insets.NONE;
 
     public DrawerLayoutContainer(Context context) {
         super(context);
@@ -379,39 +333,13 @@ public class DrawerLayoutContainer extends FrameLayout {
         return false;
     }
 
-    private View findScrollingChild(ViewGroup parent, float x, float y) {
-        int n = parent.getChildCount();
-        for (int i = 0; i < n; i++) {
-            View child = parent.getChildAt(i);
-            if (child.getVisibility() != View.VISIBLE) {
-                continue;
-            }
-            child.getHitRect(rect);
-            if (rect.contains((int) x, (int) y)) {
-                if (child.canScrollHorizontally(-1)) {
-                    return child;
-                } else if (child instanceof ViewGroup) {
-                    View v = findScrollingChild((ViewGroup) child, x - rect.left, y - rect.top);
-                    if (v != null) {
-                        return v;
-                    }
-                }
-            }
-        }
-        return null;
+    public boolean onTouchEvent(MotionEvent ev) {
+        return false;
     }
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        return (parentActionBarLayout != null && parentActionBarLayout.checkTransitionAnimation()) || onTouchEvent(ev);
-    }
-
-    @Override
-    public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-        if (maybeStartTracking && !startedTracking) {
-            onTouchEvent(null);
-        }
-        super.requestDisallowInterceptTouchEvent(disallowIntercept);
+        return parentActionBarLayout.checkTransitionAnimation();
     }
 
     @Override
@@ -427,11 +355,7 @@ public class DrawerLayoutContainer extends FrameLayout {
 
             final LayoutParams lp = (LayoutParams) child.getLayoutParams();
             try {
-                if (drawerLayout != child) {
-                    child.layout(lp.leftMargin, lp.topMargin + getPaddingTop(), lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight() + getPaddingTop());
-                } else {
-                    child.layout(-child.getMeasuredWidth(), lp.topMargin + getPaddingTop(), 0, lp.topMargin + child.getMeasuredHeight() + getPaddingTop());
-                }
+                child.layout(lp.leftMargin, lp.topMargin + getPaddingTop(), lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight() + getPaddingTop());
             } catch (Exception e) {
                 FileLog.e(e);
                 if (BuildVars.DEBUG_VERSION) {
@@ -456,6 +380,17 @@ public class DrawerLayoutContainer extends FrameLayout {
 
         setMeasuredDimension(widthSize, heightSize);
 
+        final int newDisplayWidth = widthSize
+            - systemAndCutoutInsets.left
+            - systemAndCutoutInsets.right;
+
+        final int newDisplayHeight = heightSize
+            - systemAndCutoutInsets.top
+            - systemAndCutoutInsets.bottom;
+
+        AndroidUtilities.displaySize.x = newDisplayWidth;
+        AndroidUtilities.displaySize.y = newDisplayHeight;
+
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             final View child = getChildAt(i);
@@ -466,25 +401,21 @@ public class DrawerLayoutContainer extends FrameLayout {
 
             final LayoutParams lp = (LayoutParams) child.getLayoutParams();
 
-            if (drawerLayout != child) {
-                final int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize - lp.leftMargin - lp.rightMargin, MeasureSpec.EXACTLY);
-                final int contentHeightSpec;
-                if (lp.height > 0) {
-                    contentHeightSpec = MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.EXACTLY);
-                } else {
-                    contentHeightSpec = MeasureSpec.makeMeasureSpec(heightSize - lp.topMargin - lp.bottomMargin, MeasureSpec.EXACTLY);
-                }
-                if (child instanceof ActionBarLayout) {
-                    ActionBarLayout abl = (ActionBarLayout) child;
-                    if (abl.storyViewerAttached()) {
-                        child.forceLayout();
-                    }
-                }
-                child.measure(contentWidthSpec, contentHeightSpec);
+            final int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize - lp.leftMargin - lp.rightMargin, MeasureSpec.EXACTLY);
+            final int contentHeightSpec;
+            if (lp.height > 0) {
+                contentHeightSpec = MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.EXACTLY);
             } else {
-                child.setPadding(0, 0, 0, 0);
-                child.measure(getChildMeasureSpec(widthMeasureSpec, minDrawerMargin + lp.leftMargin + lp.rightMargin, lp.width), getChildMeasureSpec(heightMeasureSpec, lp.topMargin + lp.bottomMargin, lp.height));
+                contentHeightSpec = MeasureSpec.makeMeasureSpec(heightSize - lp.topMargin - lp.bottomMargin, MeasureSpec.EXACTLY);
             }
+            if (child instanceof ActionBarLayout) {
+                ActionBarLayout actionBarLayout = (ActionBarLayout) child;
+                //fix keyboard measuring
+                if (actionBarLayout.storyViewerAttached()) {
+                    child.forceLayout();
+                }
+            }
+            child.measure(contentWidthSpec, contentHeightSpec);
         }
     }
 
@@ -493,6 +424,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (actionBarLayout != null && actionBarLayout.getParent() == this) {
             actionBarLayout.parentDraw(this, canvas);
         }
+
         super.dispatchDraw(canvas);
     }
 
@@ -551,6 +483,8 @@ public class DrawerLayoutContainer extends FrameLayout {
         return false;
     }
 
+    private final Paint internalNavbarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
     public Paint getInternalNavbarPaint() {
         return internalNavbarPaint;
     }
@@ -574,8 +508,12 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
     }
 
+    private @Nullable WindowInsetsCompat lastWindowInsetsCompat;
+    private @NonNull Insets systemAndCutoutInsets = Insets.NONE;
+    private @NonNull Insets systemAndCutoutAndImeInsets = Insets.NONE;
+
     private void dispatchApplyWindowInsetsInternal(View child, WindowInsetsCompat insets) {
-        boolean canApplyInsets = child instanceof ActionBarLayout || child instanceof DrawerContainer || child.getTag() == null;
+        boolean canApplyInsets = child instanceof ActionBarLayout || child.getTag() == null;
         if (canApplyInsets) {
             ViewCompat.dispatchApplyWindowInsets(child, insets);
         }

@@ -130,8 +130,12 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         void onError(VideoPlayer player, Exception e);
         void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio);
         void onRenderedFirstFrame();
-        void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture);
-        boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture);
+        default void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+        }
+        default boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
+            return false;
+        }
         default void onRenderedFirstFrame(EventTime eventTime) {
 
         }
@@ -273,7 +277,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             } else {
                 factory = new DefaultRenderersFactory(ApplicationLoader.applicationContext);
             }
-            factory.setExtensionRendererMode(getPlayerExtensionRendererMode());
+            factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
             ExoPlayer.Builder builder = new ExoPlayer.Builder(ApplicationLoader.applicationContext).setRenderersFactory(factory)
                     .setTrackSelector(trackSelector)
                     .setLoadControl(loadControl);
@@ -2010,7 +2014,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             hdrInfo = new StoryEntry.HDRInfo();
         }
         try {
-            MediaFormat mediaFormat = ((MediaCodecRenderer) player.getRenderer(0)).codecOutputMediaFormat;
+            MediaFormat mediaFormat = ((MediaCodecRenderer) player.getRenderer(0)).getCodecOutputMediaFormat();
             ByteBuffer byteBuffer = mediaFormat.getByteBuffer(MediaFormat.KEY_HDR_STATIC_INFO);
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
             if (byteBuffer.get() == 0) {

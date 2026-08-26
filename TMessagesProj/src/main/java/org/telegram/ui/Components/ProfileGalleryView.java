@@ -490,28 +490,24 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
             isDownReleased = false;
         } else if (action == MotionEvent.ACTION_UP) {
             if (!isDownReleased) {
-                if (!SharedConfig.nextMediaTap && callback != null) {
-                    callback.onRelease();
-                } else {
-                    int itemsCount = getRealCount();
-                    int currentItem = getCurrentItem();
-                    if (itemsCount > 1) {
-                        if (ev.getX() > getWidth() / 3f) {
-                            final int extraCount = adapter.getExtraCount();
-                            if (++currentItem >= itemsCount + extraCount) {
-                                currentItem = extraCount;
-                            }
-                        } else {
-                            final int extraCount = adapter.getExtraCount();
-                            if (--currentItem < extraCount) {
-                                currentItem = itemsCount + extraCount - 1;
-                            }
+                int itemsCount = getRealCount();
+                int currentItem = getCurrentItem();
+                if (itemsCount > 1) {
+                    if (ev.getX() > getWidth() / 3f) {
+                        final int extraCount = adapter.getExtraCount();
+                        if (++currentItem >= itemsCount + extraCount) {
+                            currentItem = extraCount;
                         }
-                        if (callback != null) {
-                            callback.onRelease();
+                    } else {
+                        final int extraCount = adapter.getExtraCount();
+                        if (--currentItem < extraCount) {
+                            currentItem = itemsCount + extraCount - 1;
                         }
-                        setCurrentItem(currentItem, false);
                     }
+                    if (callback != null) {
+                        callback.onRelease();
+                    }
+                    setCurrentItem(currentItem, false);
                 }
             }
         } else if (action == MotionEvent.ACTION_MOVE) {

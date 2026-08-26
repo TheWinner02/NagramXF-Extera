@@ -151,7 +151,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
     private final int currentAccount;
     private UniversalAdapter adapter;
     private List<TLRPC.TL_premiumGiftCodeOption> options;
-    private final Runnable closeParentSheet;
+    private final Utilities.Callback<Boolean> closeParentSheet;
     private TLRPC.DisallowedGiftsSettings userSettings;
 
     private final long dialogId;
@@ -182,11 +182,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
     private boolean birthday;
 
-    public GiftSheet(Context context, int currentAccount, long userId, Runnable closeParentSheet) {
+    public GiftSheet(Context context, int currentAccount, long userId, Utilities.Callback<Boolean> closeParentSheet) {
         this(context, currentAccount, userId, null, closeParentSheet);
     }
 
-    public GiftSheet(Context context, int currentAccount, long dialogId, List<TLRPC.TL_premiumGiftCodeOption> options, Runnable closeParentSheet) {
+    public GiftSheet(Context context, int currentAccount, long dialogId, List<TLRPC.TL_premiumGiftCodeOption> options, Utilities.Callback<Boolean> closeParentSheet) {
         super(context, null, false, false, false, null);
 
         this.currentAccount = currentAccount;
@@ -397,7 +397,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                             if (lastFragment == null) return;
                             dismiss();
                             if (closeParentSheet != null) {
-                                closeParentSheet.run();
+                                closeParentSheet.run(false);
                             }
                             final Bundle args = new Bundle();
                             args.putLong("user_id", dialogId);
@@ -474,7 +474,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     final GiftPremiumBottomSheet.GiftTier premiumTier = (GiftPremiumBottomSheet.GiftTier) item.object;
                     new SendGiftSheet(context, currentAccount, premiumTier, this.dialogId, () -> {
                         if (closeParentSheet != null) {
-                            closeParentSheet.run();
+                            closeParentSheet.run(false);
                         }
                         dismiss();
                     }) {
@@ -508,7 +508,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                             sheet.doTransfer(dialogId, err -> {
                                 progress.end();
                                 if (closeParentSheet != null) {
-                                    closeParentSheet.run();
+                                    closeParentSheet.run(false);
                                 }
                                 GiftSheet.this.dismiss();
                                 if (err != null) {
@@ -544,9 +544,12 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                                 observer.addOnPreDrawListener(onPreDrawListener);
                             }
                         };
-                        fragment.setCloseParentSheet(() -> {
+                        fragment.setCloseParentSheet((fragmentsImmediately) -> {
                             if (closeParentSheet != null) {
-                                closeParentSheet.run();
+                                closeParentSheet.run(fragmentsImmediately);
+                            }
+                            if (fragmentsImmediately) {
+                                skipDismissAnimation();
                             }
                             dismiss();
                         });
@@ -556,7 +559,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     if (gift.auction) {
                         AuctionJoinSheet.show(context, resourcesProvider, currentAccount, dialogId, gift.id, () -> {
                             if (closeParentSheet != null) {
-                                closeParentSheet.run();
+                                closeParentSheet.run(false);
                             }
                             dismiss();
                         });
@@ -576,7 +579,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                     final Runnable openSendSheet = () -> {
                         new SendGiftSheet(context, currentAccount, gift, this.dialogId, () -> {
                             if (closeParentSheet != null) {
-                                closeParentSheet.run();
+                                closeParentSheet.run(false);
                             }
                             dismiss();
                         }, gift.limited && userSettings != null && userSettings.disallow_limited_stargifts, gift.limited && userSettings != null && userSettings.disallow_unique_stargifts) {
@@ -610,7 +613,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                                     ((EffectsTextView) textView).setOnLinkPressListener(link -> {
                                         dialog.dismiss();
                                         if (closeParentSheet != null) {
-                                            closeParentSheet.run();
+                                            closeParentSheet.run(false);
                                         }
                                         dismiss();
                                         link.onClick(textView);
@@ -759,7 +762,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
         dismiss();
         if (closeParentSheet != null) {
-            closeParentSheet.run();
+            closeParentSheet.run(false);
         }
     }
 
@@ -1428,6 +1431,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 pinnedView.setScaleX(pin ? 1.0f : 0.3f);
                 pinnedView.setScaleY(pin ? 1.0f : 0.3f);
             }
+
             setShowPinIcon(!pinned && reordering && !inCollection && (userGift != null && userGift.gift instanceof TL_stars.TL_starGiftUnique), animated);
             updateRibbonText();
         }
@@ -1793,7 +1797,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             final boolean unique = userGift.gift instanceof TL_stars.TL_starGiftUnique;
             avatarView.setColorFilter(null);
             avatarView.setLayoutParams(avatarViewLayout1);
-            if (unique) {
+            if (unique && userGift.name_hidden) {
                 avatarView.setVisibility(View.GONE);
             } else if (userGift.name_hidden) {
                 avatarView.setVisibility(View.VISIBLE);
@@ -1886,7 +1890,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             this.inCollection = inCollection;
             title = null;
             subtitle = null;
-            setPinned(userGift.pinned_to_top, oldUserGift == userGift);
+            setPinned(userGift.pinned_to_top && !(unique && !userGift.name_hidden), oldUserGift == userGift);
             updateRibbonText();
 
             return oldUserGift == userGift;

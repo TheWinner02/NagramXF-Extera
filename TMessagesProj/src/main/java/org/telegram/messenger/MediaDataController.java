@@ -65,6 +65,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.tgnet.tl.TL_ephemeral;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -3459,7 +3460,6 @@ public class MediaDataController extends BaseController {
         } else if (!showTooltip || baseFragment == null) {
             toggleStickerSetInternal(context, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, false);
         } else {
-            final Context finalContext = context;
             StickerSetBulletinLayout bulletinLayout = new StickerSetBulletinLayout(context, stickerSetObject, toggle, sticker, baseFragment == null ? null : baseFragment.getResourceProvider());
             int finalCurrentIndex = currentIndex;
             boolean[] undoDone = new boolean[1];
@@ -3492,7 +3492,7 @@ public class MediaDataController extends BaseController {
                     return;
                 }
                 undoDone[0] = true;
-                toggleStickerSetInternal(finalContext, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, false);
+                toggleStickerSetInternal(context, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, false);
             });
             bulletinLayout.setButton(undoButton);
             removingStickerSetsUndos.put(stickerSet.id, undoButton::undo);
@@ -6640,9 +6640,9 @@ public class MediaDataController extends BaseController {
                             }
                         }
                         if (!ephemeralIds.isEmpty()) {
-                            ArrayList<TLRPC.EphemeralMessage> ephemeralMessages = getMessagesStorage().getEphemeralMessagesInternal(dialogId, ephemeralIds);
+                            ArrayList<TL_ephemeral.EphemeralMessage> ephemeralMessages = getMessagesStorage().getEphemeralMessagesInternal(dialogId, ephemeralIds);
                             if (ephemeralMessages != null) {
-                                for (TLRPC.EphemeralMessage ephemeralMessage : ephemeralMessages) {
+                                for (TL_ephemeral.EphemeralMessage ephemeralMessage : ephemeralMessages) {
                                     TLRPC.Message convetedEphemeralMessage = EphemeralMessagesHelper.convertEphemeralToFakeDefault(ephemeralMessage);
                                     MessagesStorage.addUsersAndChatsFromMessage(convetedEphemeralMessage, usersToLoad, chatsToLoad, null);
                                     result.add(convetedEphemeralMessage);

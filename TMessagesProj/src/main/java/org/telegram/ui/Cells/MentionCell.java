@@ -258,7 +258,7 @@ public class MentionCell extends LinearLayout {
             nameTextView.setText(command);
         }
 
-        usernameTextView.setText(help);
+        usernameTextView.setText(Emoji.replaceEmoji(help, usernameTextView.getPaint().getFontMetricsInt(), false));
     }
 
     public void setIsDarkTheme(boolean isDarkTheme) {

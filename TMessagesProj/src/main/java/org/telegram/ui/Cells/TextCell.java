@@ -513,7 +513,7 @@ public class TextCell extends FrameLayout {
         if (checkBox == null) {
             checkBox = new Switch(getContext(), resourcesProvider);
             checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
-            addView(checkBox, LayoutHelper.createFrame(38, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+            addView(checkBox, LayoutHelper.createFrame(37, 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
         }
         if (checkBox != null) {
             checkBox.setVisibility(VISIBLE);
@@ -675,7 +675,7 @@ public class TextCell extends FrameLayout {
         }
     }
 
-    public void setTextAndCheckAndIcon(CharSequence text, boolean checked, Drawable resDrawable, boolean divider) {
+    public void setTextAndCheckAndIcon(String text, boolean checked, Drawable resDrawable, boolean divider) {
         imageLeft = 16;
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);

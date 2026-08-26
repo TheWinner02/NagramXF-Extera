@@ -498,8 +498,8 @@ public class SeekBarView extends FrameLayout {
         updateModernState();
 
         if (!twoSided && separatorsCount > 1) {
-            //float step = (getMeasuredWidth() - selectorWidth) / ((float) separatorsCount - 1f);
-            //thumbX = (int) animatedThumbX.set(Math.round((thumbX) / step) * step);
+            float step = (getMeasuredWidth() - selectorWidth) / ((float) separatorsCount - 1f);
+            thumbX = (int) animatedThumbX.set(Math.round((thumbX) / step) * step);
         } else if (delegate != null && delegate.needVisuallyDivideSteps()) {
             float step = (getMeasuredWidth() - selectorWidth) / ((float) delegate.getStepsCount() - 1f);
             thumbX = (int) (Math.round((thumbX) / step) * step);

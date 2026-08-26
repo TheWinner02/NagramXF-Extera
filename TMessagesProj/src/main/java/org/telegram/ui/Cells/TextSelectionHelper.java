@@ -689,6 +689,11 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         }
     }
 
+    public void hideActionsMenu() {
+        AndroidUtilities.cancelRunOnUIThread(showActionsRunnable);
+        hideActions();
+    }
+
     public TextSelectionOverlay getOverlayView(Context context) {
         if (textSelectionOverlay == null) {
             textSelectionOverlay = new TextSelectionOverlay(context);
@@ -1553,11 +1558,10 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 menu.add(Menu.NONE, android.R.id.copy, 0, android.R.string.copy);
                 menu.add(Menu.NONE, R.id.menu_quote, 1, LocaleController.getString(R.string.Quote));
-                menu.add(Menu.NONE, TRANSLATE, 2, LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.TranslateMessage));
+                menu.add(Menu.NONE, TRANSLATE, 2, LocaleController.getString(R.string.TranslateMessage));
                 menu.add(Menu.NONE, android.R.id.cut, 3, android.R.string.cut);
                 menu.add(Menu.NONE, android.R.id.paste, 4, android.R.string.paste);
                 menu.add(Menu.NONE, android.R.id.selectAll, 5, android.R.string.selectAll);
-                menu.add(Menu.NONE, ADD_TO_FILTER, 6, getString(R.string.AddToFilter));
                 return true;
             }
 
@@ -1574,7 +1578,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 MenuItem selectAllItem = menu.findItem(android.R.id.selectAll);
                 if (selectAllItem != null && selectedView != null) {
                     CharSequence charSequence = getText(selectedView, false);
-                    if (false && !canCopy()) {
+                    if (!canCopy()) {
                         selectAllItem.setVisible(false);
                     } else if (forceShowSelectAll()) {
                         selectAllItem.setVisible(true);

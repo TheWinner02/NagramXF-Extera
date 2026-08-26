@@ -368,13 +368,9 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
       // exceeded, deliverDecodedFrame() will be called again on the next iteration of the output
       // thread's loop.  Blocking here prevents the output thread from busy-waiting while the codec
       // is idle.
-      MediaCodecWrapper localCodec = codec;
-      if (localCodec == null) {
-        return;
-      }
-      int index = localCodec.dequeueOutputBuffer(info, DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US);
+      int index = codec.dequeueOutputBuffer(info, DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US);
       if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-        reformat(localCodec.getOutputFormat());
+        reformat(codec.getOutputFormat());
         return;
       }
 
@@ -490,9 +486,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
       // All other supported color formats are NV12.
       frameBuffer = copyNV12ToI420Buffer(buffer, stride, sliceHeight, width, height);
     }
-    if (codec != null) {
-      codec.releaseOutputBuffer(index, /* render= */ false);
-    }
+    codec.releaseOutputBuffer(index, /* render= */ false);
 
     long presentationTimeNs = info.presentationTimeUs * 1000;
     VideoFrame frame = new VideoFrame(frameBuffer, rotation, presentationTimeNs);

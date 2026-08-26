@@ -110,13 +110,65 @@ public class VideoSeekPreviewImage extends View implements NotificationCenter.No
         storyBoardsReceiver.setParentView(this);
 
         storyBoardsReceiver.setDelegate((imageReceiver, set, thumb, memCache) -> {
-            if (!set) {
-                return;
-            }
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                onStoryBoardsReceiverSet();
-            } else {
-                AndroidUtilities.runOnUIThread(this::onStoryBoardsReceiverSet);
+            if (set) {
+                if (webView == null && storyBoardMap == null) {
+                    return;
+                }
+                int viewSize = dp(150);
+
+                if (webView != null) {
+                    int imageCount = webView.getYoutubeStoryboardImageCount((int) lastPosition);
+                    int rows = (int) Math.ceil(imageCount / 5f);
+                    int columns = Math.min(imageCount, 5);
+
+                    float bitmapWidth = storyBoardsReceiver.getBitmapWidth() / (float) columns;
+                    float bitmapHeight = storyBoardsReceiver.getBitmapHeight() / (float) rows;
+
+                    int imageIndex = Math.min(webView.getYoutubeStoryboardImageIndex((int) lastPosition), imageCount - 1);
+                    int row = imageIndex / 5;
+                    int column = imageIndex % 5;
+
+                    ytImageX = (int) (column * bitmapWidth);
+                    ytImageY = (int) (row * bitmapHeight);
+                    ytImageWidth = (int) bitmapWidth;
+                    ytImageHeight = (int) bitmapHeight;
+                } else {
+                    StoryBoardFrame frame = null;
+                    for (int i = 0; i < storyBoardMap.size(); ++i) {
+                        final StoryBoardFrame f = storyBoardMap.get(i);
+                        final double left = i == 0 ? 0 : f.pts;
+                        final double right = i == storyBoardMap.size() - 1 ? 99999999 : storyBoardMap.get(i + 1).pts;
+                        if (lastPosition >= left && lastPosition <= right) {
+                            frame = f;
+                            break;
+                        }
+                    }
+                    if (frame != null) {
+                        ytImageX = frame.left;
+                        ytImageY = frame.top;
+                        ytImageWidth = storyBoardFrameWidth;
+                        ytImageHeight = storyBoardFrameHeight;
+                    } else return;
+                }
+
+                drawStoryBoard = true;
+                float aspect = (float) ytImageWidth / ytImageHeight;
+                int viewWidth;
+                int viewHeight;
+                if (aspect > 1.0f) {
+                    viewWidth = viewSize;
+                    viewHeight = (int) (viewSize / aspect);
+                } else {
+                    viewHeight = viewSize;
+                    viewWidth = (int) (viewSize * aspect);
+                }
+                ViewGroup.LayoutParams layoutParams = getLayoutParams();
+                if (getVisibility() != VISIBLE || layoutParams.width != viewWidth || layoutParams.height != viewHeight) {
+                    layoutParams.width = viewWidth;
+                    layoutParams.height = viewHeight;
+                    setVisibility(VISIBLE);
+                    requestLayout();
+                }
             }
         });
     }
@@ -540,14 +592,11 @@ public class VideoSeekPreviewImage extends View implements NotificationCenter.No
                 fileDrawable = new AnimatedFileDrawable(new File(path), true, document.size, FileLoader.PRIORITY_NORMAL, document, null, parentObject, 0, currentAccount, true, null);
             }
             duration = fileDrawable.getDurationMs();
-            final float progressToApply = pendingProgress;
-            if (progressToApply != 0.0f) {
+            if (pendingProgress != 0.0f) {
+                setProgress(messageObject, pendingProgress, pixelWidth);
                 pendingProgress = 0.0f;
             }
             AndroidUtilities.runOnUIThread(() -> {
-                if (progressToApply != 0.0f) {
-                    setProgress(messageObject, progressToApply, pixelWidth);
-                }
                 open = true;
                 loadRunnable = null;
                 if (fileDrawable != null) {
@@ -596,14 +645,11 @@ public class VideoSeekPreviewImage extends View implements NotificationCenter.No
                 fileDrawable = new AnimatedFileDrawable(new File(path), true, 0, 0, null, null, null, 0, 0, true, null);
             }
             duration = fileDrawable.getDurationMs();
-            final float progressToApply = pendingProgress;
-            if (progressToApply != 0.0f) {
+            if (pendingProgress != 0.0f) {
+                setProgress(messageObject, pendingProgress, pixelWidth);
                 pendingProgress = 0.0f;
             }
             AndroidUtilities.runOnUIThread(() -> {
-                if (progressToApply != 0.0f) {
-                    setProgress(messageObject, progressToApply, pixelWidth);
-                }
                 open = true;
                 loadRunnable = null;
                 if (fileDrawable != null) {

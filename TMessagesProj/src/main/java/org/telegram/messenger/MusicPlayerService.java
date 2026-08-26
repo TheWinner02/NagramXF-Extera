@@ -871,6 +871,4 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.httpFileDidLoad);
 //            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.fileDidLoad);
         }
-    }
-
 }

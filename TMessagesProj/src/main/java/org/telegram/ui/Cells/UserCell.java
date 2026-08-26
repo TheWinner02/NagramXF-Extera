@@ -50,7 +50,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.ChatSearchTabs;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
@@ -764,9 +764,21 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 (currentChat != null && currentChat.forum ? dp(14) : dp(24)));
 
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        if (mutualView != null) {
-            mutualView.setVisibility(currentUser != null && currentUser.mutual_contact ? VISIBLE : GONE);
+    }
+
+    @Override
+    protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+        if (isCommunity && child == avatarImageView) {
+            DrawableUtils.drawCommunityCardDrawable(canvas, Theme.dialogs_communityCardsDrawable,
+                child.getX() + child.getWidth() / 2f,
+                child.getY() + child.getHeight() / 2f,
+                child.getHeight());
         }
+        return super.drawChild(canvas, child, drawingTime);
+    }
+
+    @Override
+    public void updateColors() {
     }
 
     @Override

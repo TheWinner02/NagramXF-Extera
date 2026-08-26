@@ -4589,7 +4589,6 @@ public class LocaleController {
             return f.format(value, dir, unit);
         }
     }
-
     public static Locale getContextLocale() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             return ApplicationLoader.applicationContext.getResources().getConfiguration().getLocales().get(0);

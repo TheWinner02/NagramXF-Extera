@@ -535,8 +535,8 @@ public class DataSettingsActivity extends BaseFragment {
                                 confirAlert.setTitle(LocaleController.getString(R.string.DecreaseSpeed));
                                 confirAlert.setMessage(LocaleController.getString(R.string.SdCardAlert));
                                 confirAlert.setPositiveButton(LocaleController.getString(R.string.Proceed), (dialog, which) -> {
-                                    setStorageDirectory(storageDir);
-                                    builder.getDismissRunnable().run();
+                                   setStorageDirectory(storageDir);
+                                   builder.getDismissRunnable().run();
                                 });
                                 confirAlert.setNegativeButton(LocaleController.getString(R.string.Back), null);
                                 confirAlert.show();

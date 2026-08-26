@@ -160,7 +160,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     LinearLayoutManager layoutManager;
     AnimatedTextView titleView;
     ActionBarAnimatedSubtitleOverlayContainer subtitleOverlayContainer;
-    AnimatedTextView telegramLogoView;
+    ImageView telegramLogoView;
     ImageView emojiStatusView;
     AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable statusDrawable;
     boolean drawCircleForce;
@@ -221,7 +221,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         recyclerListView.setClipChildren(false);
         miniItemsClickArea.setDelegate(this::onMiniListClicked);
         miniItemsClickArea.setLongPress(() -> {
-            if (!BuildConfig.DEBUG) {
+            if (!BuildConfig.DEBUG_PRIVATE_VERSION) {
                 return;
             }
 
@@ -334,18 +334,14 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         titleView.setFocusableInTouchMode(true);
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        telegramLogoView = new AnimatedTextView(getContext(), true, true, false);
-        telegramLogoView.setGravity(Gravity.LEFT);
-        telegramLogoView.setTextColor(getTextColor());
-        telegramLogoView.setEllipsizeByGradient(true);
+        telegramLogoView = new ImageView(context);
         telegramLogoView.setContentDescription(getString(R.string.AppName));
-        telegramLogoView.setTypeface(AndroidUtilities.bold());
-        telegramLogoView.setPadding(0, dp(8), 0, dp(8));
-        telegramLogoView.setTextSize(dp(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20));
-        telegramLogoView.setText(TypefaceHelper.getTitleText(currentAccount));
+        telegramLogoView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        telegramLogoView.setImageResource(R.drawable.telegram_logo_2);
+        telegramLogoView.setColorFilter(getTextLogoColor(), PorterDuff.Mode.MULTIPLY);
         telegramLogoView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         telegramLogoView.setFocusableInTouchMode(true);
-        addView(telegramLogoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        addView(telegramLogoView, LayoutHelper.createFrame(90, 22));
 
         statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
         statusDrawable.center = true;
@@ -957,9 +953,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             titleView.setTranslationX(lastViewRight);
             titleView.getDrawable().setRightPadding(lastViewRight - dp(12) + actionBar.menu.getVisibleItemsMeasuredWidthWithAlpha() * progress);
 
-            offset = (telegramLogoView.getMeasuredHeight() - telegramLogoView.getTextHeight()) / 2f;
             telegramLogoView.setTranslationX(titleView.getTranslationX() + dp(1));
-            telegramLogoView.setTranslationY(bottomY + dp(14) - offset + AndroidUtilities.dp(FAKE_TOP_PADDING) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
+            telegramLogoView.setTranslationY(bottomY + dp(14 + FAKE_TOP_PADDING + 4.333f) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
 
             emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + telegramLogoView.getMeasuredWidth());
             emojiStatusView.setTranslationY(bottomY + dp(14 - 11 + FAKE_TOP_PADDING + 4.333f) + translationOffset);
@@ -1173,7 +1168,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         if (subtitleOverlayContainer != null) {
             subtitleOverlayContainer.updateColors();
         }
-        telegramLogoView.setTextColor(getTextLogoColor());
+        telegramLogoView.setColorFilter(getTextLogoColor(), PorterDuff.Mode.MULTIPLY);
         AndroidUtilities.forEachViews(recyclerListView, view -> {
             StoryCell cell = (StoryCell) view;
             cell.invalidate();
@@ -2224,11 +2219,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     private void checkUi_titleVisibility() {
         final float progress = MathUtils.clamp(Math.min(collapsedProgress, collapsedProgress2), 0, 1);
-        final float rightSlidingFactor = 1f - rightSlidingProgress;
         final float titleVisibility = animatorHasTitleText.getFloatValue();
         final float logoVisibility = 1f - titleVisibility;
-        final float titleAlpha = titleVisibility * progress * rightSlidingFactor;
-        final float logoAlpha = logoVisibility * progress * rightSlidingFactor;
+        final float titleAlpha = titleVisibility * progress;
+        final float logoAlpha = logoVisibility * progress;
 
         if (titleView != null) {
             titleView.setAlpha(titleAlpha);
@@ -2243,9 +2237,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             emojiStatusView.setVisibility(logoAlpha > 0 ? VISIBLE : GONE);
         }
         if (subtitleOverlayContainer != null) {
-            final float subtitleAlpha = progress * rightSlidingFactor;
-            subtitleOverlayContainer.setAlpha(subtitleAlpha);
-            subtitleOverlayContainer.setVisibility(subtitleAlpha > 0 ? VISIBLE : GONE);
+            subtitleOverlayContainer.setAlpha(progress);
+            subtitleOverlayContainer.setVisibility(progress > 0 ? VISIBLE : GONE);
         }
     }
 }

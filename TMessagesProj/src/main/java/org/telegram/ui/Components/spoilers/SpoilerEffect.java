@@ -375,11 +375,7 @@ public class SpoilerEffect extends Drawable {
 
         for (int i = 0, size = particles.size(); i < size; i++) {
             final Particle particle = particles.get(i);
-                if (particle == null) {
-                    particles.remove(i);
-                    i--;
-                    continue;
-                }
+
             final float newCurrentTime = Math.min(particle.currentTime + dt, particle.lifeTime);
             particle.currentTime = newCurrentTime;
 
@@ -391,6 +387,8 @@ public class SpoilerEffect extends Drawable {
                 if (particlesPool.size() < maxParticles) {
                     particlesPool.push(particle);
                 }
+            final float newCurrentTime = Math.min(particle.currentTime + dt, particle.lifeTime);
+            particle.currentTime = newCurrentTime;
 
                 final int last = size - 1;
                 if (i != last) {

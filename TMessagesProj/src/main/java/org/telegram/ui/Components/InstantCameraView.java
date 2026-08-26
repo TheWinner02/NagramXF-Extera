@@ -2748,8 +2748,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
 
         private void createKeyframeThumb() {
-            DispatchQueue queue = generateKeyframeThumbsQueue;
-            if (queue != null && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH && frameCount % 33 == 0) {
+            if (generateKeyframeThumbsQueue != null && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH && frameCount % 33 == 0) {
                 GenerateKeyframeThumbTask task = new GenerateKeyframeThumbTask();
                 queue.postRunnable(task);
             }
@@ -2884,16 +2883,6 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
                 @Override
                 public void onRenderedFirstFrame() {
-
-                }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
 
                 }
             });

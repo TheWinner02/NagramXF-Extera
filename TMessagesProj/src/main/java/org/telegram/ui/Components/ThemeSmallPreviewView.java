@@ -43,6 +43,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.EmojiThemes;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.theme.ITheme;
 import org.telegram.ui.ChatBackgroundDrawable;
@@ -147,8 +148,8 @@ public class ThemeSmallPreviewView extends FrameLayout implements NotificationCe
         clipPath.addRoundRect(rectF, INNER_RADIUS, INNER_RADIUS, Path.Direction.CW);
     }
 
-    Theme.MessageDrawable messageDrawableOut = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, false);
-    Theme.MessageDrawable messageDrawableIn = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, false);
+    MessageDrawable messageDrawableOut = new MessageDrawable(MessageDrawable.TYPE_TEXT, true, false);
+    MessageDrawable messageDrawableIn = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, false);
 
     @Override
     protected void dispatchDraw(Canvas canvas) {

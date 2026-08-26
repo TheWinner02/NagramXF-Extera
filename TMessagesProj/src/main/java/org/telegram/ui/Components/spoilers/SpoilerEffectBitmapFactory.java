@@ -91,7 +91,7 @@ public class SpoilerEffectBitmapFactory {
         return shaderPaint;
     }
 
-    private synchronized void doDraw(Canvas canvas, Rect clipRegion) {
+    private void doDraw(Canvas canvas, Rect clipRegion) {
         for (PointsBuffer buffer : buffers) {
             buffer.reset();
         }

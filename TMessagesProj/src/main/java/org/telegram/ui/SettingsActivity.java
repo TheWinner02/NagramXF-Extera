@@ -233,26 +233,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             hasMainTabs = arguments.getBoolean("hasMainTabs", false);
         }
 
-        additionNavigationBarHeight = hasMainTabs ? dp(MainTabsHelper.getMainTabsHeightWithMargins()) : 0;
+        additionNavigationBarHeight = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
         return super.onFragmentCreate();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        Bulletin.Delegate delegate = new Bulletin.Delegate() {
-            @Override
-            public int getBottomOffset(int tag) {
-                return navigationBarHeight + additionNavigationBarHeight;
-            }
-        };
-        Bulletin.addDelegate(this, delegate);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        Bulletin.removeDelegate(this);
     }
 
     private boolean ignoreClearViews;
@@ -479,7 +461,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         cameraButton.setBackground(Theme.createCircleDrawable(dp(32), getThemedColor(Theme.key_windowBackgroundGray)));
         cameraButton.setPadding(dp(2), dp(2), dp(2), dp(2));
         cameraBackground = new FrameLayout(context);
-        cameraBackground.setBackground(Theme.createCircleDrawable(dp(30), getThemedColor(Theme.getActiveTheme().isMonetNight() ? Theme.key_featuredStickers_unread : Theme.key_featuredStickers_addButton)));
+        cameraBackground.setBackground(Theme.createCircleDrawable(dp(30), getThemedColor(Theme.key_featuredStickers_addButton)));
         cameraImageView = new ImageView(context);
         cameraImageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         cameraImageView.setImageResource(R.drawable.filled_premium_camera);
@@ -509,8 +491,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         versionView.setPadding(dp(21), dp(10), dp(21), dp(10));
         versionView.setGravity(Gravity.CENTER);
         versionView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
-        versionView.setOnClickListener(v -> showVersionMenu());
-        versionView.setOnLongClickListener(v -> {
+        versionView.setOnClickListener(v -> {
             versionViewPressCount++;
             if (versionViewPressCount < 2 && !BuildVars.DEBUG_PRIVATE_VERSION) {
                 try {
@@ -518,10 +499,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-                return true;
+                return;
             }
             openDebugMenu();
-            return true;
         });
 
         navigationBar = new View(context);
@@ -782,28 +762,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
         }
 
-
-            if (!getMessagesController().premiumFeaturesBlocked()) {
-                items.add(SettingCell.Factory.of(15, 0xFFF45255, 0xFFDF3955, R.drawable.settings_business, getString(R.string.TelegramBusiness)));
-            }
-            if (!getMessagesController().premiumPurchaseBlocked()) {
-                items.add(SettingCell.Factory.of(16, 0xFFF38B31, 0xFFE26314, R.drawable.settings_gift, getString(R.string.SendAGift)));
-            }
-            if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW && !hideHelp) {
-                items.add(UItem.asShadow(null));
-            }
+        if (!getMessagesController().premiumFeaturesBlocked()) {
+            items.add(SettingCell.Factory.of(15, 0xFFF45255, 0xFFDF3955, R.drawable.settings_business, getString(R.string.TelegramBusiness)));
         }
-
-        if (!hideHelp) {
-            if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW) {
-                items.add(UItem.asShadow(null));
-            }
-            items.add(UItem.asHeader(getString(R.string.SettingsHelp)));
-            items.add(SettingCell.Factory.of(17, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_ask, getString(R.string.AskAQuestion)));
-            items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
-            items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
-            items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
+        if (!getMessagesController().premiumPurchaseBlocked()) {
+            items.add(SettingCell.Factory.of(16, 0xFFF38B31, 0xFFE26314, R.drawable.settings_gift, getString(R.string.SendAGift)));
         }
+        if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW)
+            items.add(UItem.asShadow(null));
+
+        items.add(UItem.asHeader(getString(R.string.SettingsHelp)));
+        items.add(SettingCell.Factory.of(17, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_ask, getString(R.string.AskAQuestion)));
+        items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
+        items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
+        items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
 
         if (BuildVars.LOGS_ENABLED || BuildVars.DEBUG_PRIVATE_VERSION) {
             items.add(UItem.asShadow(null));
@@ -971,46 +943,45 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 final MessagesController.FaqSearchResult r = (MessagesController.FaqSearchResult) item.object;
                 link = r.url;
             }
-            boolean hasLink = !TextUtils.isEmpty(link);
-            if (hasRecentSearches || hasLink) {
-                ItemOptions options = ItemOptions.makeOptions(this, view)
-                    .setScrimViewBackground(listView.getClipBackground(view));
-                if (hasLink) {
-                    final String finalLink = link;
-                    options.add(R.drawable.msg_link2, getString(R.string.CopyLink), () -> {
+            if (!TextUtils.isEmpty(link)) {
+                final String finalLink = link;
+                ItemOptions.makeOptions(this, view)
+                    .add(R.drawable.msg_link2, getString(R.string.CopyLink), () -> {
                         AndroidUtilities.addToClipboard(finalLink);
                         BulletinFactory.of(this).createCopyLinkBulletin().show();
-                    });
-                }
-                if (hasRecentSearches && hasLink) {
-                    options.addGap();
-                }
-                if (hasRecentSearches) {
-                    options.add(R.drawable.msg_delete, getString(R.string.ClearButton), true, this::showClearSearchHistoryDialog);
-                }
-                options.show();
+                    })
+                    .setScrimViewBackground(listView.getClipBackground(view))
+                    .show();
                 return true;
             }
         }
         return false;
     }
 
-    private void showClearSearchHistoryDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), resourceProvider);
-        builder.setTitle(LocaleController.getString(R.string.ClearSearchAlertTitle));
-        builder.setMessage(LocaleController.getString(R.string.ClearSearchAlert));
-        builder.setPositiveButton(LocaleController.getString(R.string.ClearButton), (dialogInterface, i) -> search.clearRecent());
-        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-        AlertDialog dialog = builder.create();
-        showDialog(dialog);
-        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-        if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
-        }
-    }
-
     public String getVersionName() {
-        return AndroidUtil.getVersionText();
+        try {
+            PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+            int code = pInfo.versionCode / 10;
+            String abi = "";
+            switch (pInfo.versionCode % 10) {
+                case 1:
+                case 2:
+                    abi = "store bundled " + Build.CPU_ABI + " " + Build.CPU_ABI2;
+                    break;
+                default:
+                case 9:
+                    if (ApplicationLoader.isStandaloneBuild()) {
+                        abi = "direct " + Build.CPU_ABI + " " + Build.CPU_ABI2;
+                    } else {
+                        abi = "universal " + Build.CPU_ABI + " " + Build.CPU_ABI2;
+                    }
+                    break;
+            }
+            return formatString(R.string.TelegramVersion, String.format(Locale.US, "v%s (%d)\n%s", pInfo.versionName, code, abi));
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 
     @Override
@@ -1574,15 +1545,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getString(R.string.DebugMenuReloadContacts),
                 getString(R.string.DebugMenuResetContacts),
                 getString(R.string.DebugMenuResetDialogs),
-                null, //BuildVars.DEBUG_VERSION ? null : BuildVars.LOGS_ENABLED ? getString(R.string.DebugMenuDisableLogs) : getString(R.string.DebugMenuEnableLogs),
-                SharedConfig.inappCamera ? getString(R.string.DebugMenuDisableCamera) : getString(R.string.DebugMenuEnableCamera),
-                getString(R.string.DebugMenuClearMediaCache),
+                BuildVars.DEBUG_VERSION ? null : BuildVars.LOGS_ENABLED ? getString("DebugMenuDisableLogs", R.string.DebugMenuDisableLogs) : getString("DebugMenuEnableLogs", R.string.DebugMenuEnableLogs),
+                SharedConfig.inappCamera ? getString("DebugMenuDisableCamera", R.string.DebugMenuDisableCamera) : getString("DebugMenuEnableCamera", R.string.DebugMenuEnableCamera),
+                getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                 getString(R.string.DebugMenuCallSettings),
-                null, // toggleRoundCamera16to9 ?
-                null, // BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() ? getString(R.string.DebugMenuCheckAppUpdate) : null,
-                getString(R.string.DebugMenuReadAllDialogs),
+                null,
+                BuildVars.DEBUG_PRIVATE_VERSION || ApplicationLoader.isStandaloneBuild() || ApplicationLoader.isBetaBuild() ? getString("DebugMenuCheckAppUpdate", R.string.DebugMenuCheckAppUpdate) : null,
+                getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects" : null,
-                getString(R.string.DebugMenuCleanAppUpdate),
+                BuildVars.DEBUG_PRIVATE_VERSION ? "Clean app update" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? "Reset suggestions" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? getString(R.string.DebugMenuClearWebViewCache) : null,
                 getString(R.string.DebugMenuClearWebViewCookies),
@@ -1596,20 +1567,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getString(DualCameraView.dualAvailableStatic(getContext()) ? "DebugMenuDualOff" : "DebugMenuDualOn"),
                 BuildVars.DEBUG_VERSION ? SharedConfig.useSurfaceInStories ? "back to TextureView in stories" : "use SurfaceView in stories" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.photoViewerBlur ? "do not blur in photoviewer" : "blur in photoviewer" : null,
-                !SharedConfig.payByInvoice ? getString(R.string.DebugMenuEnableInvoicePayment) : getString(R.string.DebugMenuDisableInvoicePayment),
+                !SharedConfig.payByInvoice ? "Enable Invoice Payment" : "Disable Invoice Payment",
                 BuildVars.DEBUG_PRIVATE_VERSION ? "Update Attach Bots" : null,
-                !SharedConfig.isUsingCamera2(currentAccount) ? getString(R.string.DebugMenuUseCamera2Api) : getString(R.string.DebugMenuUseOldCamera1Api),
+                !SharedConfig.isUsingCamera2(currentAccount) ? "Use Camera 2 API" : "Use old Camera 1 API",
                 BuildVars.DEBUG_VERSION ? "Clear Mini Apps Permissions and Files" : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clear all login tokens" : null,
-                SharedConfig.canBlurChat() && Build.VERSION.SDK_INT >= 31 ? SharedConfig.useNewBlur ? getString(R.string.DebugMenuUseCpuBlur) : getString(R.string.DebugMenuUseNewGpuBlur) : null,
-                SharedConfig.adaptableColorInBrowser ? getString(R.string.DebugMenuDisableAdaptableColorInBrowser) : getString(R.string.DebugMenuEnableAdaptableColorInBrowser),
-                SharedConfig.debugVideoQualities ? getString(R.string.DebugMenuDisableVideoQualitiesDebug) : getString(R.string.DebugMenuEnableVideoQualitiesDebug),
+                SharedConfig.canBlurChat() && Build.VERSION.SDK_INT >= 31 ? SharedConfig.useNewBlur ? "back to cpu blur" : "use new gpu blur" : null,
+                SharedConfig.adaptableColorInBrowser ? "Disabled adaptive browser colors" : "Enable adaptive browser colors",
+                SharedConfig.debugVideoQualities ? "Disable video qualities debug" : "Enable video qualities debug",
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? getString(SharedConfig.useSystemBoldFont ? R.string.DebugMenuDontUseSystemBoldFont : R.string.DebugMenuUseSystemBoldFont) : null,
-                getString(R.string.DebugMenuReloadAppConfig),
-                !SharedConfig.forceForumTabs ? getString(R.string.DebugMenuForceForumTabs) : getString(R.string.DebugMenuDoNotForceForumTabs),
-                getString(R.string.DebugMenuMakeMemoryDump),
+                "Reload app config",
+                !SharedConfig.forceForumTabs ? "Force Forum Tabs" : "Do Not Force Forum Tabs",
+                "Make Memory Dump",
                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.fastWallpaperDisabled ? "enable wallpaper shader" : "disable wallpaper shader") : null,
-                getString(SharedConfig.frameMetricsEnabled ? R.string.DebugMenuHideFrameMetrics : R.string.DebugMenuShowFrameMetrics),
+                (SharedConfig.frameMetricsEnabled ? "hide frame metrics" : "show frame metrics"),
                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.shadowsInSections ? "disable shadows in settings" : "enable shadows in settings") : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.debugViewMetrics ? "disable debug view metrics" : "enable debug view metrics") : null,
         };
@@ -1644,7 +1615,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getMessagesStorage().clearSentMedia();
                 SharedConfig.setNoSoundHintShowed(false);
                 SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
-                editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("searchpostsnew").remove("speedhint").remove("gifhint").remove("reminderhint").remove("soundHint").remove("themehint").remove("bganimationhint").remove("filterhint").remove("n_0").remove("storyprvhint").remove("storyhint").remove("storyhint2").remove("storydualhint").remove("storysvddualhint").remove("stories_camera").remove("dualcam").remove("dualmatrix").remove("dual_available").remove("archivehint").remove("askNotificationsAfter").remove("askNotificationsDuration").remove("viewoncehint").remove("voicepausehint").remove("taptostorysoundhint").remove("nothanos").remove("voiceoncehint").remove("savedhint").remove("savedsearchhint").remove("savedsearchtaghint").remove("newppsms").remove("monetizationadshint").remove("seekSpeedHintShowed").remove("unsupport_video/av01").remove("statusgiftpage").remove("multistorieshint").remove("trimvoicehint").remove("taptostoryhighlighthint").remove("proxycheckstatusip").remove("callmiconstart").remove("showchattagsinfo").remove("language_showed3").remove("aihintshown").remove("savedmsgschatshint").apply();
+                editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("searchpostsnew").remove("speedhint").remove("gifhint").remove("reminderhint").remove("soundHint").remove("themehint").remove("bganimationhint").remove("filterhint").remove("n_0").remove("storyprvhint").remove("storyhint").remove("storyhint2").remove("storydualhint").remove("storysvddualhint").remove("stories_camera").remove("dualcam").remove("dualmatrix").remove("dual_available").remove("archivehint").remove("askNotificationsAfter").remove("askNotificationsDuration").remove("viewoncehint").remove("voicepausehint").remove("taptostorysoundhint").remove("nothanos").remove("voiceoncehint").remove("savedhint").remove("savedsearchhint").remove("savedsearchtaghint").remove("newppsms").remove("monetizationadshint").remove("seekSpeedHintShowed").remove("unsupport_video/av01").remove("statusgiftpage").remove("multistorieshint").remove("trimvoicehint").remove("taptostoryhighlighthint").remove("proxycheckstatusip").remove("callmiconstart").remove("showchattagsinfo").remove("language_showed2").remove("aihintshown").remove("savedmsgschatshint").apply();
                 HintsController.resetAll();
                 SharedPrefsHelper.cleanupAccount(currentAccount);
                 MessagesController.getEmojiSettings(currentAccount).edit().remove("featured_hidden").remove("emoji_featured_hidden").commit();
@@ -2211,8 +2182,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         final int additionalList = dp(48);
-        final int mainTabBottom = fragmentView.getMeasuredHeight() - navigationBarHeight - dp(MainTabsHelper.getMainTabsMargin());
-        final int mainTabTop = mainTabBottom - dp(MainTabsHelper.getMainTabsHeight());
+        final int mainTabBottom = fragmentView.getMeasuredHeight() - navigationBarHeight - dp(DialogsActivity.MAIN_TABS_MARGIN);
+        final int mainTabTop = mainTabBottom - dp(DialogsActivity.MAIN_TABS_HEIGHT);
 
         iBlur3PositionActionBar.set(0, -additionalList, fragmentView.getMeasuredWidth(), actionBar.getMeasuredHeight() + additionalList);
         iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);

@@ -20,6 +20,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Trace;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MotionEvent;
@@ -217,7 +218,7 @@ public abstract class BaseFragment {
     public BaseFragment(Bundle args) {
         arguments = args;
         classGuid = ConnectionsManager.generateClassGuid();
-        if (BuildConfig.DEBUG) {
+        if (BuildConfig.DEBUG_PRIVATE_VERSION) {
             LeakDetector.getInstance().add(this);
         }
 
@@ -260,7 +261,23 @@ public abstract class BaseFragment {
         this.fragmentView = fragmentView;
     }
 
-    public View createView(Context context) {
+    public View performCreateView(Context context) {
+        if (!BuildConfig.DEBUG_PRIVATE_VERSION) {
+            return createView(context);
+        }
+
+        final String className = getClass().getSimpleName();
+        final String sectionNameBase = "Fragment#createView#";
+        final String sectionName = TextUtils.isEmpty(className) ? sectionNameBase : (sectionNameBase + className);
+        Trace.beginSection(sectionName);
+        try {
+            return createView(context);
+        } finally {
+            Trace.endSection();
+        }
+    }
+
+    protected View createView(Context context) {
         return null;
     }
 
@@ -499,7 +516,7 @@ public abstract class BaseFragment {
         }
 
         if (hasForceLightStatusBar() && !AndroidUtilities.isTablet() && getParentLayout().getLastFragment() == this && getParentActivity() != null && !finishing) {
-            AndroidUtilities.setLightStatusBar(getParentActivity(), ColorUtils.calculateLuminance(Theme.getColor(Theme.key_actionBarDefault)) > 0.7f);
+            AndroidUtilities.setLightStatusBar(getParentActivity(), Theme.getColor(Theme.key_actionBarDefault) == Color.WHITE);
         }
 
         if (sheetsStack != null) {

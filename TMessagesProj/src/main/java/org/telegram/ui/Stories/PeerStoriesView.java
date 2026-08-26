@@ -67,7 +67,7 @@ import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -1827,7 +1827,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
                         addViewStatistics(popupLayout, storyItem);
 
-                        if (/*!unsupported && */!currentStory.isLive) {
+                        if (!unsupported && !currentStory.isLive) {
                             final String str = currentStory.isVideo() ? getString(R.string.SaveVideo) : getString(R.string.SaveImage);
                             ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_gallery, str, false, resourcesProvider).setOnClickListener(v -> {
                                 saveToGallery();
@@ -2074,8 +2074,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             createQualityItem(popupLayout);
                         }
 
-                        if (/*!unsupported && allowShare &&*/!currentStory.isLive) {
-                            if (UserConfig.getInstance(currentAccount).isPremium() || true) {
+                        if (!unsupported && allowShare && !currentStory.isLive) {
+                            if (UserConfig.getInstance(currentAccount).isPremium()) {
                                 ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_gallery, getString(R.string.SaveToGallery), false, resourcesProvider).setOnClickListener(v -> {
                                     saveToGallery();
                                     if (popupMenu != null) {
@@ -2526,7 +2526,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
     private void createQualityItem(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout) {
         final boolean qualityFull = MessagesController.getInstance(currentAccount).storyQualityFull;
-        if (UserConfig.getInstance(currentAccount).isPremium() || true) {
+        if (UserConfig.getInstance(currentAccount).isPremium()) {
             ActionBarMenuItem.addItem(popupLayout, qualityFull ? R.drawable.menu_quality_sd : R.drawable.menu_quality_hd, getString(qualityFull ? R.string.StoryQualityDecrease : R.string.StoryQualityIncrease), false, resourcesProvider).setOnClickListener(v -> {
                 final boolean newQualityFull = !qualityFull;
                 MessagesController.getInstance(currentAccount).setStoryQuality(newQualityFull);
@@ -3812,7 +3812,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
     private void showDownloadAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
-        builder.setTitle(getString(R.string.NagramX));
+        builder.setTitle(getString(R.string.AppName));
         builder.setPositiveButton(getString(R.string.OK), null);
         //  boolean alreadyDownloading = currentMessageObject != null && currentMessageObject.isVideo() && FileLoader.getInstance(currentMessageObject.currentAccount).isLoadingFile(currentFileNames[0]);
 //        if (alreadyDownloading) {
@@ -3912,7 +3912,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                                 if (i == 0) {
                                     updateStickersOrder = photos.get(0).updateStickersOrder;
                                 }
-                                SendMessagesHelper.prepareSendingMedia(getAccountInstance(), photos, dialogId, null, null, storyItem, null, button == 4 || forceDocument, arg, null, notify, scheduleDate, scheduleRepeatPeriod, 0, updateStickersOrder, null, null, 0, 0, false, 0, chatActivityEnterView.getSendMonoForumPeerId(), chatActivityEnterView.getSendMessageSuggestionParams());
+                                SendMessagesHelper.prepareSendingMedia(getAccountInstance(), photos, dialogId, null, null, storyItem, null, button == 4 || forceDocument, arg, null, notify, scheduleDate, scheduleRepeatPeriod, 0, updateStickersOrder, null, null, 0, false, 0, chatActivityEnterView.getSendMonoForumPeerId(), chatActivityEnterView.getSendMessageSuggestionParams());
                             }
                             chatActivityEnterView.setFieldText("");
                             afterMessageSend(payStars <= 0);
@@ -3952,7 +3952,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     if (storyItem == null || storyItem instanceof TL_stories.TL_storyItemSkipped) {
                         return;
                     }
-                    SendMessagesHelper.prepareSendingAudioDocuments(getAccountInstance(), audios, caption != null ? caption : null, dialogId, null, null, storyItem, notify, scheduleDate, scheduleRepeatPeriod, null, null, 0, effectId, invertMedia, payStars);
+                    SendMessagesHelper.prepareSendingAudioDocuments(getAccountInstance(), audios, caption != null ? caption : null, dialogId, null, null, storyItem, notify, scheduleDate, scheduleRepeatPeriod, null, null, effectId, invertMedia, payStars);
                     afterMessageSend(payStars <= 0);
                 }
 
@@ -3971,7 +3971,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                     if (storyItem == null || storyItem instanceof TL_stories.TL_storyItemSkipped) {
                         return;
                     }
-                    SendMessagesHelper.prepareSendingDocuments(getAccountInstance(), files, files, null, caption, null, dialogId, null, null, storyItem, null, null, notify, scheduleDate, null, null, 0, 0, false, payStars);
+                    SendMessagesHelper.prepareSendingDocuments(getAccountInstance(), files, files, null, caption, null, dialogId, null, null, storyItem, null, null, notify, scheduleDate, null, null, 0, false, payStars);
                     afterMessageSend(payStars <= 0);
                 }
 
@@ -4459,7 +4459,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
         TextView buttonTextView = new TextView(getContext());
         ScaleStateListAnimator.apply(buttonTextView);
-        buttonTextView.setText(getString(R.string.AppUpdate).replace("Telegram", LocaleController.getString(R.string.NagramX)));
+        buttonTextView.setText(getString(R.string.AppUpdate));
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
         buttonTextView.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
         buttonTextView.setGravity(Gravity.CENTER);
@@ -6487,9 +6487,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
         }
         if (sendAsUri) {
-            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), null, null, uri, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, 0, false);
+            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), null, null, uri, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, false);
         } else {
-            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), tempPath, originalPath, null, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, 0, false);
+            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), tempPath, originalPath, null, null, null, dialogId, null, null, storyItem, null, null, true, 0, null, null, false);
         }
     }
 
@@ -7853,15 +7853,15 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 storyItem.dialogId = dialogId;
                 if (photoEntry.isVideo) {
                     if (videoEditedInfo != null) {
-                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, videoEditedInfo, null, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0, 0, stars);
+                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, videoEditedInfo, null, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0, stars);
                     } else {
-                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, null, null, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0, 0, stars);
+                        SendMessagesHelper.prepareSendingVideo(getAccountInstance(), photoEntry.path, null, null, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.ttl, null, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.hasSpoiler, photoEntry.caption, null, 0, stars);
                     }
                 } else {
                     if (photoEntry.imagePath != null) {
-                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.imagePath, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.caption, null, 0, 0, stars);
+                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.imagePath, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.caption, null, 0, stars);
                     } else if (photoEntry.path != null) {
-                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.path, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.caption, null, 0, 0, stars);
+                        SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), photoEntry.path, photoEntry.thumbPath, null, dialogId, null, null, storyItem, null, photoEntry.entities, photoEntry.stickers, null, photoEntry.ttl, null, videoEditedInfo, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, photoEntry.caption, null, 0, stars);
                     }
                 }
                 afterMessageSend(stars <= 0);

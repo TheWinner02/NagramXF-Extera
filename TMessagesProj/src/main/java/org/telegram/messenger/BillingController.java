@@ -20,7 +20,6 @@ import com.android.billingclient.api.BillingResult;
 import com.android.billingclient.api.ConsumeParams;
 import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
-import com.android.billingclient.api.ProductDetailsResponseListener;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
@@ -162,7 +161,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
         billingClientEmpty = true;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingProductDetailsUpdated);
     }
 
     private void switchBackFromInvoice() {
@@ -170,18 +169,23 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
         billingClientEmpty = false;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingProductDetailsUpdated);
     }
 
     public boolean isReady() {
         return billingClient.isReady();
     }
 
-    public void queryProductDetails(List<QueryProductDetailsParams.Product> products, ProductDetailsResponseListener responseListener) {
+    public interface ProductDetailsResponseListenerLegacy {
+        void onProductDetailsResponse(BillingResult billingResult, List<ProductDetails> list);
+    }
+
+    public void queryProductDetails(List<QueryProductDetailsParams.Product> products, ProductDetailsResponseListenerLegacy responseListener) {
         if (!isReady()) {
             throw new IllegalStateException("Billing: Controller should be ready for this call!");
         }
-        billingClient.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(), responseListener);
+        billingClient.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build(), (billingResult, queryProductDetailsResult) ->
+            responseListener.onProductDetailsResponse(billingResult, queryProductDetailsResult.getProductDetailsList()));
     }
 
     /**

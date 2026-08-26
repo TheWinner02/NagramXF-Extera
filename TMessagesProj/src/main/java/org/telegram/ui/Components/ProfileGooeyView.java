@@ -195,9 +195,7 @@ public class ProfileGooeyView extends FrameLayout {
             canvas.translate(0, -dp(BLACK_KING_BAR));
 
             if (alpha != 255) {
-                if (bitmap != null && !bitmap.isRecycled()) {
-                    bitmap.eraseColor(0);
-                }
+                bitmap.eraseColor(0);
 
                 bitmapCanvas.save();
                 bitmapCanvas.scale((float) bitmap.getWidth() / bitmapOrigW, (float) bitmap.getHeight() / bitmapOrigH);

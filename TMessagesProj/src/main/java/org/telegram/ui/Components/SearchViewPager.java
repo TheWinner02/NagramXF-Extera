@@ -877,12 +877,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, parent.hasMainTabs ? 18 : 72, 0, 0, 0));
             selectedMessagesCountTextView.setOnTouchListener((v, event) -> true);
 
-            saveItem = actionMode.addItemWithWidth(saveItemId, R.drawable.msg_download, AndroidUtilities.dp(54), getString(R.string.SaveToDownloads));
             speedItem = actionMode.addItemWithWidth(speedItemId, R.drawable.avd_speed, AndroidUtilities.dp(54), getString(R.string.AccDescrPremiumSpeed));
             speedItem.getIconView().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.SRC_IN));
-            speedItem.setVisibility(View.GONE);
             gotoItem = actionMode.addItemWithWidth(gotoItemId, R.drawable.msg_message, AndroidUtilities.dp(54), getString(R.string.AccDescrGoToMessage));
-            forwardItem = actionMode.addItemWithWidth(forwardItemId, R.drawable.msg_forward_noquote, AndroidUtilities.dp(54), getString(R.string.Forward));
+            forwardItem = actionMode.addItemWithWidth(forwardItemId, R.drawable.msg_forward, AndroidUtilities.dp(54), getString(R.string.Forward));
             deleteItem = actionMode.addItemWithWidth(deleteItemId, R.drawable.msg_delete, AndroidUtilities.dp(54), getString(R.string.Delete));
         }
         if (selectedMessagesCountTextView != null) {
@@ -1480,7 +1478,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     }
 
     public void showDownloads() {
-        setPosition((expandedPublicPosts ? 1 : 0) + (UserConfig.getInstance(currentAccount).isPremium() ? 5 : 4));
+        setPosition((expandedPublicPosts ? 1 : 0) + 5);
     }
 
     public int getPositionForType(int initialSearchType) {
@@ -1561,7 +1559,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
             items.add(new Item(CHANNELS_TYPE));
             items.add(new Item(BOTS_TYPE));
-            if (UserConfig.getInstance(currentAccount).isPremium()) items.add(new Item(POSTS_TYPE));
+            items.add(new Item(POSTS_TYPE));
             if (!showOnlyDialogsAdapter) {
                 Item item = new Item(FILTER_TYPE);
                 item.filterIndex = 0;
@@ -1636,7 +1634,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 downloadsContainer.recyclerListView.addEdgeEffectListener(SearchViewPager.this::invalidateBlur);
                 downloadsContainer.setUiCallback(SearchViewPager.this);
                 return downloadsContainer;
-            } else if (viewType == 6 && UserConfig.getInstance(currentAccount).isPremium()) {
+            } else if (viewType == 6) {
                 return postsSearchContainer;
             } else {
                 FilteredSearchView filteredSearchView = new FilteredSearchView(parent);

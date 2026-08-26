@@ -506,7 +506,7 @@ public class SessionCell extends FrameLayout {
 
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.notification).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
-        CombinedDrawable combinedDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(42), Theme.getColor(Theme.key_avatar_backgroundBlue)), iconDrawable);
+        CombinedDrawable combinedDrawable = new CombinedDrawable(Theme.createCircleDrawable(dp(42), Theme.getColor(Theme.key_avatar_backgroundGreen)), iconDrawable);
         if (placeholderImageView != null) {
             placeholderImageView.setImageDrawable(combinedDrawable);
         } else {

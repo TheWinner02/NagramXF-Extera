@@ -25,3 +25,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "NegramXFE"
 include ':TMessagesProj'
+include ':jlatexmath'
+project(':jlatexmath').projectDir = file('TMessagesProj/lib/jlatexmath/jlatexmath')

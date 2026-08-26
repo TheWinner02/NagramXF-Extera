@@ -123,7 +123,6 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     public interface PhotoPickerActivityDelegate {
         void selectedPhotosChanged();
-
         void actionButtonPressed(boolean canceled, boolean notify, int scheduleDate, int scheduleRepeatPeriod);
         void onCaptionChanged(CharSequence caption);
 

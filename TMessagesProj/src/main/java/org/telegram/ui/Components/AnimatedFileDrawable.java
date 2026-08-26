@@ -171,11 +171,7 @@ public final class AnimatedFileDrawable extends BitmapDrawable implements Animat
             loadFrameTask = null;
             BitmapsCache.incrementTaskCounter();
             RLottieDrawable.lottieCacheGenerateQueue.postRunnable(cacheGenRunnable = () -> {
-                try {
-                        bitmapsCache.createCache();
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
+                bitmapsCache.createCache();
                 AndroidUtilities.runOnUIThread(() -> {
                     if (cacheGenRunnable != null) {
                         BitmapsCache.decrementTaskCounter();
@@ -208,9 +204,6 @@ public final class AnimatedFileDrawable extends BitmapDrawable implements Animat
                 unusedBuffers.get(i).recycle();
             }
             unusedBuffers.clear();
-            if (bitmapsCache != null) {
-                bitmapsCache.recycle();
-            }
             invalidateInternal();
         }
     }

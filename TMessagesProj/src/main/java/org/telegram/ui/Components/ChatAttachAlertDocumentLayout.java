@@ -1385,7 +1385,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             FileLog.e(e);
         }
 
-        if (!isSoundPicker && !isEmojiPicker && (parentAlert == null || !parentAlert.isPollAttach)) {
+        if (!isSoundPicker && (parentAlert == null || !parentAlert.isPollAttach)) {
             fs = new ListItem();
             fs.title = LocaleController.getString(R.string.Gallery);
             fs.subtitle = LocaleController.getString(R.string.GalleryInfo);

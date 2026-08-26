@@ -115,6 +115,7 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
+import org.telegram.tgnet.tl.TL_ephemeral;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_update;
@@ -458,7 +459,7 @@ public class AlertsCreator {
                 }
             }
         } else if (request instanceof TLRPC.TL_messages_sendMessage ||
-                request instanceof TLRPC.TL_ephemeral_sendMessage ||
+                request instanceof TL_ephemeral.TL_sendMessage ||
                 request instanceof TLRPC.TL_messages_sendMedia ||
                 request instanceof TLRPC.TL_messages_sendInlineBotResult ||
                 request instanceof TLRPC.TL_messages_forwardMessages ||
@@ -469,8 +470,8 @@ public class AlertsCreator {
                 dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendMessage) request).peer);
             } else if (request instanceof TLRPC.TL_messages_sendMedia) {
                 dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendMedia) request).peer);
-            } else if (request instanceof TLRPC.TL_ephemeral_sendMessage) {
-                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_ephemeral_sendMessage) request).peer);
+            } else if (request instanceof TL_ephemeral.TL_sendMessage) {
+                dialogId = DialogObject.getPeerDialogId(((TL_ephemeral.TL_sendMessage) request).peer);
             } else if (request instanceof TLRPC.TL_messages_sendInlineBotResult) {
                 dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendInlineBotResult) request).peer);
             } else if (request instanceof TLRPC.TL_messages_forwardMessages) {
@@ -828,8 +829,8 @@ public class AlertsCreator {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(title);
         Map<String, Integer> colorsReplacement = new HashMap<>();
-        colorsReplacement.put("info1.**", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
-        colorsReplacement.put("info2.**", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
+        colorsReplacement.put("info1", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
+        colorsReplacement.put("info2", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
         builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider), colorsReplacement);
         builder.setTopAnimationIsNew(true);
         builder.setPositiveButton(LocaleController.getString(R.string.Close), null);
@@ -854,7 +855,7 @@ public class AlertsCreator {
             return null;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
-        builder.setTitle(title == null ? LocaleController.getString(R.string.NagramX) : title);
+        builder.setTitle(title == null ? LocaleController.getString(R.string.AppName) : title);
         builder.setMessage(text);
         if (positiveButton == null) {
             builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
@@ -4664,7 +4665,7 @@ public class AlertsCreator {
         final FrameLayout repeatContainer;
         final TextView repeatTextView;
         final Runnable updateRepeatText;
-        if (UserConfig.getInstance(UserConfig.selectedAccount).isPremium() && (dialogId == selfUserId || true) && !doNotShowReminder) {
+        if ((dialogId == selfUserId || true) && !doNotShowReminder) {
             repeatContainer = new FrameLayout(context);
 
             final int textColor = datePickerColors != null ? datePickerColors.textColor : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
@@ -6842,7 +6843,7 @@ public class AlertsCreator {
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
-        builder.setTitle(LocaleController.getString(R.string.NagramX));
+        builder.setTitle(LocaleController.getString(R.string.AppName));
         switch (error.text) {
             case "PEER_FLOOD":
                 builder.setMessage(LocaleController.getString(R.string.NobodyLikesSpam2));
@@ -7946,6 +7947,19 @@ public class AlertsCreator {
                         hasUnsafePaidSuggestedPostStars |= msg.messageOwner.paid_suggested_post_stars;
                         hasUnsafePaidSuggestedPostTon |= msg.messageOwner.paid_suggested_post_ton;
                     }
+                    if (msg.isPaidSuggestedPostProtected()) {
+                        hasUnsafePaidSuggestedPostStars |= msg.messageOwner.paid_suggested_post_stars;
+                        hasUnsafePaidSuggestedPostTon |= msg.messageOwner.paid_suggested_post_ton;
+                    }
+                }
+            }
+        }
+        if (selectedGroup != null) {
+            for (int a = 0; a < selectedGroup.messages.size(); a++) {
+                MessageObject messageObject = selectedGroup.messages.get(a);
+                if (messageObject.isPaidSuggestedPostProtected()) {
+                    hasUnsafePaidSuggestedPostStars |= messageObject.messageOwner.paid_suggested_post_stars;
+                    hasUnsafePaidSuggestedPostTon |= messageObject.messageOwner.paid_suggested_post_ton;
                 }
             }
         }

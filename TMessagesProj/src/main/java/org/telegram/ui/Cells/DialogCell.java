@@ -848,7 +848,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     }
 
     private void checkTtl() {
-        showTtl = ttlPeriod > 0 && !hasCall && !isOnline() && !(checkBox != null && checkBox.isChecked()) && !storyParams.drawnLive  && AndroidUtil.getOnlineColor(user, resourcesProvider) == 0;
+        showTtl = ttlPeriod > 0 && !hasCall && !isOnline() && !(checkBox != null && checkBox.isChecked()) && !storyParams.drawnLive;
         ttlProgress = showTtl ? 1.0f : 0.0f;
     }
 
@@ -1811,7 +1811,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 isSavedDialog && user != null && !user.self && message != null && message.isOutOwner() ||
                                 triedMessageName != null ||
                                 message != null && message.messageOwner != null && message.messageOwner.guestchat_via_from != null ||
-                                chat != null && chat.id > 0 && (fromChat == null || fromChat.id != chat.id) && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message) && !useFromUserAsAvatar ||
+                                chat != null && chat.id > 0 && (fromChat == null || fromChat.id != chat.id) && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message) ||
                                 user != null && user.id == UserObject.VERIFY && message != null && message.getForwardedFromId() != null
                             ) {
                                 messageNameString = AndroidUtilities.escape(triedMessageName != null ? triedMessageName : getMessageNameString());
@@ -3781,9 +3781,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 avatarRadius = 1;
             } else if (drawCommunityAvatar) {
                 avatarRadius = dp(12);
+            } else if (chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar || !isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats) {
+                avatarRadius = dp(16);
             } else {
-                boolean isForum = (chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar) || (!isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats);
-                avatarRadius = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f, isForum);
+                avatarRadius = dp(28);
             }
 
             avatarImage.setRoundRadius(avatarRadius);
@@ -4011,14 +4012,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.drawRect(tx - dp(8), 0, getMeasuredWidth(), getMeasuredHeight(), Theme.dialogs_pinnedPaint);
                 if (currentRevealProgress == 0) {
                     if (Theme.dialogs_archiveDrawableRecolored) {
-                        Theme.dialogs_archiveDrawable.setLayerColor("Arrow.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_archiveDrawable.setLayerColor("Arrow", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
                         Theme.dialogs_archiveDrawableRecolored = false;
                     }
                     if (Theme.dialogs_hidePsaDrawableRecolored) {
                         Theme.dialogs_hidePsaDrawable.beginApplyLayerColors();
-                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
-                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
-                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
                         Theme.dialogs_hidePsaDrawable.commitApplyLayerColors();
                         Theme.dialogs_hidePsaDrawableRecolored = false;
                     }
@@ -4039,14 +4040,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.restore();
 
                 if (!Theme.dialogs_archiveDrawableRecolored) {
-                    Theme.dialogs_archiveDrawable.setLayerColor("Arrow.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_archiveDrawable.setLayerColor("Arrow", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
                     Theme.dialogs_archiveDrawableRecolored = true;
                 }
                 if (!Theme.dialogs_hidePsaDrawableRecolored) {
                     Theme.dialogs_hidePsaDrawable.beginApplyLayerColors();
-                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
-                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
-                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
                     Theme.dialogs_hidePsaDrawable.commitApplyLayerColors();
                     Theme.dialogs_hidePsaDrawableRecolored = true;
                 }
@@ -5119,7 +5120,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             return false;
         }
         if (isDialogCell && currentDialogFolderId == 0 && !stars) {
-            showTtl = ttlPeriod > 0 && !isOnline() && !hasCall && !storyParams.drawnLive && AndroidUtil.getOnlineColor(user, resourcesProvider) == 0;
+            showTtl = ttlPeriod > 0 && !isOnline() && !hasCall && !storyParams.drawnLive;
             if (rightFragmentOpenedProgress != 1f && (showTtl || ttlProgress > 0)) {
                 if (timerDrawable == null || (timerDrawable.getTime() != ttlPeriod && ttlPeriod > 0)) {
                     timerDrawable = TimerDrawable.getTtlIconForDialogs(ttlPeriod);

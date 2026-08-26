@@ -13,11 +13,9 @@ import static org.telegram.ui.Components.UniversalAdapter.VIEW_TYPE_USER_GROUP_C
 import static org.telegram.ui.Components.UniversalAdapter.VIEW_TYPE_USER_CHECKBOX;
 
 import android.content.SharedPreferences;
-import android.graphics.Canvas;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.LinearLayout;
 
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
@@ -444,8 +442,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
 //        if (prefs.getBoolean("delete_report", false)) {
 //            report.setAllChecks(true, false);
 //        }
-        final boolean canDeleteMessages = ChatObject.canUserDoAdminAction(inChat, ChatObject.ACTION_DELETE_MESSAGES);
-        deleteAll = new Action(ACTION_DELETE_ALL, canDeleteMessages ? actionParticipants : new ArrayList<>(0));
+        deleteAll = new Action(ACTION_DELETE_ALL, actionParticipants);
         deleteAllReactions = new Action(ACTION_DELETE_ALL_REACTIONS, actionParticipants);
         isSingleUsersMode = actionParticipants.size() == 1;
 //        if (prefs.getBoolean("delete_deleteAll", false)) {
@@ -1015,7 +1012,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             } else if (action == ACTION_DELETE_ALL) {
                 deleteAll.toggleCheck(index);
                 onDeleteAllChanged();
-            } else if (action == ACTION_DELETE_ALL_REACTIONS) {
+            } else if (item.id == ACTION_DELETE_ALL_REACTIONS) {
                 deleteAllReactions.toggleCheck(index);
                 onDeleteAllChanged();
             } else if (action == ACTION_BAN) {
@@ -1327,9 +1324,6 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
                 } else if (participant instanceof TLRPC.Chat) {
                     req.participant = MessagesController.getInputPeer((TLRPC.Chat) participant);
                 }
-                if (ids.isEmpty()) {
-                    return;
-                }
                 req.id = ids;
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
             }
@@ -1375,46 +1369,20 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
                 }
             });
         }
+    }
 
-        applyInCommonGroup.forEachSelected((participant, i) -> {
-            if (participant instanceof TLRPC.User) {
-                boolean needBan = banOrRestrict.checkOption(i);
-                boolean needDelete = deleteAll.checkOption(i);
-                if (!needBan && !needDelete) {
-                    return;
-                }
-                TLRPC.User userFinal = (TLRPC.User) participant;
-                TLRPC.TL_messages_getCommonChats req = new TLRPC.TL_messages_getCommonChats();
-                req.user_id = MessagesController.getInstance(currentAccount).getInputUser(userFinal);
-                if (req.user_id instanceof TLRPC.TL_inputUserEmpty) {
-                    return;
-                }
-                req.limit = 100;
-                req.max_id = 0;
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-                    if (error != null) {
-                        return;
-                    }
-                    TLRPC.messages_Chats res = (TLRPC.messages_Chats) response;
-                    for (int j=0; j < res.chats.size(); j++) {
-                        TLRPC.Chat chat_ = res.chats.get(j);
-                        boolean canBan = ChatObject.canBlockUsers(chat_);
-                        boolean canDelete = ChatObject.canUserDoAdminAction(chat_, ChatObject.ACTION_DELETE_MESSAGES);
-                        if (canBan && needBan) {
-                            if (restrict) {
-                                TLRPC.TL_chatBannedRights rights = bannedRightsOr(bannedRights, participantsBannedRights.get(i));
-                                MessagesController.getInstance(currentAccount).setParticipantBannedRole(chat_.id, userFinal, null, rights, false, getBaseFragment());
-                            } else {
-                                MessagesController.getInstance(currentAccount).deleteParticipantFromChat(chat_.id, userFinal, null, false, false);
-                            }
-                        }
-                        if (canDelete && needDelete) {
-                            MessagesController.getInstance(currentAccount).deleteUserChannelHistory(chat_, userFinal, null, 0);
-                        }
-                    }
-                });
-            }
-        });
+    private void savePreferences() {
+        final SharedPreferences.Editor e = MessagesController.getInstance(currentAccount).getMainSettings().edit();
+        e.putBoolean("delete_report", report.areAllSelected());
+        e.putBoolean("delete_deleteAll", deleteAll.areAllSelected());
+        e.putBoolean("delete_ban", !restrict && banOrRestrict.areAllSelected());
+        e.apply();
+    }
+
+    @Override
+    public void dismiss() {
+        savePreferences();
+        super.dismiss();
     }
 
     private void savePreferences() {

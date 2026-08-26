@@ -33,6 +33,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -521,15 +522,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                         AnimatedEmojiSpan span = createAnimatedEmojiSpan(document, documentId, editText.getFontMetricsInt());
                         span.cacheType = AnimatedEmojiDrawable.getCacheTypeForEnterView();
                         span.setAdded();
-                        Editable text = editText.getText();
-                        AnimatedEmojiSpan[] allSpans = text.getSpans(0, text.length(), AnimatedEmojiSpan.class);
-                        int insertionIndex = 0;
-                        for (AnimatedEmojiSpan s : allSpans) {
-                            if (text.getSpanStart(s) < selectionEnd) {
-                                insertionIndex++;
-                            }
-                        }
-                        selectedEmojisIds.add(insertionIndex, documentId);
+                        selectedEmojisIds.add(MathUtils.clamp(selectionEnd, 0, selectedEmojisIds.size()), documentId);
                         selectedEmojisMap.put(documentId, span);
                         spannable.setSpan(span, 0, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         editText.getText().insert(selectionEnd, spannable);
@@ -705,17 +698,12 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                 closeKeyboard();
                 actionButtonContainer.animate().setListener(null).cancel();
                 switchLayout.animate().setListener(null).cancel();
-                if (initialSelectedType == -1 || selectType == initialSelectedType) {
-                    actionButtonContainer.animate().alpha(0f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            actionButtonContainer.setVisibility(View.INVISIBLE);
-                        }
-                    }).start();
-                } else {
-                    actionButtonContainer.setVisibility(View.VISIBLE);
-                    actionButtonContainer.setAlpha(1f);
-                }
+                actionButtonContainer.animate().alpha(0f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        actionButtonContainer.setVisibility(View.INVISIBLE);
+                    }
+                }).start();
                 switchLayout.animate().alpha(0f).setDuration(350).setInterpolator(CubicBezierInterpolator.DEFAULT).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -725,12 +713,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                 }).start();
             } else {
                 switchLayout.setVisibility(View.INVISIBLE);
-                if (initialSelectedType == -1 || selectType == initialSelectedType) {
-                    actionButtonContainer.setVisibility(View.INVISIBLE);
-                } else {
-                    actionButtonContainer.setVisibility(View.VISIBLE);
-                    actionButtonContainer.setAlpha(1f);
-                }
+                actionButtonContainer.setVisibility(View.INVISIBLE);
             }
         }
     }
@@ -779,7 +762,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     }
 
     private boolean checkChangesBeforeExit(boolean invoked) {
-        boolean hasChanges = selectedType != initialSelectedType || !selectedEmojisMap.keySet().equals(initialSelectedEmojis.keySet());
+        boolean hasChanges = !selectedEmojisMap.keySet().equals(initialSelectedEmojis.keySet());
         if (boostsStatus != null && boostsStatus.level < selectedCustomReactions) {
             hasChanges = false;
         }

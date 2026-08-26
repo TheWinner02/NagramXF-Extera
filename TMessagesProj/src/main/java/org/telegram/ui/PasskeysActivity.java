@@ -63,7 +63,7 @@ public class PasskeysActivity extends BaseFragment {
     private ArrayList<TL_account.Passkey> passkeys;
 
     public PasskeysActivity(ArrayList<TL_account.Passkey> passkeys) {
-        this.passkeys = passkeys != null ? passkeys : new ArrayList<>();
+        this.passkeys = passkeys;
     }
 
     @Override
@@ -114,14 +114,9 @@ public class PasskeysActivity extends BaseFragment {
             addPasskeyRow = items.size();
             items.add(UItem.asButton(-1, R.drawable.menu_passkey_add, getString(R.string.PasskeyAdd)).accent());
         }
-        items.add(UItem.asButton(-2, R.drawable.menu_settings, getString(R.string.Settings)).accent());
         items.add(UItem.asShadow(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.PasskeyInfo), () -> {
             showLearnSheet(getContext(), currentAccount, resourceProvider, passkeys.size() + 1 <= getMessagesController().config.passkeysAccountPasskeysMax.get());
         }), true)));
-        items.add(UItem.asShadow(AndroidUtilities.replaceMultipleTags(getString(R.string.PasskeyInfo2),
-            () -> Browser.openUrl(getContext(), BITWARDEN_URL),
-            () -> Browser.openUrl(getContext(), KEEPASSDX_URL)
-        )));
     }
 
     private void openMenu(View view) {
@@ -176,24 +171,13 @@ public class PasskeysActivity extends BaseFragment {
                         return;
                     if ("EMPTY".equalsIgnoreCase(error)) {
                         new AlertDialog.Builder(getContext())
-                                .setTitle(getString(R.string.PasskeyNoOptionsTitle))
-                                .setMessage(getString(R.string.PasskeyNoOptionsText))
-                                .setPositiveButton(getString(R.string.OK), null)
-                                .show();
+                            .setTitle(getString(R.string.PasskeyNoOptionsTitle))
+                            .setMessage(getString(R.string.PasskeyNoOptionsText))
+                            .setPositiveButton(getString(R.string.OK), null)
+                            .show();
                         return;
                     }
-                    if (error.startsWith("No create options")) {
-                        BulletinFactory.of(this).createSimpleBulletin(
-                                R.raw.error,
-                                getString(R.string.PasskeyUnsupportedTitle),
-                                AndroidUtilities.replaceMultipleTags(getString(R.string.PasskeyUnsupportedMessage),
-                                        () -> Browser.openUrl(getContext(), BITWARDEN_URL),
-                                        () -> Browser.openUrl(getContext(), KEEPASSDX_URL)
-                                )
-                        ).show();
-                    } else {
-                        BulletinFactory.of(this).showForError(error, true);
-                    }
+                    BulletinFactory.of(this).showForError(error, true);
                 } else if (passkey != null) {
                     MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
                     added(passkey);
@@ -394,18 +378,7 @@ public class PasskeysActivity extends BaseFragment {
                 if (fragment == null) return;
 
                 if (error != null) {
-                    if (error.startsWith("No create options")) {
-                        BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider()).createSimpleBulletin(
-                                R.raw.error,
-                                getString(R.string.PasskeyUnsupportedTitle),
-                                AndroidUtilities.replaceMultipleTags(getString(R.string.PasskeyUnsupportedMessage),
-                                        () -> Browser.openUrl(context, BITWARDEN_URL),
-                                        () -> Browser.openUrl(context, KEEPASSDX_URL)
-                                )
-                        ).show();
-                    } else {
-                        BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider()).showForError(error);
-                    }
+                    BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider()).showForError(error);
                 } else if (passkey != null) {
                     MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
                     if (fragment instanceof PasskeysActivity) {
@@ -434,7 +407,7 @@ public class PasskeysActivity extends BaseFragment {
                                 fragment2.presentFragment(activity);
                                 AndroidUtilities.runOnUIThread(() -> activity.added(passkey), 150);
                             } else if (err != null) {
-                                BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider()).showForError(err);
+                                BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider()).showForError(error);
                             }
                         });
                     }

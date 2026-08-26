@@ -514,24 +514,21 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         req.lang_code = targetLocaleInfo.getLangCode();
         req.keys.add("ContinueOnThisLanguage");
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-            if (!(response instanceof Vector vector)) {
-                return;
-            }
-            if (vector.objects.isEmpty()) {
-                return;
-            }
-            final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(0);
-            if (string instanceof TLRPC.TL_langPackString) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (!destroyed) {
-                        localeInfo = targetLocaleInfo;
-                        switchLanguageTextView.setText(string.value);
-                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        Set<String> showedLangs = new HashSet<>(preferences.getStringSet("language_showed3", new HashSet<>()));
-                        showedLangs.add(showedLanguage);
-                        preferences.edit().putStringSet("language_showed3", showedLangs).apply();
-                    }
-                });
+            if (response instanceof Vector) {
+                Vector vector = (Vector) response;
+                if (vector.objects.isEmpty()) {
+                    return;
+                }
+                final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(0);
+                if (string instanceof TLRPC.TL_langPackString) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!destroyed) {
+                            switchLanguageTextView.setText(string.value);
+                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                            preferences.edit().putString("language_showed2", finalSystemLang.toLowerCase()).apply();
+                        }
+                    });
+                }
             }
         }, ConnectionsManager.RequestFlagWithoutLogin);
     }

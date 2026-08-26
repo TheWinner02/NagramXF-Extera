@@ -241,8 +241,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
-import me.vkryl.core.BitwiseUtils;
-
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import xyz.nextalone.nagram.NaConfig;
@@ -2991,6 +2989,13 @@ public class AndroidUtilities {
         );
     }
 
+    public static boolean isFold() {
+        return (
+            ApplicationLoader.applicationContext != null &&
+            ApplicationLoader.applicationContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE)
+        );
+    }
+
     public static boolean isSmallScreen() {
         if (isSmallScreen == null) {
             isSmallScreen = (Math.max(displaySize.x, displaySize.y) - statusBarHeight - navigationBarHeight) / density <= 650;
@@ -3625,6 +3630,19 @@ public class AndroidUtilities {
         return false;
     }
 
+    public static boolean addToClipboard(CharSequence plain, String html) {
+        if (html == null) return addToClipboard(plain);
+        try {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newHtmlText("label", plain, html);
+            clipboard.setPrimaryClip(clip);
+            return true;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return false;
+    }
+
     public static boolean addToClipboard(CharSequence str) {
         try {
             android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -4214,8 +4232,8 @@ public class AndroidUtilities {
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
                     Map<String, Integer> colorsReplacement = new HashMap<>();
-                    colorsReplacement.put("info1.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
-                    colorsReplacement.put("info2.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    colorsReplacement.put("info1", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    colorsReplacement.put("info2", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
                     builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, parentFragment.getThemedColor(Theme.key_dialogTopBackground), colorsReplacement);
                     builder.setTopAnimationIsNew(true);
                     builder.setMessage(getString(R.string.IncorrectTheme));
@@ -4264,8 +4282,8 @@ public class AndroidUtilities {
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
                     Map<String, Integer> colorsReplacement = new HashMap<>();
-                    colorsReplacement.put("info1.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
-                    colorsReplacement.put("info2.**", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    colorsReplacement.put("info1", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
+                    colorsReplacement.put("info2", parentFragment.getThemedColor(Theme.key_dialogTopBackground));
                     builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, parentFragment.getThemedColor(Theme.key_dialogTopBackground), colorsReplacement);
                     builder.setTopAnimationIsNew(true);
                     builder.setPositiveButton(getString(R.string.OK), null);
@@ -6807,6 +6825,8 @@ public class AndroidUtilities {
 
     public static void logFlagSecure() {
         if (!BuildConfig.DEBUG) {
+            return;
+        }
             return;
         }
 

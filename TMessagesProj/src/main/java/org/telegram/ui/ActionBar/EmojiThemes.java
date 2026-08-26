@@ -349,10 +349,8 @@ public class EmojiThemes {
             final ITheme iTheme = getITheme(index);
             final TLRPC.TL_theme tlTheme = getTlTheme(index);
             Theme.ThemeInfo baseTheme;
-            final TLRPC.ThemeSettings settings = iTheme != null ? iTheme.getThemeSettings(settingsIndex) : null;
-            final String baseThemeKey = Theme.getBaseThemeKey(settings);
             if (iTheme != null) {
-                baseTheme = Theme.getTheme(baseThemeKey);
+                baseTheme = Theme.getTheme(Theme.getBaseThemeKey(iTheme.getThemeSettings(settingsIndex)));
             } else {
                 baseTheme = Theme.getTheme("Blue");
             }
@@ -368,10 +366,10 @@ public class EmojiThemes {
             }
             if (baseTheme != null) {
                 themeInfo = new Theme.ThemeInfo(baseTheme);
-                if (iTheme != null && settings != null) {
+                if (iTheme != null) {
                     accent = themeInfo.createNewAccent(
                         iTheme.getThemeId(),
-                        settings,
+                        iTheme.getThemeSettings(settingsIndex),
                         tlTheme,
                         currentAccount,
                         true

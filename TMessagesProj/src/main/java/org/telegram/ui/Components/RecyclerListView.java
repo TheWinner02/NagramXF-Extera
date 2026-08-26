@@ -3160,7 +3160,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             }
             canvas.restore();
 
-            if (BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG_PRIVATE_VERSION) {
             //     canvas.drawColor(0x80FF00FF);
             }
         } else {

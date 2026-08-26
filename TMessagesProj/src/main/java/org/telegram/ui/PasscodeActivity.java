@@ -964,24 +964,18 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 return;
             }
 
-            boolean isFirst;
-            if (account != -1) {
-                isFirst = false;
-                PasscodeHelper.setPasscodeForAccount(firstPassword, account);
-            } else {
-                isFirst = SharedConfig.passcodeHash.isEmpty();
-                try {
-                    SharedConfig.passcodeSalt = new byte[16];
-                    Utilities.random.nextBytes(SharedConfig.passcodeSalt);
-                    byte[] passcodeBytes = firstPassword.getBytes(StandardCharsets.UTF_8);
-                    byte[] bytes = new byte[32 + passcodeBytes.length];
-                    System.arraycopy(SharedConfig.passcodeSalt, 0, bytes, 0, 16);
-                    System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
-                    System.arraycopy(SharedConfig.passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
-                    SharedConfig.passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
+            boolean isFirst = SharedConfig.passcodeHash.isEmpty();
+            try {
+                SharedConfig.passcodeSalt = new byte[16];
+                Utilities.random.nextBytes(SharedConfig.passcodeSalt);
+                byte[] passcodeBytes = firstPassword.getBytes(StandardCharsets.UTF_8);
+                byte[] bytes = new byte[32 + passcodeBytes.length];
+                System.arraycopy(SharedConfig.passcodeSalt, 0, bytes, 0, 16);
+                System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+                System.arraycopy(SharedConfig.passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
+                SharedConfig.passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
+            } catch (Exception e) {
+                FileLog.e(e);
             }
             SharedConfig.allowScreenCapture = true;
             SharedConfig.passcodeType = currentPasswordType;

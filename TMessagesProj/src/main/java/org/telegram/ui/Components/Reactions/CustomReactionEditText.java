@@ -53,11 +53,7 @@ public class CustomReactionEditText extends EditTextCaption {
                 return true;
             }
         });
-        if (needBackground) {
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        } else {
-            setBackground(null);
-        }
+        setBackground(null);
         setIncludeFontPadding(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             setShowSoftInputOnFocus(false);

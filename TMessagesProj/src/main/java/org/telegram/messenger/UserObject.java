@@ -14,8 +14,6 @@ import androidx.annotation.NonNull;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import xyz.nextalone.nagram.helper.LocalPeerColorHelper;
 import xyz.nextalone.nagram.helper.LocalPremiumStatusHelper;
@@ -198,7 +196,6 @@ public class UserObject {
     public static int getColorId(TLRPC.User user) {
         if (user == null) return 0;
         if (user.color instanceof TLRPC.TL_peerColor && (user.color.flags & 1) != 0) return user.color.color;
-
         Integer replace = LocalPeerColorHelper.getColorId(user);
         if (replace != null) return replace;
 

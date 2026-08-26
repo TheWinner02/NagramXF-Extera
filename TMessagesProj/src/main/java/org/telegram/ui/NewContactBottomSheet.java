@@ -174,9 +174,9 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         ScrollView fragmentView = new ScrollView(context);
 
         contentLayout = new LinearLayout(context);
-        contentLayout.setPadding(dp(20), 0, dp(20), 0);
+        contentLayout.setPadding(dp(16), 0, dp(16), 0);
         contentLayout.setOrientation(LinearLayout.VERTICAL);
-        fragmentView.addView(contentLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        fragmentView.addView(contentLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));;
         contentLayout.setOnTouchListener((v, event) -> true);
 
         FrameLayout frameLayout = new FrameLayout(context);
@@ -649,6 +649,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         qrButtonContainer.addView(qrButtonSeparator, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.TOP, 0, 6, 0, 0));
 
         qrButton = new ButtonWithCounterView(context, false, resourcesProvider);
+        qrButton.setRound();
         SpannableStringBuilder qrButtonText = new SpannableStringBuilder("QR");
         qrButtonText.setSpan(new ColoredImageSpan(R.drawable.header_qr_24), 0, qrButtonText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         qrButtonText.append("  ");
@@ -690,7 +691,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         notesField.setBackground(null);
         notesField.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         notesField.getEditText().setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        notesField.setHint(getString(R.string.ContactNotes));
+        notesField.setHint("Notes");
         qrButtonContainer.addView(notesField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.TOP, 0, 0, 0, 0));
         notesField.getEditText().setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
@@ -795,17 +796,18 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         doneButton.setTextColor(parentFragment.getThemedColor(Theme.key_featuredStickers_buttonText));
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         doneButton.setTypeface(AndroidUtilities.bold());
+        ScaleStateListAnimator.apply(doneButtonContainer, .02f, 1.2f);
 
         progressView = new RadialProgressView(context);
         progressView.setSize(dp(20));
         progressView.setProgressColor(parentFragment.getThemedColor(Theme.key_featuredStickers_buttonText));
         doneButtonContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         doneButtonContainer.addView(progressView, LayoutHelper.createFrame(40, 40, Gravity.CENTER));
-        contentLayout.addView(doneButtonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 16, 0, 16));
+        contentLayout.addView(doneButtonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 8, 0, 4));
 
         AndroidUtilities.updateViewVisibilityAnimated(doneButton, true, 1f, false);
         AndroidUtilities.updateViewVisibilityAnimated(progressView, false, 1f, false);
-        doneButtonContainer.setBackground(Theme.AdaptiveRipple.filledRect(parentFragment.getThemedColor(Theme.key_featuredStickers_addButton), 6));
+        doneButtonContainer.setBackground(Theme.AdaptiveRipple.filledRect(parentFragment.getThemedColor(Theme.key_featuredStickers_addButton), 24));
         doneButtonContainer.setOnClickListener(v -> doOnDone());
 
         plusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -941,7 +943,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         final Utilities.Callback<TLRPC.User> onUser = user -> {
             if (user == null) {
                 phoneStatusView.setImageDrawable(null);
-                underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.PhoneNotOnTelegramInvite), () -> {
+                underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag("This phone number is not on Telegram. **Invite >**", () -> {
                     final Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setData(Uri.parse("sms:+" + phone));
                     intent.putExtra("sms_body", LocaleController.formatString(R.string.InviteText2, "https://telegram.org/dl"));
@@ -952,7 +954,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                 drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon), PorterDuff.Mode.SRC_IN));
                 phoneStatusView.setImageDrawable(drawable);
                 if (user.contact) {
-                    underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.PhoneAlreadyInContacts), () -> {
+                    underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag("This phone number is already in your contacts. **View >**", () -> {
                         dismiss();
 
                         final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
@@ -961,7 +963,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                         }
                     }), true, dp(8f / 3f), dp(1)));
                 } else {
-                    underPhoneTextView.setText(getString(R.string.PhoneOnTelegram));
+                    underPhoneTextView.setText("This phone number is on Telegram.");
                 }
             }
             updateBottomTranslation(false);
@@ -1421,14 +1423,14 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             }
             // Fallback to account name which should have slot info
             return accountName != null && !accountName.isEmpty() ?
-                    accountName : getString(R.string.SIMCard);
+                    accountName : "SIM Card";
         }
 
         // For local/device account
         if (accountType.equals("com.android.localphone") ||
                 accountName == null || accountName.isEmpty() ||
                 accountName.equals("Device")) {
-            return getString(R.string.DeviceAccount);
+            return "Device";
         }
 
         // For other accounts (Exchange, Office365, etc.), use email/account name

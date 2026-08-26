@@ -734,7 +734,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
             }
             case VIEW_TYPE_RADIO_2: {
                 RadioButtonCell radioCell = (RadioButtonCell) holder.itemView;
-                radioCell.setTextAndValueAndCheck(item.text.toString(), item.textValue.toString(), divider, item.checked);
+                radioCell.setTextAndValue(item.text.toString(), item.textValue.toString(), divider, item.checked);
                 radioCell.itemId = item.id;
                 break;
             }
@@ -1107,9 +1107,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         if (viewType >= UItem.factoryViewTypeStartsWith) {
             UItem.UItemFactory<?> factory = UItem.findFactory(viewType);
             if (factory != null) {
-                UItem item = getItem(position);
-                if (item == null) return;
-                factory.attachedView(listView, holder.itemView, item);
+                factory.attachedView(listView, holder.itemView, getItem(holder.getAdapterPosition()));
             }
         } else {
             switch (viewType) {

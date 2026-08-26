@@ -918,7 +918,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
         if (position < 0) {
             return;
         }
-        if (currentPosition == position && !force) {
+        if (currentPosition == position) {
             return;
         }
         if (progress < 0) {
