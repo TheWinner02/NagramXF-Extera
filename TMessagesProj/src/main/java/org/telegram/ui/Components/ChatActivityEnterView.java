@@ -14165,6 +14165,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         if (hasBotWebView() && botCommandsMenuIsShowing() || BaseFragment.hasSheets(parentFragment)) {
             return;
         }
+        if (isPopupShowing()) {
+            showPopup(0, currentPopupContentType, false, true);
+        }
         if (delegate != null) {
             delegate.onKeyboardRequested();
         }
@@ -14175,6 +14178,9 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     public void closeKeyboard() {
+        showKeyboardOnResume = false;
+        waitingForKeyboardOpen = false;
+        AndroidUtilities.cancelRunOnUIThread(openKeyboardRunnable);
         AndroidUtilities.hideKeyboard(messageEditText);
     }
 

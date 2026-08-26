@@ -8741,7 +8741,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (parentChatActivity != null && parentChatActivity.getChatActivityEnterView() != null && parentChatActivity.getFragmentView() != null) {
             boolean keyboardVisible = parentChatActivity.getChatActivityEnterView().isKeyboardVisible();
             if (keyboardVisible) {
-                parentChatActivity.getChatActivityEnterView().showEmojiView();
                 openKeyboardOnShareAlertClose = true;
             }
             AndroidUtilities.setAdjustResizeToNothing(parentChatActivity.getParentActivity(), classGuid);

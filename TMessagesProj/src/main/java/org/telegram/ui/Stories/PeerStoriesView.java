@@ -8216,9 +8216,6 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             return false;
         }
         boolean keyboardVisible = chatActivityEnterView.isKeyboardVisible();
-        if (keyboardVisible) {
-            chatActivityEnterView.showEmojiView();
-        }
         AndroidUtilities.runOnUIThread(() -> {
             delegate.requestAdjust(true);
         }, 300);

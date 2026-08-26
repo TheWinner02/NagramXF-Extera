@@ -11854,12 +11854,12 @@ public class ChatActivity extends BaseFragment implements
         contentView.addView(forwardingPreviewView);
 
         if (keyboardWasVisible) {
-            chatActivityEnterView.freezeEmojiView(true);
-            chatActivityEnterView.showEmojiView();
             openKeyboardOnAttachMenuClose = true;
         }
         AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
-        fragmentView.requestLayout();
+        if (fragmentView != null) {
+            fragmentView.requestLayout();
+        }
     }
 
     private void animateToNextChat() {
@@ -13349,6 +13349,12 @@ public class ChatActivity extends BaseFragment implements
                     if (chatAttachAlert != null && chatAttachAlert.isShowing()) {
                         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
                     }
+                    if (chatAttachAlert != null && chatAttachAlert.sent) {
+                        openKeyboardOnAttachMenuClose = false;
+                        if (chatActivityEnterView != null) {
+                            chatActivityEnterView.closeKeyboard();
+                        }
+                    }
                     super.dismissInternal();
                     onEditTextDialogClose(false, true);
                 }
@@ -13358,11 +13364,18 @@ public class ChatActivity extends BaseFragment implements
                     if (chatAttachAlert != null) {
                         chatAttachAlert.setFocusable(false);
                     }
-                    if (chatActivityEnterView != null && chatActivityEnterView.getEditField() != null) {
-                        chatActivityEnterView.getEditField().requestFocus();
+                    if (chatAttachAlert != null && !chatAttachAlert.sent && openKeyboardOnAttachMenuClose) {
+                        if (chatActivityEnterView != null && chatActivityEnterView.getEditField() != null) {
+                            chatActivityEnterView.getEditField().requestFocus();
+                        }
+                    } else if (chatActivityEnterView != null && chatActivityEnterView.getEditField() != null) {
+                        chatActivityEnterView.getEditField().clearFocus();
                     }
                     if (chatAttachAlert != null && chatAttachAlert.isShowing()) {
                         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+                    }
+                    if (chatAttachAlert != null && chatAttachAlert.sent) {
+                        openKeyboardOnAttachMenuClose = false;
                     }
                     onEditTextDialogClose(false, false);
                 }
@@ -13381,8 +13394,12 @@ public class ChatActivity extends BaseFragment implements
                         editingMessageObject.messageOwner.invert_media = invertMedia;
                     }
                     if (button == 8 || button == 7 || button == 4 && !chatAttachAlert.getPhotoLayout().getSelectedPhotos().isEmpty()) {
-                        if (chatAttachAlert != null && button != 8) {
-                            chatAttachAlert.dismiss(true);
+                        openKeyboardOnAttachMenuClose = false;
+                        if (chatAttachAlert != null) {
+                            chatAttachAlert.sent = true;
+                            if (button != 8) {
+                                chatAttachAlert.dismiss(true);
+                            }
                         }
                         final HashMap<Object, Object> selectedPhotos = chatAttachAlert.getPhotoLayout().getSelectedPhotos();
                         final ArrayList<Object> selectedPhotosOrder = chatAttachAlert.getPhotoLayout().getSelectedPhotosOrder();
@@ -13499,19 +13516,17 @@ public class ChatActivity extends BaseFragment implements
     }
 
     public boolean needEnterText() {
-        boolean keyboardVisible = chatActivityEnterView.isKeyboardVisible();
-        if (keyboardVisible) {
-            chatActivityEnterView.showEmojiView();
-            openKeyboardOnAttachMenuClose = true;
-        }
+        boolean keyboardVisible = chatActivityEnterView != null && chatActivityEnterView.isKeyboardVisible();
         AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
-        fragmentView.requestLayout();
+        if (fragmentView != null) {
+            fragmentView.requestLayout();
+        }
         return keyboardVisible;
     }
 
     public void onEditTextDialogClose(boolean resetAdjust, boolean reset) {
         if (openKeyboardOnAttachMenuClose) {
-            AndroidUtilities.runOnUIThread(() -> chatActivityEnterView.openKeyboard(), 200);
+            AndroidUtilities.runOnUIThread(() -> chatActivityEnterView.openKeyboardInternal(), 200);
             if (reset) {
                 openKeyboardOnAttachMenuClose = false;
             }
@@ -13626,6 +13641,10 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void afterMessageSend() {
+        openKeyboardOnAttachMenuClose = false;
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.closeKeyboard();
+        }
         messageSuggestionParams = null;
         if (threadMessageId == 0 || isTopic) {
             if (isTopic) {
