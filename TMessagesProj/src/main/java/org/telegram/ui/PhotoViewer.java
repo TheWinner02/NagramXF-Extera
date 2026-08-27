@@ -596,6 +596,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             setSubtitle(subtitle, true);
         }
         public void setSubtitle(CharSequence subtitle, boolean animated) {
+            if (NaConfig.INSTANCE.getHidePhotoCounter().Bool()) {
+                subtitle = null;
+            }
             final boolean haveSubtitle = !TextUtils.isEmpty(subtitle);
             if (haveSubtitle != hasSubtitle) {
                 hasSubtitle = haveSubtitle;

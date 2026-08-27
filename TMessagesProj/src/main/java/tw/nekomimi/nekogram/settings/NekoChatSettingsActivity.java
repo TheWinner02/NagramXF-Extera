@@ -876,7 +876,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             builder.setNegativeButton(getString(R.string.Cancel), null);
             showDialog(builder.create());
         } else if (position == cellGroup.rows.indexOf(cameraTypeRow)) {
-            showSingleChoiceDialog(getParentActivity(), R.string.CameraType, new String[]{"Camera 1", "Camera 2"}, SharedConfig.isUsingCamera2(currentAccount) ? 1 : 0, getResourceProvider(), i -> {
+            showSingleChoiceDialog(getParentActivity(), R.string.CameraType, new String[]{"Camera 1 (Legacy API)", "Camera 2 (Camera2 API)"}, SharedConfig.isUsingCamera2(currentAccount) ? 1 : 0, getResourceProvider(), i -> {
                 boolean useCamera2 = i == 1;
                 if (SharedConfig.isUsingCamera2(currentAccount) != useCamera2) {
                     SharedConfig.toggleUseCamera2(currentAccount);
@@ -1129,7 +1129,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 } else if (position == cellGroup.rows.indexOf(cameraTypeRow)) {
                     textCell.setTextAndValue(
                             getString(R.string.CameraType),
-                            SharedConfig.isUsingCamera2(currentAccount) ? "Camera 2" : "Camera 1",
+                            SharedConfig.isUsingCamera2(currentAccount) ? "Camera 2 (Camera2 API)" : "Camera 1 (Legacy API)",
                             true,
                             cellGroup.needSetDivider(cameraTypeRow));
                 } else if (position == cellGroup.rows.indexOf(doubleTapActionRow)) {
