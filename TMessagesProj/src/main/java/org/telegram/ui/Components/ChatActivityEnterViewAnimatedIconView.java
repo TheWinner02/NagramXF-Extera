@@ -56,8 +56,9 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
                 if (drawable == null) return;
                 drawable.stop();
 
-            drawable.setProgress(state == State.VOICE ? 0.5f : 0, false);
-            setAnimation(drawable);
+                drawable.setProgress(state == State.VOICE ? 0.5f : 0, false);
+                setAnimation(drawable);
+            }
         } else {
             TransitState transitState = getState(fromState, currentState);
             if (transitState == animatingState) {

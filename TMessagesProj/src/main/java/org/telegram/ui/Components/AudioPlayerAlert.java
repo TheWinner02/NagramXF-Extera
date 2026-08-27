@@ -2348,9 +2348,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 playerShadow.setLayoutParams(layoutParams);
             }
             if (noforwards) {
-                optionsButton.hideSubItem(1);
-                optionsButton.hideSubItem(100);
-                /*optionsButton.hideSubItem(2);
+                optionsButton.hideSubItem(2);
                 optionsButton.hideSubItem(5);
                 optionsButton.hideSubItem(6);
                 optionsButton.setAdditionalYOffset(-dp(16));

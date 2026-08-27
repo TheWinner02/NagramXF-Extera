@@ -314,7 +314,7 @@ public abstract class FontUtils {
         try {
             Iterator<Font> it = SystemFonts.getAvailableFonts().iterator();
             while (it.hasNext()) {
-                File file = FontUtils$$ExternalSyntheticApiModelOutline2.m(it.next()).getFile();
+                File file = it.next().getFile();
                 if (file != null) {
                     String lowerCase = file.getName().toLowerCase();
                     if (lowerCase.contains("googlesanstext") || lowerCase.contains("google-sans-text") || lowerCase.contains("googlesans") || lowerCase.contains("google-sans")) {
@@ -336,7 +336,7 @@ public abstract class FontUtils {
             Iterator<Font> it = SystemFonts.getAvailableFonts().iterator();
             File file = null;
             while (it.hasNext()) {
-                File file2 = FontUtils$$ExternalSyntheticApiModelOutline2.m(it.next()).getFile();
+                File file2 = it.next().getFile();
                 if (file2 != null) {
                     String lowerCase = file2.getName().toLowerCase();
                     if (lowerCase.contains("samsungcoloremoji")) {
@@ -436,8 +436,7 @@ public abstract class FontUtils {
 
     public static Typeface getFontFromAssets(String str) {
         if (Build.VERSION.SDK_INT >= 26) {
-            FontUtils$$ExternalSyntheticApiModelOutline1.m();
-            Typeface.Builder builderM = FontUtils$$ExternalSyntheticApiModelOutline0.m(ApplicationLoader.applicationContext.getAssets(), str);
+            Typeface.Builder builderM = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), str);
             if (str.contains("medium")) {
                 builderM.setWeight(700);
             }

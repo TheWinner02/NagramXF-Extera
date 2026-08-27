@@ -3449,22 +3449,20 @@ public class MediaDataController extends BaseController {
         loadHash[type] = calcStickersHash(stickerSets[type]);
         putStickersToCache(type, stickerSets[type], loadDate[type], loadHash[type]);
 
-        if (context == null && baseFragment != null && baseFragment.getParentActivity() != null) {
-            context = baseFragment.getParentActivity();
-        }
+        final Context ctx = (context == null && baseFragment != null && baseFragment.getParentActivity() != null) ? baseFragment.getParentActivity() : context;
 
         if (toggle == 2) {
             if (!cancelRemovingStickerSet(stickerSet.id)) {
-                toggleStickerSetInternal(context, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, showTooltip);
+                toggleStickerSetInternal(ctx, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, showTooltip);
             }
         } else if (!showTooltip || baseFragment == null) {
-            toggleStickerSetInternal(context, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, false);
+            toggleStickerSetInternal(ctx, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, false);
         } else {
-            StickerSetBulletinLayout bulletinLayout = new StickerSetBulletinLayout(context, stickerSetObject, toggle, sticker, baseFragment == null ? null : baseFragment.getResourceProvider());
+            StickerSetBulletinLayout bulletinLayout = new StickerSetBulletinLayout(ctx, stickerSetObject, toggle, sticker, baseFragment == null ? null : baseFragment.getResourceProvider());
             int finalCurrentIndex = currentIndex;
             boolean[] undoDone = new boolean[1];
             markSetUninstalling(stickerSet.id, true);
-            Bulletin.UndoButton undoButton = new Bulletin.UndoButton(context, false).setUndoAction(() -> {
+            Bulletin.UndoButton undoButton = new Bulletin.UndoButton(ctx, false).setUndoAction(() -> {
                 if (undoDone[0]) {
                     return;
                 }
@@ -3492,7 +3490,7 @@ public class MediaDataController extends BaseController {
                     return;
                 }
                 undoDone[0] = true;
-                toggleStickerSetInternal(context, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, false);
+                toggleStickerSetInternal(ctx, toggle, baseFragment, bulletinContainer, showSettings, stickerSetObject, stickerSet, sticker, type, false);
             });
             bulletinLayout.setButton(undoButton);
             removingStickerSetsUndos.put(stickerSet.id, undoButton::undo);
@@ -3834,6 +3832,14 @@ public class MediaDataController extends BaseController {
 
     public boolean isMessageFound(int messageId, boolean mergeDialog) {
         return searchServerResultMessagesMap[mergeDialog ? 1 : 0].indexOfKey(messageId) >= 0;
+    }
+
+    public void searchMessagesInChat(String query, long dialogId, long mergeDialogId, int guid, int direction, long replyMessageId, TLRPC.User user, TLRPC.Chat chat, ReactionsLayoutInBubble.VisibleReaction reaction) {
+        searchMessagesInChat(query, dialogId, mergeDialogId, guid, direction, replyMessageId, false, user, chat, true, reaction, null);
+    }
+
+    public void searchMessagesInChat(String query, long dialogId, long mergeDialogId, int guid, int direction, long replyMessageId, boolean internal, TLRPC.User user, TLRPC.Chat chat, boolean jumpToMessage, ReactionsLayoutInBubble.VisibleReaction reaction) {
+        searchMessagesInChat(query, dialogId, mergeDialogId, guid, direction, replyMessageId, internal, user, chat, jumpToMessage, reaction, null);
     }
 
     public void searchMessagesInChat(String query, long dialogId, long mergeDialogId, int guid, int direction, long replyMessageId, TLRPC.User user, TLRPC.Chat chat, ReactionsLayoutInBubble.VisibleReaction reaction, TLRPC.MessagesFilter filter) {

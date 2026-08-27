@@ -4610,10 +4610,6 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     cell.setUseAnEmojiVisible(showAvatarConstructor);
                     break;
                 }
-                case VIEW_TYPE_EMPTY: {
-                    GalleryEmptyView cell = (GalleryEmptyView) holder.itemView;
-                    cell.setUseAnEmojiVisible(showAvatarConstructor);
-                }
             }
         }
 

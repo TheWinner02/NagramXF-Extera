@@ -348,9 +348,11 @@ public class EmojiThemes {
             int settingsIndex = getSettingsIndex(index);
             final ITheme iTheme = getITheme(index);
             final TLRPC.TL_theme tlTheme = getTlTheme(index);
+            final TLRPC.ThemeSettings settings = iTheme != null ? iTheme.getThemeSettings(settingsIndex) : null;
+            final String baseThemeKey = Theme.getBaseThemeKey(settings);
             Theme.ThemeInfo baseTheme;
             if (iTheme != null) {
-                baseTheme = Theme.getTheme(Theme.getBaseThemeKey(iTheme.getThemeSettings(settingsIndex)));
+                baseTheme = Theme.getTheme(baseThemeKey);
             } else {
                 baseTheme = Theme.getTheme("Blue");
             }

@@ -315,9 +315,6 @@ public class MessageObject {
     public boolean sentHighQuality;
 
     public boolean notime;
-    
-    public int richMessageMediaType;
-
     public int richMessageMediaType;
 
     public int getChatMode() {
@@ -737,12 +734,6 @@ public class MessageObject {
             return null;
         }
         return ReactionFilter.getFirstReaction(currentAccount, getDialogId(), messageOwner.reactions);
-    }
-
-    public void markPollVotesAsRead() {
-        if (messageOwner != null && messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
-            ((TLRPC.TL_messageMediaPoll) messageOwner.media).results.has_unread_votes = false;
-        }
     }
 
     public void markPollVotesAsRead() {
@@ -3784,8 +3775,6 @@ public class MessageObject {
         }
         return replyUpdated || false;
     }
-        return replyUpdated || false;
-    }
 
     public void applyNewText() {
         translated = false;
@@ -4031,17 +4020,6 @@ public class MessageObject {
             TLRPC.ReactionCount rc = messageOwner.reactions.results.get(i);
             if (reaction.isSame(rc.reaction)) {
                 return !ReactionFilter.shouldFilter(currentAccount, messageOwner) || ReactionFilter.getReactionCount(currentAccount, getDialogId(), messageOwner.reactions, rc) > 0;
-            }
-        }
-        return false;
-    }
-
-    public boolean hasChosenReaction(ReactionsLayoutInBubble.VisibleReaction reaction) {
-        if (!hasReactions() || reaction == null) return false;
-        for (int i = 0; i < messageOwner.reactions.results.size(); ++i) {
-            TLRPC.ReactionCount rc = messageOwner.reactions.results.get(i);
-            if (reaction.isSame(rc.reaction)) {
-                return rc.chosen;
             }
         }
         return false;

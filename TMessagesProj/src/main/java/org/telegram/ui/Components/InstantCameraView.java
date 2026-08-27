@@ -2748,7 +2748,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
 
         private void createKeyframeThumb() {
-            if (generateKeyframeThumbsQueue != null && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH && frameCount % 33 == 0) {
+            DispatchQueue queue = generateKeyframeThumbsQueue;
+            if (queue != null && SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH && frameCount % 33 == 0) {
                 GenerateKeyframeThumbTask task = new GenerateKeyframeThumbTask();
                 queue.postRunnable(task);
             }

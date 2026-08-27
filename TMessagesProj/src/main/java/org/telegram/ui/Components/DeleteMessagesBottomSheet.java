@@ -13,9 +13,11 @@ import static org.telegram.ui.Components.UniversalAdapter.VIEW_TYPE_USER_GROUP_C
 import static org.telegram.ui.Components.UniversalAdapter.VIEW_TYPE_USER_CHECKBOX;
 
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.LinearLayout;
 
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
@@ -1369,20 +1371,6 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
                 }
             });
         }
-    }
-
-    private void savePreferences() {
-        final SharedPreferences.Editor e = MessagesController.getInstance(currentAccount).getMainSettings().edit();
-        e.putBoolean("delete_report", report.areAllSelected());
-        e.putBoolean("delete_deleteAll", deleteAll.areAllSelected());
-        e.putBoolean("delete_ban", !restrict && banOrRestrict.areAllSelected());
-        e.apply();
-    }
-
-    @Override
-    public void dismiss() {
-        savePreferences();
-        super.dismiss();
     }
 
     private void savePreferences() {

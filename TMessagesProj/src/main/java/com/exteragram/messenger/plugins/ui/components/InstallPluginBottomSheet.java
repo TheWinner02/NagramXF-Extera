@@ -400,7 +400,7 @@ public final class InstallPluginBottomSheet extends BottomSheet {
                     }
                 });
             }
-        }, new InstallPluginBottomSheet$buttonView$1$1$4(installPluginBottomSheet));
+        });
     }
 
     public static void $r8$lambda$6zxqI9k4hzUm636fgiMNfKCapIU(final InstallPluginBottomSheet installPluginBottomSheet, final String str, final BaseFragment baseFragment) {

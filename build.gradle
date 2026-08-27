@@ -23,7 +23,7 @@ subprojects {
                     sourceCompatibility = JavaVersion.VERSION_21
                     targetCompatibility = JavaVersion.VERSION_21
 
-                    coreLibraryDesugaringEnabled = true
+                    coreLibraryDesugaringEnabled = plugins.hasPlugin("com.android.application")
                 }
 
                 kotlin {

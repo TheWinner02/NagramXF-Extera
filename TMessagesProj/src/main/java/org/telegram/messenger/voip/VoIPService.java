@@ -164,6 +164,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import tw.nekomimi.nekogram.NekoConfig;
 
 @SuppressLint("NewApi")

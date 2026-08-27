@@ -166,9 +166,9 @@ class BottomBuilder(val ctx: Context, val needFocus: Boolean = true, val bgColor
         rootView.addView(checkBoxCell, LayoutHelper.createLinear(-1, -2))
 
         if (valueText == null) {
-            checkBoxCell.setTextAndValue(text, true, checked)
+            checkBoxCell.setTextAndValue(text, "", true, checked)
         } else {
-            checkBoxCell.setTextAndValueAndCheck(text, valueText, true, checked)
+            checkBoxCell.setTextAndValue(text, valueText, true, checked)
         }
         radioButtonGroup.add(checkBoxCell)
         checkBoxCell.setOnClickListener {

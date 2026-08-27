@@ -217,32 +217,6 @@ public class ReactionsLayoutInBubble {
                         includeEmptyStarButton = true;
                     }
                 }
-                boolean includeEmptyStarButton = false;
-                boolean includeEmptyLikeButton = forceLikeDislikeReactions;
-                boolean includeEmptyDislikeButton = forceLikeDislikeReactions;
-
-                final TLRPC.ChatFull chatInfo = MessagesController.getInstance(currentAccount).getChatFull(-messageObject.getDialogId());
-                if (!isSmall && !messageObject.messageOwner.reactions.results.isEmpty() && chatInfo != null && chatInfo.paid_reactions_available) {
-                    boolean hasPaidReaction = false;
-                    for (int i = 0; i < messageObject.messageOwner.reactions.results.size(); i++) {
-                        TLRPC.ReactionCount reactionCount = messageObject.messageOwner.reactions.results.get(i);
-                        if (reactionCount.reaction instanceof TLRPC.TL_reactionPaid) {
-                            hasPaidReaction = true;
-                        }
-                        if (reactionCount.reaction instanceof TLRPC.TL_reactionEmoji) {
-                            String emoji = ((TLRPC.TL_reactionEmoji) reactionCount.reaction).emoticon;
-                            if (TextUtils.equals("\uD83D\uDC4D", emoji)) {
-                                includeEmptyLikeButton = false;
-                            }
-                            if (TextUtils.equals("\uD83D\uDC4E", emoji)) {
-                                includeEmptyDislikeButton = false;
-                            }
-                        }
-                    }
-                    if (!hasPaidReaction) {
-                        includeEmptyStarButton = true;
-                    }
-                }
 
                 ArrayList<TLRPC.Reaction> forcedReactions = new ArrayList<>();
                 if (includeEmptyStarButton) {

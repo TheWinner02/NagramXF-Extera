@@ -1533,7 +1533,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                         float velX = velocityTracker.getXVelocity();
                         float velY = velocityTracker.getYVelocity();
                         final boolean backAnimation = (newBackTransitions() ? x < dp(56) / 2 || velX < -1000 : x < containerView.getMeasuredWidth() / 3.0f) && (velX < 3500 || Math.abs(velX) < Math.abs(velY));
-                        animateBackEndAnimation(backAnimation);
+                        animateBackEndAnimation(backAnimation, velX);
                     } else {
                         maybeStartTracking = false;
                         startedTracking = false;
@@ -1622,7 +1622,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     public void onBackCancelled() {
         if (!predictiveInput) return;
         predictiveInput = false;
-        animateBackEndAnimation(true);
+        animateBackEndAnimation(true, 0f);
     }
 
     public void onBackInvoked() {
@@ -1631,7 +1631,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             return;
         }
         predictiveInput = false;
-        animateBackEndAnimation(false);
+        animateBackEndAnimation(false, 0f);
     }
 
     private boolean newBackTransitions() {
@@ -1640,7 +1640,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
     private boolean backAnimatorIsBack;
     private AnimatorSet backAnimator;
-    private void animateBackEndAnimation(boolean backAnimation) {
+    private void animateBackEndAnimation(boolean backAnimation, float velX) {
         final BaseFragment currentFragment = !fragmentsStack.isEmpty() ? fragmentsStack.get(fragmentsStack.size() - 1) : null;
         if (currentFragment == null) return;
 

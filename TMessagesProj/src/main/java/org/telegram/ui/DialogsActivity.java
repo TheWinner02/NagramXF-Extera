@@ -23,6 +23,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
@@ -300,10 +301,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private static final boolean TMP_DISABLE_TOPICS_TWO_COLUMNS = false;
 
-    public static final int MAIN_TABS_HEIGHT = 56;
-    public static final int MAIN_TABS_MARGIN = 8;
+    public static final int MAIN_TABS_HEIGHT = MainTabsHelper.MAIN_TABS_HEIGHT;
+    public static final int MAIN_TABS_MARGIN = MainTabsHelper.MAIN_TABS_MARGIN;
     public static final int MAIN_TABS_HEIGHT_WITH_MARGINS = MAIN_TABS_HEIGHT + MAIN_TABS_MARGIN * 2;
-    public static final int FILTER_TABS_HEIGHT = 36;
+    public static final int FILTER_TABS_HEIGHT = MainTabsHelper.FILTER_TABS_HEIGHT;
     public static final int SEARCH_TABS_HEIGHT = 36 + 7 + 7;
     public static final int SEARCH_FIELD_HEIGHT = 48;
 
@@ -4094,7 +4095,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                     filter.neverShow.add(selectedDialogs.get(a));
                                     filter.alwaysShow.remove(selectedDialogs.get(a));
                                 }
-                                FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+                                FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.emoticon, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
                                 long did;
                                 if (selectedDialogs.size() == 1) {
                                     did = selectedDialogs.get(0);
@@ -4111,7 +4112,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         filter.neverShow.remove(alwaysShow.get(a));
                                     }
                                     filter.alwaysShow.addAll(alwaysShow);
-                                    FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+                                    FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.emoticon, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
                                 }
                                 long did;
                                 if (alwaysShow.size() == 1) {
@@ -4154,7 +4155,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (filter.isChatlist()) {
                             filter.neverShow.clear();
                         }
-                        FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, false, false, DialogsActivity.this, null);
+                        FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.emoticon, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, false, false, DialogsActivity.this, null);
                     }
                     long did;
                     if (neverShow.size() == 1) {
@@ -5995,12 +5996,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     public boolean isPremiumRestoreHintVisible() {
-        if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && folderId == 0 && communityId == 0) {
-            return MessagesController.getInstance(currentAccount).pendingSuggestions.contains("PREMIUM_RESTORE") && !getUserConfig().isPremium() && MediaDataController.getInstance(currentAccount).getPremiumHintAnnualDiscount(false) != null;
-        }
-    }
-
-    public boolean isPremiumRestoreHintVisible() {
         /*if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && folderId == 0 && communityId == 0) {
            return MessagesController.getInstance(currentAccount).pendingSuggestions.contains("PREMIUM_RESTORE") && !getUserConfig().isPremium() && MediaDataController.getInstance(currentAccount).getPremiumHintAnnualDiscount(false) != null;
         }*/
@@ -7082,10 +7077,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 filterTabsView.removeTabs();
                 for (int a = 0, N = filters.size(); a < N; a++) {
                     if (filters.get(a).isDefault()) {
-                        filterTabsView.addTab(a, 0, LocaleController.getString(R.string.FilterAllChats), null, false, true, filters.get(a).locked);
+                        if (filterTabsView.showAllChatsTab) filterTabsView.addTab(a, 0, LocaleController.getString(R.string.FilterAllChats), filters.get(a).emoticon, null, false, true, filters.get(a).locked);
                     } else {
                         final MessagesController.DialogFilter filter = filters.get(a);
-                        filterTabsView.addTab(a, filter.localId, filter.name, filter.entities, filter.title_noanimate, false, filters.get(a).locked);
+                        filterTabsView.addTab(a, filter.localId, filter.name, filter.emoticon, filter.entities, filter.title_noanimate, false, filters.get(a).locked);
                     }
                 }
                 if (NekoConfig.hideAllTab.Bool() && stableId <= 0) {
@@ -8817,13 +8812,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 folder.neverShow.remove(alwaysShow.get(a));
                             }
                             folder.alwaysShow.addAll(alwaysShow);
-                            FilterCreateActivity.saveFilterToServer(folder, folder.flags, folder.name, folder.entities, folder.title_noanimate, folder.color, folder.alwaysShow, folder.neverShow, folder.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+                            FilterCreateActivity.saveFilterToServer(folder, folder.flags, folder.emoticon, folder.name, folder.entities, folder.title_noanimate, folder.color, folder.alwaysShow, folder.neverShow, folder.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
                         }
                         getUndoView().showWithAction(dialogId, UndoView.ACTION_ADDED_TO_FOLDER, alwaysShow.size(), folder, null, null);
                     } else {
                         folder.alwaysShow.remove(dialogId);
                         folder.neverShow.add(dialogId);
-                        FilterCreateActivity.saveFilterToServer(folder, folder.flags, folder.name, folder.entities, folder.title_noanimate, folder.color, folder.alwaysShow, folder.neverShow, folder.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+                        FilterCreateActivity.saveFilterToServer(folder, folder.flags, folder.emoticon, folder.name, folder.entities, folder.title_noanimate, folder.color, folder.alwaysShow, folder.neverShow, folder.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
                         getUndoView().showWithAction(dialogId, UndoView.ACTION_REMOVED_FROM_FOLDER, alwaysShow.size(), folder, null, null);
                     }
                     hideActionMode(true);
@@ -9011,7 +9006,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         undoView.showWithAction(0, UndoView.ACTION_UNPIN_DIALOGS, 1, 1600, null, null);
                     }
                     if (filter != null) {
-                        FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+                        FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.emoticon, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
                     }
                     getMessagesController().reorderPinnedDialogs(folderId, null, 0);
                     updateCounters(true);
@@ -9360,7 +9355,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (!movingDialogFilters.isEmpty()) {
             for (int a = 0, N = movingDialogFilters.size(); a < N; a++) {
                 MessagesController.DialogFilter filter = movingDialogFilters.get(a);
-                FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+                FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.emoticon, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
             }
             movingDialogFilters.clear();
         }
@@ -9785,7 +9780,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         if (action == pin || action == pin2) {
             if (filter != null) {
-                FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
+                FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.emoticon, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, DialogsActivity.this, null);
             } else {
                 getMessagesController().reorderPinnedDialogs(folderId, null, 0);
             }
@@ -14564,9 +14559,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private final ArrayList<RectF> iBlur3Positions = new ArrayList<>();
     private final RectF iBlur3PositionActionBar = new RectF();
+    private final RectF iBlur3PositionFolders = new RectF();
     private final RectF iBlur3PositionMainTabs = new RectF(); {
         iBlur3Positions.add(iBlur3PositionActionBar);
         iBlur3Positions.add(iBlur3PositionMainTabs);
+        iBlur3Positions.add(iBlur3PositionFolders);
     }
 
     private void blur3_InvalidateBlur() {

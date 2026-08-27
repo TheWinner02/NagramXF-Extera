@@ -54,6 +54,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
+import me.vkryl.core.BitwiseUtils;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -2843,6 +2844,46 @@ public class AndroidUtilities {
         return ((long) (value * 1000000)) / 1000000.0;
     }
 
+    public static String formapMapUrl(int account, double lat, double lon, int width, int height, boolean marker, int zoom, int provider) {
+        int scale = Math.min(2, (int) Math.ceil(AndroidUtilities.density));
+        if (provider == -1) {
+            provider = NekoConfig.mapPreviewProvider.Int() == 1 ? 1 : 2;
+        }
+        if (provider == 1 || provider == 3) {
+            String lang = null;
+            String[] availableLangs = new String[]{"ru_RU", "tr_TR"};
+            LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+            for (int a = 0; a < availableLangs.length; a++) {
+                if (availableLangs[a].toLowerCase().contains(localeInfo.shortName)) {
+                    lang = availableLangs[a];
+                }
+            }
+            if (lang == null) {
+                lang = "en_US";
+            }
+            if (marker) {
+                return String.format(Locale.US, "https://static-maps.yandex.ru/1.x/?ll=%.6f,%.6f&z=%d&size=%d,%d&scale=%d&pt=%.6f,%.6f,vkbkm&lang=%s", lon, lat, zoom, width * scale, height * scale, scale, lon, lat, lang);
+            } else {
+                return String.format(Locale.US, "https://static-maps.yandex.ru/1.x/?ll=%.6f,%.6f&z=%d&size=%d,%d&scale=%d&lang=%s", lon, lat, zoom, width * scale, height * scale, scale, lang);
+            }
+        } else {
+            String k = "";
+            if (!TextUtils.isEmpty(k)) {
+                if (marker) {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d&markers=color:red%%7Csize:mid%%7C%.6f,%.6f&sensor=false&key=%s", lat, lon, zoom, width, height, scale, lat, lon, k);
+                } else {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d&sensor=false&key=%s", lat, lon, zoom, width, height, scale, k);
+                }
+            } else {
+                if (marker) {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d&markers=color:red%%7Csize:mid%%7C%.6f,%.6f&sensor=false", lat, lon, zoom, width, height, scale, lat, lon);
+                } else {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d&sensor=false", lat, lon, zoom, width, height, scale);
+                }
+            }
+        }
+    }
+
     public static String formapMapUrl(boolean isSecretChat, double lat, double lon, int width, int height, boolean marker, int zoom) {
         int scale = Math.min(2, (int) Math.ceil(AndroidUtilities.density));
         int provider = 2;
@@ -2980,13 +3021,6 @@ public class AndroidUtilities {
 
     public static boolean isTablet() {
         return isTabletInternal()/* && !SharedConfig.forceDisableTabletMode*/;
-    }
-
-    public static boolean isFold() {
-        return (
-            ApplicationLoader.applicationContext != null &&
-            ApplicationLoader.applicationContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE)
-        );
     }
 
     public static boolean isFold() {
@@ -3615,19 +3649,6 @@ public class AndroidUtilities {
         boolean isMIUI = XiaomiUtilities.isMIUI();
         boolean isColorOS = !TextUtils.isEmpty(AndroidUtilities.getSystemProperty("ro.build.version.oplusrom"));
         return isMIUI || isColorOS;
-    }
-
-    public static boolean addToClipboard(CharSequence plain, String html) {
-        if (html == null) return addToClipboard(plain);
-        try {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newHtmlText("label", plain, html);
-            clipboard.setPrimaryClip(clip);
-            return true;
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return false;
     }
 
     public static boolean addToClipboard(CharSequence plain, String html) {
@@ -6825,8 +6846,6 @@ public class AndroidUtilities {
 
     public static void logFlagSecure() {
         if (!BuildConfig.DEBUG) {
-            return;
-        }
             return;
         }
 

@@ -2142,8 +2142,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             iBlur3SourceGlass = null;
             iBlur3FactoryLiquidGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
         }
-
-        scrimBlur3Factory.setLinkedViewsRef(new ReferenceList<>());
     }
 
     @Override
@@ -11873,13 +11871,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (user != null/* && !getMessagesController().premiumFeaturesBlocked()*/ && !MessagesController.isSupportUser(user) && DialogObject.getEmojiStatusDocumentId(user.emoji_status) != 0) {
                         rightIconIsStatus = true;
                         rightIconIsPremium = false;
-                        if (user.self && (selfEmojiDocId != null && selfEmojiDocId != 0) && DialogObject.getEmojiStatusDocumentId(user.emoji_status) == 0) {
-                            TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
-                            status.document_id = selfEmojiDocId;
-                            nameTextView[a].setRightDrawable(getEmojiStatusDrawable(status, false, false, a));
-                        } else {
-                            nameTextView[a].setRightDrawable(getEmojiStatusDrawable(user.emoji_status, false, false, a));
-                        }
+                        nameTextView[a].setRightDrawable(getEmojiStatusDrawable(user.emoji_status, false, false, a));
                         nameTextViewRightDrawableContentDescription = LocaleController.getString(R.string.AccDescrPremium);
                     } else if (getMessagesController().isPremiumUser(user)) {
                         rightIconIsStatus = false;
@@ -11901,13 +11893,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (/*!getMessagesController().premiumFeaturesBlocked() && */user != null && !MessagesController.isSupportUser(user) && DialogObject.getEmojiStatusDocumentId(user.emoji_status) != 0) {
                         rightIconIsStatus = true;
                         rightIconIsPremium = false;
-                        if (user.self && (selfEmojiDocId2 != null && selfEmojiDocId2 != 0) && DialogObject.getEmojiStatusDocumentId(user.emoji_status) == 0) {
-                            TLRPC.TL_emojiStatus status = new TLRPC.TL_emojiStatus();
-                            status.document_id = selfEmojiDocId2;
-                            nameTextView[a].setRightDrawable(getEmojiStatusDrawable(status, true, true, a));
-                        } else {
-                            nameTextView[a].setRightDrawable(getEmojiStatusDrawable(user.emoji_status, true, true, a));
-                        }
+                        nameTextView[a].setRightDrawable(getEmojiStatusDrawable(user.emoji_status, true, true, a));
                         nameTextViewRightDrawableContentDescription = LocaleController.getString(R.string.AccDescrPremium);
                     } else if (getMessagesController().isPremiumUser(user)) {
                         rightIconIsStatus = false;
@@ -12704,19 +12690,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (topicId == 0) {
                         otherItem.addSubItem(add_shortcut, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut));
                     }
-                    if (chat.creator) {
-                        otherItem.addColoredGap();
-                        otherItem.addSubItem(leave_group, R.drawable.msg_leave, getString(R.string.LeaveMega));
-                        final ActionBarMenuSubItem deleteItem = otherItem.addSubItem(delete_group, R.drawable.msg_delete, getString(R.string.DeleteMega));
-                        deleteItem.setColors(getThemedColor(Theme.key_text_RedBold), getThemedColor(Theme.key_text_RedRegular));
-                        leaveAction = true;
-                    } else {
-                        if (!chat.left && !chat.kicked && !isTopic) {
-                            otherItem.addSubItem(leave_group, R.drawable.msg_leave, getString(R.string.LeaveMega));
-                            leaveAction = true;
-                        }
-                    }
-                } else {
                     if (chat.admin_rights == null) {
                         otherItem.addSubItem(shadow_ban, R.drawable.hide_title, !channelBlocked ? getString(R.string.ShadowBan) : getString(R.string.UnshadowBan));
                     }
@@ -15095,7 +15068,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         private static SearchResult[] onCreateSearchArray(final BaseFragment f) {
             final int currentAccount = f.getCurrentAccount();
             final Theme.ResourcesProvider resourcesProvider = f.getResourceProvider();
-            return new SearchResult[]{
+            SearchResult[] arr = new SearchResult[]{
                     new SearchResult(500, getString(R.string.EditName), 0, () -> f.presentFragment(new ChangeNameActivity(resourcesProvider))),
                     new SearchResult(501, getString(R.string.ChangePhoneNumber), 0, () -> f.presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER))).withLink("tg://settings/edit/change-number"),
                     new SearchResult(502, getString(R.string.AddAnotherAccount), 0, () -> {

@@ -69,6 +69,7 @@ public class TranslateController extends BaseController {
 
     private final LongSparseArray<Boolean> translatingDialogs = new LongSparseArray<>();
     private final Set<Long> translatableDialogs = new HashSet<>();
+    private final HashMap<Long, Set<Integer>> manualTranslationsList = new HashMap<>();
     private final HashMap<Long, TranslatableDecision> translatableDialogMessages = new HashMap<>();
     private final HashMap<Long, String> translateDialogLanguage = new HashMap<>();
     private final HashMap<Long, String> detectedDialogLanguage = new HashMap<>();
@@ -345,7 +346,15 @@ public class TranslateController extends BaseController {
         setHideTranslateDialog(dialogId, hide, false);
     }
 
+    public void setHideTranslateWithMinimize(long dialogId, boolean hide) {
+        setHideTranslateDialog(dialogId, hide, false, true);
+    }
+
     public void setHideTranslateDialog(long dialogId, boolean hide, boolean doNotNotify) {
+        setHideTranslateDialog(dialogId, hide, doNotNotify, false);
+    }
+
+    public void setHideTranslateDialog(long dialogId, boolean hide, boolean doNotNotify, boolean minimize) {
         TLRPC.TL_messages_togglePeerTranslations req = new TLRPC.TL_messages_togglePeerTranslations();
         req.peer = getMessagesController().getInputPeer(dialogId);
         req.disabled = hide;
@@ -2445,4 +2454,35 @@ public class TranslateController extends BaseController {
 //        layout.subtitleTextView.setText(subtitle);
 //        layout.setProgress(percent);
 //    }
+
+    public boolean isManualTranslated(MessageObject messageObject) {
+        if (manualTranslationsList.containsKey(messageObject.getDialogId())) {
+            return Objects.requireNonNull(manualTranslationsList.get(messageObject.getDialogId())).contains(messageObject.getId());
+        }
+        return false;
+    }
+
+    public void addAsManualTranslate(MessageObject messageObject) {
+        if (!manualTranslationsList.containsKey(messageObject.getDialogId())) {
+            manualTranslationsList.put(messageObject.getDialogId(), new HashSet<>());
+        }
+        Objects.requireNonNull(manualTranslationsList.get(messageObject.getDialogId())).add(messageObject.getId());
+    }
+
+    public void removeAsManualTranslate(MessageObject messageObject) {
+        if (manualTranslationsList.containsKey(messageObject.getDialogId())) {
+            Objects.requireNonNull(manualTranslationsList.get(messageObject.getDialogId())).remove(messageObject.getId());
+            if (Objects.requireNonNull(manualTranslationsList.get(messageObject.getDialogId())).isEmpty()) {
+                manualTranslationsList.remove(messageObject.getDialogId());
+            }
+        }
+    }
+
+    public void addAsTranslatingItem(MessageObject messageObject) {
+        // tracking
+    }
+
+    public void removeAsTranslatingItem(MessageObject messageObject) {
+        // tracking
+    }
 }

@@ -272,7 +272,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             VIEW_CODE_FRAGMENT_SMS = 15,
             VIEW_CODE_WORD = 16,
             VIEW_CODE_PHRASE = 17,
-            VIEW_PAY = 18;
+            VIEW_PAY = 18,
+            VIEW_QR_LOGIN = 19;
 
     public final static int COUNTRY_STATE_NOT_SET_OR_VALID = 0,
             COUNTRY_STATE_EMPTY = 1,
@@ -320,7 +321,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             VIEW_CODE_FRAGMENT_SMS,
             VIEW_CODE_WORD,
             VIEW_CODE_PHRASE,
-            VIEW_PAY
+            VIEW_PAY,
+            VIEW_QR_LOGIN
     })
     private @interface ViewNumber {}
 
@@ -333,7 +335,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     @ViewNumber
     private int currentViewNum;
-    private final SlideView[] views = new SlideView[19];
+    private final SlideView[] views = new SlideView[20];
     private CustomPhoneKeyboardView keyboardView;
     private ValueAnimator keyboardAnimator;
     private boolean paid;
@@ -785,7 +787,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             });
         }
 
-        proxyButtonView = new ImageView(context);
+        /*proxyButtonView = new ImageView(context);
         proxyButtonView.setImageDrawable(proxyDrawable = new ProxyDrawable(context));
         proxyButtonView.setOnClickListener(v -> presentFragment(new ProxyListActivity()));
         proxyButtonView.setAlpha(0f);
@@ -1826,7 +1828,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             setPage(VIEW_PAY, true, params, true);
             return;
         }
-        if (res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms && !res.type.verifiedFirebase && !isRequestingFirebaseSms) {
+        /*if (res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms && !res.type.verifiedFirebase && !isRequestingFirebaseSms) {
             if (PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices()) {
                 TLRPC.TL_auth_sentCodeTypeFirebaseSms r = (TLRPC.TL_auth_sentCodeTypeFirebaseSms) res.type;
                 needShowProgress(0);
@@ -2534,10 +2536,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 });
             }
 
-            final boolean allowTestBackend = (BuildVars.DEBUG_VERSION || TEST_BACKEND_IN_STORE && !BuildConfig.BUNDLE) || getConnectionsManager().isTestBackend();
+            final boolean allowTestBackend = true;
             if (allowTestBackend && activityMode == MODE_LOGIN) {
                 testBackendCheckBox = new CheckBoxCell(context, 2);
-                testBackendCheckBox.setText(getString(R.string.DebugTestBackend), "", testBackend = getConnectionsManager().isTestBackend(), false);
+                testBackendCheckBox.setText(getString(R.string.TestBackend), "", testBackend = getConnectionsManager().isTestBackend(), false);
                 addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? 56 : 0), 0));
                 bottomMargin -= 24;
                 testBackendCheckBox.setOnClickListener(v -> {
@@ -3123,7 +3125,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString("ChooseCountry", R.string.ChooseCountry));
                 needHideProgress(false);
                 return;
-            } else if (countryState == COUNTRY_STATE_INVALID && !BuildVars.DEBUG_VERSION && !(TEST_BACKEND_IN_STORE && !BuildConfig.BUNDLE)) {
+            } else if (countryState == COUNTRY_STATE_INVALID && !BuildVars.DEBUG_VERSION && !TEST_BACKEND_IN_STORE) {
                 needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.WrongCountry));
                 needHideProgress(false);
                 return;
@@ -3483,7 +3485,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     }
                 }
                 if (activityMode == MODE_LOGIN) {
-                    requestPasskey(false);
+                    // requestPasskey(false);
                 }
             }, SHOW_DELAY);
         }
@@ -3500,9 +3502,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private boolean requestedPasskey = false;
         private boolean requestingPasskey = false;
         private Runnable cancelRequestingPasskey;
-        private void requestPasskey(boolean clickedButton) {
+        private void requestPasskey(boolean clickedButton, boolean force) {
             if (activityMode != MODE_LOGIN) return;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !BuildVars.SUPPORTS_PASSKEYS) return;
+            if (force) {
+                if (cancelRequestingPasskey != null) {
+                    cancelRequestingPasskey.run();
+                    cancelRequestingPasskey = null;
+                }
+                requestingPasskey = false;
+                requestedPasskey = false;
+            }
             if (requestingPasskey || !clickedButton && requestedPasskey) return;
 
             requestingPasskey = true;
@@ -3513,8 +3523,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (err != null && ("EMPTY".equals(err) || "CANCELLED".equals(err))) {
                     if (subtitleView != null && "CANCELLED".equals(err)) {
                         subtitleView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.StartTextPasskey), () -> {
-                            requestPasskey(true);
+                            requestPasskey(true, false);
                         }), true));
+                    }
+                    if ("EMPTY".equals(err)) {
+                        BulletinFactory.of(LoginActivity.this).createSimpleBulletin(R.raw.info, getString(R.string.PasskeyNoCredentialAvailable)).show();
                     }
                     return;
                 }
@@ -3555,7 +3568,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         }
                     }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
                 } else if (err != null) {
-                    if (BuildVars.DEBUG_VERSION)
+                    // if (BuildVars.DEBUG_VERSION)
                         BulletinFactory.of(LoginActivity.this).showForError(err);
                     return;
                 }
@@ -4241,9 +4254,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         private void applyLottieColors(RLottieDrawable drawable) {
             if (drawable != null) {
-                drawable.setLayerColor("Bubble", Theme.getColor(Theme.key_chats_actionBackground));
-                drawable.setLayerColor("Phone", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                drawable.setLayerColor("Note", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                drawable.setLayerColor("Bubble.**", Theme.getColor(Theme.key_chats_actionBackground));
+                drawable.setLayerColor("Phone.**", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                drawable.setLayerColor("Note.**", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             }
         }
 
@@ -8750,8 +8763,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         backButtonView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
 
-        proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        proxyButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+        // proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        // proxyButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+
+        moreButtonView.setIconColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        moreButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
 
         radialProgressView.setProgressColor(Theme.getColor(Theme.key_chats_actionBackground));
 
@@ -9114,7 +9130,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.didUpdateConnectionState) {
-            updateProxyButton(true, false);
+            //updateProxyButton(true, false);
         } else if (id == NotificationCenter.newSuggestionsAvailable) {
             if (emailChangeIsSuggestion && !getMessagesController().hasSetupEmailSuggestion()) {
                 finishFragment();
@@ -10386,14 +10402,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             .build()
                     );
                     FileLog.d("LoginBilling querying \"" + product + "\" product");
-                    BillingController.getInstance().queryProductDetails(productQueries, (result, list) -> AndroidUtilities.runOnUIThread(() -> {
+                    BillingController.getInstance().queryProductDetails(productQueries, (result, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
                         FileLog.d("LoginBilling queried \"" + product + "\" product: " + BillingController.getResponseCodeString(result.getResponseCode()));
                         if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                             lastError = "BILLING_" + BillingController.getResponseCodeString(result.getResponseCode());
                             BulletinFactory.of(slideViewsContainer, null).createSimpleBulletin(R.raw.error, formatString(R.string.UnknownErrorCode, BillingController.getResponseCodeString(result.getResponseCode())));
                             return;
                         }
-                        List<ProductDetails> list = queryResult.getProductDetailsList();
+                        List<ProductDetails> list = queryResult;
                         if (list != null && !list.isEmpty()) {
                             final ProductDetails productDetails = list.get(0);
 

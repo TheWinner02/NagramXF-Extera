@@ -2529,7 +2529,7 @@ public class StoriesController {
                 if (entry.wouldBeVideo()) {
                     SendMessagesHelper.prepareSendingVideo(AccountInstance.getInstance(currentAccount), path, null, null, null, userId, null, null, null, null, captionEntities, 0, null, !entry.silent, entry.scheduleDate, 0, false, false, caption, null, 0, 0);
                 } else {
-                    SendMessagesHelper.prepareSendingPhoto(AccountInstance.getInstance(currentAccount), path, null, null, userId, null, null, null, null, captionEntities, null, null, 0, null, null, !entry.silent, entry.scheduleDate, 0, false, caption, null, 0, 0, 0);
+                    SendMessagesHelper.prepareSendingPhoto(AccountInstance.getInstance(currentAccount), path, null, null, userId, null, null, null, null, captionEntities, null, null, 0, null, null, !entry.silent, entry.scheduleDate, 0, false, caption, null, 0, 0);
                 }
             }
             putMessages = true;

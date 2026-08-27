@@ -352,27 +352,4 @@ public class SelectorUserCell extends BaseCell {
             return item;
         }
     }
-
-    public static class Factory extends UItem.UItemFactory<SelectorUserCell> {
-        static { setup(new Factory()); }
-
-        @Override
-        public SelectorUserCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-            return new SelectorUserCell(context, true, false, resourcesProvider, false);
-        }
-
-        @Override
-        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
-            final SelectorUserCell cell = (SelectorUserCell) view;
-            cell.setUser((TLRPC.User) item.object);
-            cell.setChecked(item.checked, false);
-            cell.setDivider(divider);
-        }
-
-        public static UItem make(TLRPC.User user) {
-            final UItem item = UItem.ofFactory(Factory.class);
-            item.object = user;
-            return item;
-        }
-    }
 }

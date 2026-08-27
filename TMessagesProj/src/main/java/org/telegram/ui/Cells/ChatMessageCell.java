@@ -714,7 +714,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default void didPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
         }
 
-        default void didLongPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
+        default boolean didLongPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
+            return false;
         }
 
         default void didPressCustomBotButton(ChatMessageCell cell, BotInlineKeyboard.ButtonCustom button) {
@@ -6216,11 +6217,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else if (!TextUtils.isEmpty(object.messageOwner.media.title)) {
                 int photoWidth = backgroundWidth - dp(21);
                 int photoHeight = dp(195);
-                url = AndroidUtilities.formapMapUrl(currentAccount, lat, lon, (int) (photoWidth / AndroidUtilities.density), (int) (photoHeight / AndroidUtilities.density), true, 15, provider);
+                url = AndroidUtilities.formapMapUrl(currentAccount, lat, lon, (int) (photoWidth / AndroidUtilities.density), (int) (photoHeight / AndroidUtilities.density), true, 15, -1);
             } else {
                 int photoWidth = backgroundWidth - dp(12);
                 int photoHeight = dp(195);
-                url = AndroidUtilities.formapMapUrl(currentAccount, lat, lon, (int) (photoWidth / AndroidUtilities.density), (int) (photoHeight / AndroidUtilities.density), true, 15, provider);
+                url = AndroidUtilities.formapMapUrl(currentAccount, lat, lon, (int) (photoWidth / AndroidUtilities.density), (int) (photoHeight / AndroidUtilities.density), true, 15, -1);
             }
             return !url.equals(currentUrl);
         } else if (currentPhotoObject == null || currentPhotoObject.location instanceof TLRPC.TL_fileLocationUnavailable) {
@@ -18604,10 +18605,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             timeString = LocaleController.formatSmallDateChat(currentMessageObject.realDate) + ", " + LocaleController.getInstance().getFormatterDay().format((long) (currentMessageObject.realDate) * 1000);
         } else if (currentMessageObject.isRepostPreview) {
             timeString = LocaleController.formatSmallDateChat(messageObject.messageOwner.date) + ", " + LocaleController.getInstance().getFormatterDay().format((long) (messageObject.messageOwner.date) * 1000);
-        } else if (edited) {
-            timeString = AppGlobalConfig.getInstance(currentAccount).messagePrimaryEditedDate.get() ?
-                LocaleController.formatPmEditedDate(currentMessagesGroup != null ? currentMessagesGroup.getMaxEditDate() : messageObject.messageOwner.edit_date) :
-                (getString(R.string.EditedMessage) + " " + LocaleController.getInstance().getFormatterDay().format((long) (messageObject.messageOwner.date) * 1000));
+        } else if (edited && !showAyuDeletedMark) {
+            timeString = TimeStringHelper.createEditedString(currentMessageObject, translated, showBookmarkInTime, senderNameColor, editedDate);
+        } else if (!edited && showAyuDeletedMark) {
+            timeString = TimeStringHelper.createDeletedString(currentMessageObject, edited, translated, showBookmarkInTime, senderNameColor);
+        } else if (edited && showAyuDeletedMark) {
+            timeString = TimeStringHelper.createDeletedString(currentMessageObject, edited, translated, showBookmarkInTime, senderNameColor, editedDate);
+        } else if (translated) {
+            timeString = TimeStringHelper.createTranslatedString(currentMessageObject, false, showBookmarkInTime, senderNameColor);
+        } else if (showBookmarkInTime) {
+            timeString = TimeStringHelper.createBookmarkedString(currentMessageObject, senderNameColor);
         } else if (currentMessageObject.isSaved && currentMessageObject.messageOwner.fwd_from != null && (currentMessageObject.messageOwner.fwd_from.date != 0 || currentMessageObject.messageOwner.fwd_from.saved_date != 0)) {
             int date = currentMessageObject.messageOwner.fwd_from.saved_date;
             if (date == 0) {
@@ -18670,35 +18677,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (prefix != null) {
                 currentTimeString.insert(0, ", ");
                 currentTimeString.insert(0, prefix);
-            }
-        }
-        if (currentMessageObject.isStakedDice()) {
-            currentTimeString = TextUtils.concat("💎", StarsIntroActivity.formatTON(currentMessageObject.getStakedDiceAmount()), "  ", currentTimeString);
-            currentTimeString = StarsIntroActivity.replaceDiamond(currentTimeString, 0.55f, null, 0, dp(-.33f), 1.05f);
-        }
-        final long starsPrice = currentMessageObject.getDialogId() < 0 ? getStarsPrice() : 0;
-        if (starsPrice > 0) {
-            currentTimeString = TextUtils.concat("⭐️", AndroidUtilities.formatWholeNumber((int) starsPrice, 0), "  ", currentTimeString);
-            currentTimeString = StarsIntroActivity.replaceStars(currentTimeString, 0.8f, null, 0, dp(-.33f), 0.94f);
-        }
-        if (currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.schedule_repeat_period != 0) {
-            final int period = currentMessageObject.messageOwner.schedule_repeat_period;
-            if (period == 365 * 86400) {
-                currentTimeString = TextUtils.concat(getString(R.string.MessageScheduledRepeatYearly), ", ", currentTimeString);
-            } else if (period == 182 * 86400) {
-                currentTimeString = TextUtils.concat(formatPluralString("MessageScheduledRepeatMonthlyMany", 6), ", ", currentTimeString);
-            } else if (period == 91 * 86400) {
-                currentTimeString = TextUtils.concat(formatPluralString("MessageScheduledRepeatMonthlyMany", 3), ", ", currentTimeString);
-            } else if (period == 30 * 86400) {
-                currentTimeString = TextUtils.concat(getString(R.string.MessageScheduledRepeatMonthly), ", ", currentTimeString);
-            } else if (period == 14 * 86400) {
-                currentTimeString = TextUtils.concat(getString(R.string.MessageScheduledRepeatBiweekly), ", ", currentTimeString);
-            } else if (period == 7 * 86400) {
-                currentTimeString = TextUtils.concat(getString(R.string.MessageScheduledRepeatWeekly), ", ", currentTimeString);
-            } else if (period == 86400) {
-                currentTimeString = TextUtils.concat(getString(R.string.MessageScheduledRepeatDaily), ", ", currentTimeString);
-            } else {
-                currentTimeString = TextUtils.concat(formatString(R.string.MessageScheduledRepeatSeconds, period), ", ", currentTimeString);
             }
         }
         timeTextWidth = timeWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentTimeString, 0, currentTimeString == null ? 0 : currentTimeString.length()));
@@ -19206,7 +19184,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     stringBuilder.setSpan(viaSpan2 = new TypefaceSpan(AndroidUtilities.bold(), 0, color), 1 + viaBotString.length(), stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     nameStringFinal = stringBuilder;
                 }
-                nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.chat_namePaint, nameWidthForLayout + additionalWidth, TextUtils.TruncateAt.END);
+                nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.chat_namePaint, nameWidth + additionalWidth, TextUtils.TruncateAt.END);
             }
             try {
                 nameLayout = new StaticLayout(nameStringFinal, Theme.chat_namePaint, nameWidth + additionalWidth + dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -22522,18 +22500,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 canvas.save();
                 final float lineWidth = adminLayout.getLineWidth(0);
-                float ax = end - dp(11) - lineWidth - (adminLayoutIsAdmin ? dp(6) : 0);
-                float ax2 = end - dp(11);
-                float ay = nameY + dp(0.5f);
-                ax = lerp(ax, nx, avatarAlpha);
-                ax2 = lerp(ax2, nx + lineWidth + (adminLayoutIsAdmin ? dp(6) : 0), avatarAlpha);
-                ay += dp(14) * avatarAlpha;
-                if (currentNameBotVerificationId != 0) {
-                    ax -= dp(20) * avatarAlpha;
-                }
-
-                canvas.save();
-                final float lineWidth = adminLayout.getLineWidth(0);
                 final float adminLayoutWidth = lineWidth + (adminLayoutIsAdmin ? dp(6) : 0);
                 final float adminRight = end - dp(11) - bookmarkShift;
                 float ax = adminRight - adminLayoutWidth;
@@ -25366,7 +25332,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         setDrawableBounds(Theme.chat_msgMediaMenuDrawable, otherX = (int) (photoImage.getImageX() + photoImage.getImageWidth() - dp(14)), otherY = (int) (photoImage.getImageY() + dp(8.1f)));
                         Theme.chat_msgMediaMenuDrawable.draw(canvas);
-                        Theme.chat_msgMediaMenuDrawable.setAlpha(oldAlpha);
+                        Theme.chat_msgMediaMenuDrawable.setAlpha(oldAlpha);*/
                     }
                 }
 

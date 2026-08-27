@@ -99,6 +99,10 @@ public class RadioButtonCell extends LinearLayout {
         needDivider = divider;
     }
 
+    public void setTextAndValueAndCheck(String text, String value, boolean divider, boolean checked) {
+        setTextAndValue(text, value, divider, checked);
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         radioButton.setChecked(checked, animated);
     }

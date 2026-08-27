@@ -749,6 +749,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 long balance = c.getBalance().amount;
                 items.add(SettingCell.Factory.of(13, 0xFF1BA4ED, 0xFF1488E1, R.drawable.settings_gram_24, getString(R.string.MyTON), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
             }
+        }
 
         TLRPC.TL_attachMenuBots menuBots = MediaDataController.getInstance(UserConfig.selectedAccount).getAttachMenuBots();
         if (menuBots != null && menuBots.bots != null && !menuBots.bots.isEmpty()) {
@@ -959,29 +960,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     public String getVersionName() {
-        try {
-            PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            int code = pInfo.versionCode / 10;
-            String abi = "";
-            switch (pInfo.versionCode % 10) {
-                case 1:
-                case 2:
-                    abi = "store bundled " + Build.CPU_ABI + " " + Build.CPU_ABI2;
-                    break;
-                default:
-                case 9:
-                    if (ApplicationLoader.isStandaloneBuild()) {
-                        abi = "direct " + Build.CPU_ABI + " " + Build.CPU_ABI2;
-                    } else {
-                        abi = "universal " + Build.CPU_ABI + " " + Build.CPU_ABI2;
-                    }
-                    break;
-            }
-            return formatString(R.string.TelegramVersion, String.format(Locale.US, "v%s (%d)\n%s", pInfo.versionName, code, abi));
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return null;
+        return tw.nekomimi.nekogram.utils.AndroidUtil.getVersionText();
     }
 
     @Override

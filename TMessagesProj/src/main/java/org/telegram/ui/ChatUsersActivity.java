@@ -1939,7 +1939,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             Utilities.Callback<Integer> openRightsFor = action ->
                 openRightsEdit2(peerId, date, participant, adminRights, bannedRights, rank, canEditAdmin, action, false);
 
-            ItemOptions.makeOptions(this, view)
+            ItemOptions options = ItemOptions.makeOptions(this, view)
                 .setScrimViewBackground(listView.getClipBackground(view))
                 .addIf(allowSetAdmin, R.drawable.msg_admins, editingAdmin ? getString(R.string.EditAdminRights) : getString(R.string.SetAsAdmin), () -> openRightsFor.run(0))
                 .addIf(canChangePermission, R.drawable.msg_permissions, getString("ChangePermissions", R.string.ChangePermissions), () -> {

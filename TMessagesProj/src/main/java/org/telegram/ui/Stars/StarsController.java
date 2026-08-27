@@ -324,7 +324,7 @@ public class StarsController {
                             bulletinError("BILLING_" + BillingController.getResponseCodeString(result.getResponseCode()));
                             return;
                         }
-                        List<ProductDetails> list = queryResult.getProductDetailsList();
+                        List<ProductDetails> list = queryResult;
                         if (list != null) {
                             for (int i = 0; i < list.size(); ++i) {
                                 ProductDetails productDetails = list.get(i);
@@ -412,7 +412,7 @@ public class StarsController {
                             bulletinError("BILLING_" + BillingController.getResponseCodeString(result.getResponseCode()));
                             return;
                         }
-                        List<ProductDetails> list = queryResult.getProductDetailsList();
+                        List<ProductDetails> list = queryResult;
                         if (list != null) {
                             for (int i = 0; i < list.size(); ++i) {
                                 ProductDetails productDetails = list.get(i);
@@ -500,7 +500,7 @@ public class StarsController {
                             bulletinError("BILLING_" + BillingController.getResponseCodeString(result.getResponseCode()));
                             return;
                         }
-                        List<ProductDetails> list = queryResult.getProductDetailsList();
+                        List<ProductDetails> list = queryResult;
                         if (list != null) {
                             for (int i = 0; i < list.size(); ++i) {
                                 ProductDetails productDetails = list.get(i);
@@ -995,7 +995,7 @@ public class StarsController {
                 .setProductId(option.store_product)
                 .build();
         BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
-            List<ProductDetails> list = queryResult.getProductDetailsList();
+            List<ProductDetails> list = queryResult;
             if (list.isEmpty()) {
                 AndroidUtilities.runOnUIThread(() -> whenDone.run(false, "PRODUCT_NOT_FOUND"));
                 return;
@@ -1162,7 +1162,7 @@ public class StarsController {
                 .setProductId(option.store_product)
                 .build();
         BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> AndroidUtilities.runOnUIThread(() -> {
-            List<ProductDetails> list = queryResult.getProductDetailsList();
+            List<ProductDetails> list = queryResult;
             if (list.isEmpty()) {
                 AndroidUtilities.runOnUIThread(() -> whenDone.run(false, "PRODUCT_NOT_FOUND"));
                 return;

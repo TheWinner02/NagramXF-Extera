@@ -174,16 +174,6 @@ public class RichEditorToolbar extends FrameLayout {
         bottomPanel.setPadding(dp(8), dp(8), dp(8), dp(8));
         bottomInnerContainer.addView(bottomPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8 + 44 + 8, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
-        emojiButton = new ChatActivityEnterViewAnimatedIconView(context, 24);
-        emojiButton.setPadding(dp(10), dp(10), dp(10), dp(10));
-        emojiButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        emojiButton.setBackground(RichEditor.withShadow(Theme.createRadSelectorDrawable(color(Theme.key_glass_targetMainTabs), Theme.blendOver(color(Theme.key_glass_targetMainTabs), color(Theme.key_listSelector)), dp(22), dp(22))));
-        emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
-        bottomPanel.addView(emojiButton, LayoutHelper.createLinear(44, 44, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
-        ScaleStateListAnimator.apply(emojiButton);
-        emojiButton.setContentDescription("Emoji");
-        emojiButton.setOnClickListener(v -> delegate.onEmoji());
-
         aiButton = new ImageView(context);
         aiButton.setImageDrawable(new AiButtonDrawable(context));
         aiButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -244,8 +234,6 @@ public class RichEditorToolbar extends FrameLayout {
         addBlockButton(R.drawable.iv_lists, BLOCK_LIST, true);
         addBlockButton(R.drawable.iv_table, BLOCK_TABLE, true);
         addBlockButton(R.drawable.iv_math, BLOCK_MATH, true);
-
-        bottomPanel.addView(blocksContainer2, LayoutHelper.createLinear(0, 44, 1f));
 
         addButton = new ImageView(context);
         addButton.setImageResource(R.drawable.outline_poll_attach_24);

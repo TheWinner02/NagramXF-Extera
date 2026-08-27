@@ -250,8 +250,7 @@ public class ClassProxy {
                 if (classLoader == null) {
                     classLoader = ApplicationLoader.applicationContext.getClassLoader();
                 }
-                ClassProxy$$ExternalSyntheticApiModelOutline1.m();
-                InMemoryDexClassLoader inMemoryDexClassLoaderM = ClassProxy$$ExternalSyntheticApiModelOutline0.m(ByteBuffer.wrap(bArrGenerate), classLoader);
+                InMemoryDexClassLoader inMemoryDexClassLoaderM = new InMemoryDexClassLoader(ByteBuffer.wrap(bArrGenerate), classLoader);
                 clsLoadClass = inMemoryDexClassLoaderM.loadClass(string);
                 sharedGeneratedClassLoader = inMemoryDexClassLoaderM;
             } catch (Throwable th) {
@@ -712,7 +711,7 @@ public class ClassProxy {
         }
 
         public final int hashCode() {
-            return ClassProxy$ProxyMethodSpec$$ExternalSyntheticRecord0.m(this.overrideExisting, this.modifiers, this.name, this.returnType, this.parameterTypes, this.implementation, this.mvelCode, this.argumentNames);
+            return Objects.hash(this.overrideExisting, this.modifiers, this.name, this.returnType, java.util.Arrays.hashCode(this.parameterTypes), this.implementation, this.mvelCode, this.argumentNames);
         }
 
         public String implementation() {
@@ -786,7 +785,7 @@ public class ClassProxy {
         }
 
         public final int hashCode() {
-            return ClassProxy$FieldSpec$$ExternalSyntheticRecord0.m(this.modifiers, this.name, this.type, this.methods);
+            return Objects.hash(this.modifiers, this.name, this.type, this.methods);
         }
 
         public List<FieldMethodSpec> methods() {
@@ -846,7 +845,7 @@ public class ClassProxy {
         }
 
         public final int hashCode() {
-            return ClassProxy$FieldMethodSpec$$ExternalSyntheticRecord0.m(this.getter, this.modifiers, this.name);
+            return Objects.hash(this.getter, this.modifiers, this.name);
         }
 
         public int modifiers() {

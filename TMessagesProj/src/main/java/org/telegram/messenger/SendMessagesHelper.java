@@ -3641,8 +3641,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     null, null, false, false, messageObject,
                     inputPollAnswer,
                     false, 0, 0, 0, false,
-                    null, 0,
-                    false, 0, 0, null);
+                    null, null, 0, false,
+                    0, 0, null);
         } else if (attachedMedia instanceof PollAttachedMediaSticker) {
             PollAttachedMediaSticker s = (PollAttachedMediaSticker) attachedMedia;
             editMessage(messageObject, inputPollAnswer, null, null, (TLRPC.TL_document) s.sticker, null, null, null, false, false, s.parent);
@@ -3656,6 +3656,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             inputMediaWebPage.optional = true;
             inputPollAnswer.input_media = inputMediaWebPage;
             editMessage(messageObject, inputPollAnswer, null, null, null, null, null, null, false, false, null);
+        } else if (attachedMedia instanceof PollAttachedMediaMusic) {
+            PollAttachedMediaMusic music = (PollAttachedMediaMusic) attachedMedia;
+            editMessage(messageObject, inputPollAnswer, null, null, (TLRPC.TL_document) music.messageObject.getDocument(), null, null, null, false, false, null);
+        } else if (attachedMedia instanceof PollAttachedMediaFile) {
+            PollAttachedMediaFile file = (PollAttachedMediaFile) attachedMedia;
+            editMessage(messageObject, inputPollAnswer, null, null, null, file.path, null, null, false, false, null);
         } else {
             editMessage(messageObject, inputPollAnswer, null, null, null, null, null, null, false, false, null);
         }
@@ -3673,16 +3679,22 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
-    public void sendCurrentLocation(final MessageObject messageObject, final TL_keyboard.KeyboardButtonProto button) {
-        if (messageObject == null || button == null) {
+    public void sendCurrentLocation(MessageObject messageObject, TL_keyboard.KeyboardButtonProto button) {
+        if (messageObject == null || button == null || button.getData() == null) {
             return;
         }
-        if (messageObject == null || button == null) {
+        final String key = messageObject.getDialogId() + "_" + messageObject.getId() + "_" + Utilities.bytesToHex(button.getData()) + "_" + (TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeGame.class) ? "1" : "0");
+        waitingForLocation.put(key, messageObject);
+    }
+
+    public boolean isSendingCurrentLocation(MessageObject messageObject, TL_keyboard.KeyboardButtonProto button) {
+        if (messageObject == null || button == null || button.getData() == null) {
             return false;
         }
         final String key = messageObject.getDialogId() + "_" + messageObject.getId() + "_" + Utilities.bytesToHex(button.getData()) + "_" + (TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeGame.class) ? "1" : "0");
         return waitingForLocation.containsKey(key);
     }
+
 
     public void sendNotificationCallback(long dialogId, int msgId, byte[] data) {
         AndroidUtilities.runOnUIThread(() -> {
@@ -10080,6 +10092,27 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
             });
         }
+    }
+
+    public static void prepareSendingLocation(AccountInstance accountInstance, final Location location, final long dialog_id) {
+        accountInstance.getMessagesStorage().getStorageQueue().postRunnable(() -> Utilities.stageQueue.postRunnable(() -> AndroidUtilities.runOnUIThread(() -> {
+            CharSequence venueTitle = location.getExtras() != null ? location.getExtras().getCharSequence("venueTitle") : null;
+            CharSequence venueAddress = location.getExtras() != null ? location.getExtras().getCharSequence("venueAddress") : null;
+            TLRPC.MessageMedia sendingMedia;
+            if (venueTitle != null || venueAddress != null) {
+                sendingMedia = new TLRPC.TL_messageMediaVenue();
+                sendingMedia.address = venueAddress == null ? "" : venueAddress.toString();
+                sendingMedia.title = venueTitle == null ? "" : venueTitle.toString();
+                sendingMedia.provider = "";
+                sendingMedia.venue_id = "";
+            } else {
+                sendingMedia = new TLRPC.TL_messageMediaGeo();
+            }
+            sendingMedia.geo = new TLRPC.TL_geoPoint();
+            sendingMedia.geo.lat = location.getLatitude();
+            sendingMedia.geo._long = location.getLongitude();
+            accountInstance.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(sendingMedia, dialog_id, null, null, null, null, true, 0, 0));
+        })));
     }
 
     @UiThread

@@ -39,6 +39,7 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.DispatchQueuePoolBackground;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.MonoColorLottieList;
 import org.telegram.messenger.ResLottieMeta;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.BitmapsCache;
@@ -595,10 +596,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     public RLottieDrawable(@RawRes int rawRes, String name, int w, int h, boolean startDecode, int[] colorReplacement) {
         width = w;
         height = h;
-        isSingleChannel = MonoColorLottieList.isMonoColorLottie(rawRes);
-        if (isSingleChannel) {
-            setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
-        }
         autoRepeat = 0;
         getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
         args = new NativePtrArgs();

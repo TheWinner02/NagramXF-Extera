@@ -401,7 +401,7 @@ public class GroupMedia {
         if (layout == null) return;
         float hiddenAlpha = animatedHidden.set(hidden);
 
-//        Theme.MessageDrawable backgroundDrawable = cell.currentBackgroundDrawable;
+//        MessageDrawable backgroundDrawable = cell.currentBackgroundDrawable;
 //        if (backgroundDrawable != null && hiddenAlpha > 0) {
 //            canvas.save();
 //            canvas.clipRect(x - dp(20), y - dp(2), x + width + dp(20), y + height + dp(3));

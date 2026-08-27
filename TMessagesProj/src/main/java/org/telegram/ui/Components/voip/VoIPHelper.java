@@ -77,32 +77,13 @@ public class VoIPHelper {
 
     private static final int VOIP_SUPPORT_ID = 4244000;
 
-	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance) {
+    public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance) {
+        startCall(user, videoCall, canVideoCall, activity, userFull, accountInstance, false);
+    }
+
+    public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull, AccountInstance accountInstance, boolean confirmed) {
 		if (accountInstance == null ? MessagesController.getInstance(UserConfig.selectedAccount).isFrozen() : accountInstance.getMessagesController().isFrozen()) {
 			AccountFrozenAlert.show(accountInstance == null ? UserConfig.selectedAccount : accountInstance.getCurrentAccount());
-			return;
-		}
-		if (userFull != null && userFull.phone_calls_private) {
-			AlertsCreator.showCallsForbidden(activity, accountInstance.getCurrentAccount(), user.id, null);
-			return;
-		}
-		if (ConnectionsManager.getInstance(UserConfig.selectedAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected) {
-			boolean isAirplaneMode = Settings.System.getInt(activity.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) != 0;
-			AlertDialog.Builder bldr = new AlertDialog.Builder(activity)
-					.setTitle(isAirplaneMode ? LocaleController.getString(R.string.VoipOfflineAirplaneTitle) : LocaleController.getString(R.string.VoipOfflineTitle))
-					.setMessage(isAirplaneMode ? LocaleController.getString(R.string.VoipOfflineAirplane) : LocaleController.getString(R.string.VoipOffline))
-					.setPositiveButton(LocaleController.getString(R.string.OK), null);
-			if (isAirplaneMode) {
-				final Intent settingsIntent = new Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS);
-				if (settingsIntent.resolveActivity(activity.getPackageManager()) != null) {
-					bldr.setNeutralButton(LocaleController.getString(R.string.VoipOfflineOpenSettings), (dialog, which) -> activity.startActivity(settingsIntent));
-				}
-			}
-			try {
-				bldr.show();
-			} catch (Exception e) {
-				FileLog.e(e);
-			}
 			return;
 		}
         if (userFull != null && userFull.phone_calls_private) {

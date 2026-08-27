@@ -28,10 +28,11 @@ import android.view.ViewTreeObserver;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
@@ -467,14 +468,12 @@ public abstract class NekoDelegateFragment extends BaseFragment implements Notif
     }
 
     @Override
-    public void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
+    public void didPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
         if (button == null || getParentActivity() == null) return;
         try {
-            if (button instanceof TLRPC.TL_keyboardButtonUrl) {
-                String url = button.url;
-                if (!TextUtils.isEmpty(url)) {
-                    Browser.openUrl(getParentActivity(), url);
-                }
+            String url = button.getUrl();
+            if (!TextUtils.isEmpty(url)) {
+                Browser.openUrl(getParentActivity(), url);
             } else {
                 BulletinFactory.of(this).createSimpleBulletin(R.raw.error, getString(R.string.Nya)).show();
             }
@@ -484,29 +483,45 @@ public abstract class NekoDelegateFragment extends BaseFragment implements Notif
     }
 
     @Override
-    public boolean didLongPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
+    public boolean didLongPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
         if (button == null || getParentActivity() == null) return false;
         try {
-            if (!TextUtils.isEmpty(button.url)) {
-                AndroidUtilities.addToClipboard(button.url);
+            String url = button.getUrl();
+            if (!TextUtils.isEmpty(url)) {
+                AndroidUtilities.addToClipboard(url);
                 BulletinFactory.of(this).createCopyLinkBulletin().show();
             } else {
+                String data = null;
+                String query = null;
+                long user_id = 0;
+                if (button.getData() != null) {
+                    data = MessageHelper.getTextOrBase64(button.getData());
+                }
+                if (button.getType() instanceof TL_keyboard.TL_inlineButtonTypeSwitchInline) {
+                    query = ((TL_keyboard.TL_inlineButtonTypeSwitchInline) button.getType()).query;
+                }
+                if (button.getType() instanceof TL_keyboard.TL_inlineButtonTypeUserProfile) {
+                    user_id = ((TL_keyboard.TL_inlineButtonTypeUserProfile) button.getType()).user_id;
+                }
+                final String finalData = data;
+                final String finalQuery = query;
+                final long finalUserId = user_id;
                 BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity(), false, getResourceProvider());
-                builder.setTitle(button.text);
+                builder.setTitle(button.getText());
                 builder.setItems(new CharSequence[]{
                         getString(R.string.Copy),
-                        button.data != null ? getString(R.string.CopyCallback) : null,
-                        button.query != null ? getString(R.string.CopyInlineQuery) : null,
-                        button.user_id != 0 ? getString(R.string.CopyID) : null
+                        finalData != null ? getString(R.string.CopyCallback) : null,
+                        finalQuery != null ? getString(R.string.CopyInlineQuery) : null,
+                        finalUserId != 0 ? getString(R.string.CopyID) : null
                 }, (dialog, which) -> {
                     if (which == 0) {
-                        AndroidUtilities.addToClipboard(button.text);
+                        AndroidUtilities.addToClipboard(button.getText());
                     } else if (which == 1) {
-                        AndroidUtilities.addToClipboard(MessageHelper.getTextOrBase64(button.data));
+                        AndroidUtilities.addToClipboard(finalData);
                     } else if (which == 2) {
-                        AndroidUtilities.addToClipboard(button.query);
+                        AndroidUtilities.addToClipboard(finalQuery);
                     } else if (which == 3) {
-                        AndroidUtilities.addToClipboard(String.valueOf(button.user_id));
+                        AndroidUtilities.addToClipboard(String.valueOf(finalUserId));
                     }
                     BulletinFactory.of(this).createCopyBulletin(getString(R.string.TextCopied)).show();
                 });
@@ -514,8 +529,7 @@ public abstract class NekoDelegateFragment extends BaseFragment implements Notif
             }
             try {
                 if (!NekoConfig.disableVibration.Bool()) cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-            } catch (Exception ignore) {
-            }
+            } catch (Exception ignore) {}
             return true;
         } catch (Exception e) {
             FileLog.e(e);

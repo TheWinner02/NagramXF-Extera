@@ -1179,7 +1179,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 } else if (!UserConfig.hasPremiumOnAccounts()) {
                     if (actionBarLayout.getFragmentStack().size() > 0) {
                         BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
-                        LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(fragment, this, TYPE_ACCOUNTS, currentAccount, null);
+                        LimitReachedBottomSheet limitReachedBottomSheet = new LimitReachedBottomSheet(fragment, this, LimitReachedBottomSheet.TYPE_ACCOUNTS, currentAccount, null);
                         fragment.showDialog(limitReachedBottomSheet);
                         limitReachedBottomSheet.onShowPremiumScreenRunnable = () -> drawerLayoutContainer.closeDrawer(false);
                     }
@@ -2209,7 +2209,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
                     final LinkManager linkManager = new LinkManager(this, intentAccount[0], progress, openedTelegram);
                     if (linkManager.handle(data)) {
-                        if (intent.hasExtra(EXTRA_ACTION_TOKEN)) {
+                        /*if (intent.hasExtra(EXTRA_ACTION_TOKEN)) {
                             final boolean success = true;
                             final Action assistAction = new AssistActionBuilder()
                                 .setActionToken(intent.getStringExtra(EXTRA_ACTION_TOKEN))
@@ -2217,7 +2217,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 .build();
                             FirebaseUserActions.getInstance(this).end(assistAction);
                             intent.removeExtra(EXTRA_ACTION_TOKEN);
-                        }
+                        }*/
                         return true;
                     }
 
@@ -6332,6 +6332,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private boolean firstAppUpdateCheck = true;
     public void checkAppUpdate(boolean force, Browser.Progress progress) {
+        checkAppUpdate(force, progress, false);
+    }
+
+    public void checkAppUpdate(boolean force, Browser.Progress progress, boolean updateAlways) {
         if (!ApplicationLoader.isStandaloneBuild() && !ApplicationLoader.isBetaBuild()) {
             return;
         }

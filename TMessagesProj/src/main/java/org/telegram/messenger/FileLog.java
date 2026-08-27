@@ -299,13 +299,8 @@ public class FileLog {
     }
 
     private void init() {
-        if (initied) {
+        if (initied || initiing) {
             return;
-        }
-        if (initiing) {
-            if (BuildVars.DEBUG_VERSION) {
-                throw new IllegalStateException("double init call");
-            }
         }
         initiing = true;
 
@@ -338,7 +333,7 @@ public class FileLog {
             e.printStackTrace();
         }
         if (BuildVars.DEBUG_VERSION) {
-            new ANRDetector(this::dumpANR);
+            new ANRDetector(FileLog::dumpANR);
         }
         initied = true;
     }

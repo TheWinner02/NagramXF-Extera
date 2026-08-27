@@ -402,7 +402,7 @@ void initWebRTC(JNIEnv *env) {
 }
 
 extern "C"
-JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGroupNativeInstance(JNIEnv *env, jclass clazz, jobject instanceObj, jstring logFilePath, jboolean highQuality, jlong videoCapturer, jboolean screencast, jboolean noiseSupression, jboolean conference) {
+JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGroupNativeInstance(JNIEnv *env, jclass clazz, jobject instanceObj, jstring logFilePath, jboolean highQuality, jlong videoCapturer, jboolean screencast, jboolean noiseSupression, jboolean conference, jshort customBitrate) {
     initWebRTC(env);
 
     std::shared_ptr<VideoCaptureInterface> videoCapture;

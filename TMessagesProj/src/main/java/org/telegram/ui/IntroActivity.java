@@ -525,7 +525,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                         if (!destroyed) {
                             switchLanguageTextView.setText(string.value);
                             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                            preferences.edit().putString("language_showed2", finalSystemLang.toLowerCase()).apply();
+                            preferences.edit().putString("language_showed2", showedLanguage.toLowerCase()).apply();
                         }
                     });
                 }

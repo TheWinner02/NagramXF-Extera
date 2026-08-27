@@ -199,7 +199,6 @@ public class Emoji {
                         FileLog.e(e);
                     }
                 }
-                }
                 if (bitmap != null) {
                     emojiBmp[page][page2] = bitmap;
                     AndroidUtilities.cancelRunOnUIThread(invalidateUiRunnable);

@@ -527,7 +527,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                 AndroidUtilities.rectTmp.set(child.getX(), child.getY(), child.getX() + child.getWidth(), child.getY() + child.getHeight());
                 AndroidUtilities.rectTmp.inset(-dp(3), -dp(3));
                 canvas.saveLayer(AndroidUtilities.rectTmp, null);
-                final boolean b = super.drawChild(canvas, child, drawingTime);
+                b = super.drawChild(canvas, child, drawingTime);
                 if (hasTimer) {
                     final float cx = timeItem.getX() + timeItem.getWidth() / 2f;
                     final float cy = timeItem.getY() + timeItem.getHeight() / 2f;

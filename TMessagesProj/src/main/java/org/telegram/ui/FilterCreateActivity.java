@@ -1041,7 +1041,7 @@ public class FilterCreateActivity extends BaseFragment {
     private void save(boolean progress, Runnable after) {
         final CharSequence[] parsedTitle = new CharSequence[] { newFilterName };
         final ArrayList<TLRPC.MessageEntity> entities = getMediaDataController().getEntities(parsedTitle, false);
-        saveFilterToServer(filter, newFilterFlags, parsedTitle[0].toString(), entities, !newFilterAnimations, newFilterColor, newAlwaysShow, newNeverShow, newPinned, creatingNew, false, hasUserChanged, true, progress, this, () -> {
+        saveFilterToServer(filter, newFilterFlags, newFilterEmoticon, parsedTitle[0].toString(), entities, !newFilterAnimations, newFilterColor, newAlwaysShow, newNeverShow, newPinned, creatingNew, false, hasUserChanged, true, progress, this, () -> {
 
             hasUserChanged = false;
             creatingNew = false;
@@ -1056,7 +1056,7 @@ public class FilterCreateActivity extends BaseFragment {
         });
     }
 
-    private static void processAddFilter(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<TLRPC.MessageEntity> newFilterNameEntities, boolean newFilterNoanimate, int newFilterColor, ArrayList<Long> newAlwaysShow, ArrayList<Long> newNeverShow, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, BaseFragment fragment, Runnable onFinish) {
+    private static void processAddFilter(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterEmoticon, String newFilterName, ArrayList<TLRPC.MessageEntity> newFilterNameEntities, boolean newFilterNoanimate, int newFilterColor, ArrayList<Long> newAlwaysShow, ArrayList<Long> newNeverShow, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, BaseFragment fragment, Runnable onFinish) {
         if (filter.flags != newFilterFlags || hasUserChanged) {
             filter.pendingUnreadCount = -1;
             if (resetUnreadCounter) {
@@ -1090,7 +1090,7 @@ public class FilterCreateActivity extends BaseFragment {
         }
     }
 
-    public static void saveFilterToServer(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<TLRPC.MessageEntity> newFilterNameEntities, boolean newFilterNoanimate, int newFilterColor, ArrayList<Long> newAlwaysShow, ArrayList<Long> newNeverShow, LongSparseIntArray newPinned, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, boolean progress, BaseFragment fragment, Runnable onFinish) {
+    public static void saveFilterToServer(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterEmoticon, String newFilterName, ArrayList<TLRPC.MessageEntity> newFilterNameEntities, boolean newFilterNoanimate, int newFilterColor, ArrayList<Long> newAlwaysShow, ArrayList<Long> newNeverShow, LongSparseIntArray newPinned, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, boolean progress, BaseFragment fragment, Runnable onFinish) {
         if (fragment == null || fragment.getParentActivity() == null) {
             return;
         }
@@ -1205,13 +1205,13 @@ public class FilterCreateActivity extends BaseFragment {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-                processAddFilter(filter, newFilterFlags, newFilterName, newFilterNameEntities, newFilterNoanimate, newFilterColor, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, resetUnreadCounter, fragment, onFinish);
+                processAddFilter(filter, newFilterFlags, newFilterEmoticon, newFilterName, newFilterNameEntities, newFilterNoanimate, newFilterColor, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, resetUnreadCounter, fragment, onFinish);
             } else if (onFinish != null) {
                 onFinish.run();
             }
         }));
         if (!progress) {
-            processAddFilter(filter, newFilterFlags, newFilterName, newFilterNameEntities, newFilterNoanimate, newFilterColor, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, resetUnreadCounter, fragment, null);
+            processAddFilter(filter, newFilterFlags, newFilterEmoticon, newFilterName, newFilterNameEntities, newFilterNoanimate, newFilterColor, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, resetUnreadCounter, fragment, null);
         }
     }
 

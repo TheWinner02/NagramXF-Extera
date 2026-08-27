@@ -34,8 +34,6 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
@@ -55,8 +53,6 @@ import java.util.ArrayList;
 
 @RequiresApi(api = 28)
 public class PasskeysActivity extends BaseFragment {
-    private static final String BITWARDEN_URL = "https://github.com/bitwarden/android";
-    private static final String KEEPASSDX_URL = "https://github.com/Kunzisoft/KeePassDX";
 
     private UniversalRecyclerView listView;
 
@@ -88,14 +84,6 @@ public class PasskeysActivity extends BaseFragment {
         listView.adapter.setApplyBackground(false);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         actionBar.setAdaptiveBackground(listView);
-
-        if (passkeys.isEmpty()) {
-            AndroidUtilities.runOnUIThread(() -> {
-                if (getContext() != null) {
-                    showLearnSheet(getContext(), currentAccount, resourceProvider, true);
-                }
-            }, 200);
-        }
 
         return fragmentView = contentView;
     }
@@ -183,8 +171,6 @@ public class PasskeysActivity extends BaseFragment {
                     added(passkey);
                 }
             });
-        } else if (item.id == -2) {
-            PasskeysController.openSettings(getParentActivity());
         } else if (item.object != null) {
             openMenu(view);
         }

@@ -223,6 +223,7 @@ import org.telegram.ui.web.SearchEngine;
 import org.telegram.ui.web.WebActionBar;
 import org.telegram.ui.web.WebBrowserSettings;
 import org.telegram.ui.web.WebInstantView;
+import org.telegram.ui.iv.Latex;
 
 import java.io.File;
 import java.net.URLDecoder;

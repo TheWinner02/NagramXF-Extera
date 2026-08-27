@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+project(tmessages)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -DANDROID -g")
 set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g -Wno-error=implicit-function-declaration")
@@ -54,12 +55,6 @@ set_target_properties(tdutils PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTOR
 
 add_library(libopus STATIC IMPORTED)
 set_target_properties(libopus PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libopus.a)
-
-add_library(tde2e STATIC IMPORTED)
-set_target_properties(tde2e PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/tde2e/${ANDROID_ABI}/libtde2e.a)
-
-add_library(tdutils STATIC IMPORTED)
-set_target_properties(tdutils PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/tde2e/${ANDROID_ABI}/libtdutils.a)
 
 #tgnet
 add_library(tgnet STATIC
@@ -211,5 +206,3 @@ target_link_libraries(${NATIVE_LIB}
 #            c)
 #endif()
 
-include(AndroidNdkModules)
-android_ndk_import_module_cpufeatures()

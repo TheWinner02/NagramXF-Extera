@@ -518,8 +518,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         }
     }
 
-    private void onQueriedPremiumProductDetails(BillingResult billingResult, QueryProductDetailsResult result) {
-        List<ProductDetails> list = result.getProductDetailsList();
+    private void onQueriedPremiumProductDetails(BillingResult billingResult, List<ProductDetails> list) {
         FileLog.d("Billing: Query product details finished " + billingResult + ", " + list);
         if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
             for (ProductDetails details : list) {

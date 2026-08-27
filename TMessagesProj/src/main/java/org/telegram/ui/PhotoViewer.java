@@ -15265,14 +15265,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 title = customTitle;
             } else if (isEvent) {
                 title = getString(R.string.AttachPhoto);
-            }
-            final boolean noforwards = avatarsDialogId != 0 && MessagesController.getInstance(currentAccount).isPeerNoForwards(avatarsDialogId);
-            if (noforwards) {
-                galleryButton.setVisibility(View.GONE);
-                galleryGap.setVisibility(View.GONE);
+            } else if (avatarsDialogId < 0) {
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-avatarsDialogId);
+                if (chat != null) {
+                    title = chat.title;
+                }
             } else {
-                galleryButton.setVisibility(View.VISIBLE);
-                galleryGap.setVisibility(View.VISIBLE);
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(avatarsDialogId);
+                if (user != null) {
+                    title = UserObject.getUserName(user);
+                }
             }
             CharSequence subtitle = null;
             TLRPC.Photo avatar = avatarsArr.get(switchingToIndex);
@@ -19263,10 +19265,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             pausedOnPause = true;
             videoPlayer.pause();
         }
-    }
-
-    private boolean allowLoopingOnPause() {
-        return AndroidUtilities.isInPictureInPictureMode(parentActivity);
     }
 
     private boolean allowLoopingOnPause() {

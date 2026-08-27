@@ -627,7 +627,7 @@
             <intent-filter>
                 <action android:name="com.google.android.gms.auth.api.phone.SMS_RETRIEVED"/>
             </intent-filter>
-        </receiver> -->
+        </receiver>
 
         <receiver android:name=".CallReceiver" android:exported="false">
             <intent-filter>
@@ -780,8 +780,6 @@
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/tg-wear-auth/" />
             </intent-filter>
         </service>
-
-        <receiver android:name=".StopLiveLocationReceiver" android:enabled="true"/>
 
         <receiver android:name=".StopLiveLocationReceiver" android:enabled="true" android:exported="false"/>
 

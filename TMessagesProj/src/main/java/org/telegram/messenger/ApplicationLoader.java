@@ -185,14 +185,6 @@ public class ApplicationLoader extends Application {
         return false;
     }
 
-    protected boolean isBeta() {
-        return false;
-    }
-
-    protected boolean isAndroidTestEnv() {
-        return false;
-    }
-
     public static File getFilesDirFixed() {
         for (int a = 0; a < 10; a++) {
             File path = ApplicationLoader.applicationContext.getFilesDir();
@@ -209,19 +201,6 @@ public class ApplicationLoader extends Application {
             FileLog.e(e);
         }
         return new File("/data/data/" + BuildConfig.APPLICATION_ID + "/files");
-    }
-
-    public static File getFilesDirFixed(String child) {
-        try {
-            File path = getFilesDirFixed();
-            File dir = new File(path, child);
-            dir.mkdirs();
-
-            return dir;
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return null;
     }
 
     public static File getFilesDirFixed(String child) {
@@ -348,11 +327,7 @@ public class ApplicationLoader extends Application {
         super.onCreate();
         installCrashReportFilter();
 
-        // AndroidUtilities must be initialized before FileLog
-        final String helloWorld = AndroidUtilities.getHelloWorld();
-
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d(helloWorld);
             FileLog.d("app start time = " + (startTime = SystemClock.elapsedRealtime()));
             try {
                 final PackageInfo info = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);

@@ -740,40 +740,6 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 case VIEW_TYPE_SETTINGS: {
                     TextCell textCell = (TextCell) holder.itemView;
                     textCell.setTextAndIcon(getString(R.string.TranslatorSettings), R.drawable.ic_translate, false);
-                    /*HashSet<String> langCodes = RestrictedLanguagesSelectActivity.getRestrictedLanguages();
-                    final String doNotTranslateCellName = LocaleController.getString(R.string.DoNotTranslate);
-                    String doNotTranslateCellValue = null;
-                    try {
-                        boolean[] accusative = new boolean[1];
-                        if (langCodes.size() == 0) {
-                            doNotTranslateCellValue = "";
-                        } else if (langCodes.size() == 1) {
-                            doNotTranslateCellValue = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(langCodes.iterator().next(), accusative));
-                        } else {
-                            Iterator<String> iterator = langCodes.iterator();
-                            boolean first = true;
-                            StringBuilder string = new StringBuilder();
-                            while (iterator.hasNext()) {
-                                String lang = iterator.next();
-                                if (!first) {
-                                    string.append(", ");
-                                }
-                                String langName = TranslateAlert2.capitalFirst(TranslateAlert2.languageName(lang, accusative));
-                                if (langName != null) {
-                                    string.append(langName);
-                                    first = false;
-                                }
-                            }
-                            doNotTranslateCellValue = string.toString();
-                            if (settingsCell.getValueTextView().getPaint().measureText(doNotTranslateCellValue) > Math.min((AndroidUtilities.displaySize.x - AndroidUtilities.dp(34)) / 2f, AndroidUtilities.displaySize.x - AndroidUtilities.dp(21 * 4) - settingsCell.getTextView().getPaint().measureText(doNotTranslateCellName))) {
-                                doNotTranslateCellValue = null;
-                            }
-                        }
-                    } catch (Exception ignore) {}
-                    if (doNotTranslateCellValue == null) {
-                        doNotTranslateCellValue = String.format(LocaleController.getPluralString("Languages", langCodes.size()), langCodes.size());
-                    }
-                    settingsCell.setTextAndValue(doNotTranslateCellName, doNotTranslateCellValue, true, false/*translationModels != null*/);
                     break;
                 }
                 case VIEW_TYPE_SETTINGS_2: {

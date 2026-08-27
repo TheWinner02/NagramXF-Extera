@@ -580,19 +580,6 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
     }
 
-    private boolean isCenterTitle;
-
-    public void centerTitle() {
-        isCenterTitle = true;
-        if (titleTextView != null) {
-            for (int a = 0; a < titleTextView.length; a++) {
-                if (titleTextView[a] != null) {
-                    titleTextView[a].setGravity(Gravity.CENTER);
-                }
-            }
-        }
-    }
-
     public void setTitleRightMargin(int value) {
         titleRightMargin = value;
     }

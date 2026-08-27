@@ -148,29 +148,6 @@ public final class RLottieNative {
         return getFrame(mNativePtr, frame, bitmap, clear);
     }
 
-    /**
-     * Updates the fill color of a named layer.
-     *
-     * @param layer layer name as defined in the Lottie JSON
-     * @param color ARGB color value
-     * @throws IllegalStateException if already recycled
-     */
-    public void setLayerColor(String layer, int color) {
-        checkNotRecycled();
-        setLayerColor(mNativePtr, layer, color);
-    }
-
-    /**
-     * Replaces the animation palette using a flat color-replacement array.
-     *
-     * @param colors interleaved [from, to, from, to, …] ARGB values
-     * @throws IllegalStateException if already recycled
-     */
-    public void replaceColors(int[] colors) {
-        checkNotRecycled();
-        replaceColors(mNativePtr, colors);
-    }
-
     // -------------------------------------------------------------------------
     // Metadata
     // -------------------------------------------------------------------------

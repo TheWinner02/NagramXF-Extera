@@ -215,7 +215,7 @@ public class BoostRepository {
                 .setProductId(option.store_product)
                 .build();
         BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> {
-            List<ProductDetails> list = queryResult.getProductDetailsList();
+            List<ProductDetails> list = queryResult;
             ProductDetails.OneTimePurchaseOfferDetails offerDetails = list.get(0).getOneTimePurchaseOfferDetails();
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
@@ -456,7 +456,7 @@ public class BoostRepository {
                 .setProductId(option.store_product)
                 .build();
         BillingController.getInstance().queryProductDetails(Arrays.asList(product), (billingResult, queryResult) -> {
-            List<ProductDetails> list = queryResult.getProductDetailsList();
+            List<ProductDetails> list = queryResult;
             ProductDetails.OneTimePurchaseOfferDetails offerDetails = list.get(0).getOneTimePurchaseOfferDetails();
             payload.currency = offerDetails.getPriceCurrencyCode();
             payload.amount = (long) ((offerDetails.getPriceAmountMicros() / Math.pow(10, 6)) * Math.pow(10, BillingController.getInstance().getCurrencyExp(option.currency)));
@@ -682,7 +682,7 @@ public class BoostRepository {
                     return;
                 }
                 BillingController.getInstance().queryProductDetails(products, (billingResult, queryResult) -> {
-                    List<ProductDetails> list = queryResult.getProductDetailsList();
+                    List<ProductDetails> list = queryResult;
                     for (ProductDetails productDetails : list) {
                         ProductDetails.OneTimePurchaseOfferDetails offerDetails = productDetails.getOneTimePurchaseOfferDetails();
                         for (TLRPC.TL_premiumGiftCodeOption option : result) {

@@ -4612,6 +4612,9 @@ public class ImageLoader {
             newPhotoSize.type = photoSize.type;
 
             if (file.exists() && message.grouped_id == 0) {
+                int h = photoSize.h;
+                int w = photoSize.w;
+                PointF point = ChatMessageCell.getMessageSize(w, h);
                 int targetWidth = (int) (point.x / AndroidUtilities.density);
                 int targetHeight = (int) (point.y / AndroidUtilities.density);
                 if (targetWidth <= 0 || targetHeight <= 0) {

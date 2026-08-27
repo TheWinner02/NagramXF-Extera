@@ -71,7 +71,6 @@ import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
@@ -188,8 +187,8 @@ public class FilterTabsView extends FrameLayout {
         }
     }
 
-    private static final float TAB_PADDING_WIDTH = 24;
-    private static final float TAB_INTERNAL_PADDING = 12.5f;
+    public static final float TAB_PADDING_WIDTH = 24;
+    public static final float TAB_INTERNAL_PADDING = 12.5f;
     private static final float TAB_COUNTER_HEIGHT = 17.333f;
 
     public class TabView extends View {
@@ -316,14 +315,14 @@ public class FilterTabsView extends FrameLayout {
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            int w = currentTab.getWidth(false) + dp(TAB_PADDING_WIDTH) + additionalTabWidth;
+            int w = currentTab.getWidth(false) + dp(FolderIconHelper.getTabPadding()) + additionalTabWidth;
             setMeasuredDimension(w, MeasureSpec.getSize(heightMeasureSpec));
         }
 
         @SuppressLint("DrawAllocation")
         @Override
         protected void onDraw(@NonNull Canvas canvas) {
-            boolean reorderEnabled = true;
+            boolean reorderEnabled = !currentTab.isDefault || UserConfig.getInstance(UserConfig.selectedAccount).isPremium();
             boolean showRemove = !currentTab.isDefault && reorderEnabled;
             if (reorderEnabled && editingAnimationProgress != 0) {
                 canvas.save();
@@ -545,9 +544,9 @@ public class FilterTabsView extends FrameLayout {
                 }
                 int textSpace = dp(tabType != NekoXConfig.TITLE_TYPE_ICON ? 6 : 0);
                 if (animateTextChange && titleAnimateOutLayout == null) {
-                    x = textX - titleXOffset + titleOffsetX + titleWidth + dp(5);
+                    x = textX - titleXOffset + titleOffsetX + titleWidth + textSpace;
                 } else {
-                    x = textX + titleWidth + dp(5);
+                    x = textX + titleWidth + textSpace;
                 }
                 int countTop = (getMeasuredHeight() - dp(TAB_COUNTER_HEIGHT)) / 2;
 
@@ -662,7 +661,7 @@ public class FilterTabsView extends FrameLayout {
                     lockDrawableColor = unactiveColor;
                     lockDrawable.setColorFilter(new PorterDuffColorFilter(unactiveColor, PorterDuff.Mode.MULTIPLY));
                 }
-                int iconX = (int) ((getMeasuredWidth() - lockDrawable.getIntrinsicWidth()) / 2f + locIconXOffset);
+                iconX = (int) ((getMeasuredWidth() - lockDrawable.getIntrinsicWidth()) / 2f + locIconXOffset);
                 int iconY = getMeasuredHeight() - dp(12);
                 lockDrawable.setBounds(iconX, iconY, iconX + lockDrawable.getIntrinsicWidth(), iconY + lockDrawable.getIntrinsicHeight());
                 if (progressToLocked != 1f) {
@@ -1379,13 +1378,13 @@ public class FilterTabsView extends FrameLayout {
     }
 
     public CharSequence text(String t, ArrayList<TLRPC.MessageEntity> e)  {
-        CharSequence title = new SpannableStringBuilder(t);
+        CharSequence title = new SpannableStringBuilder(t != null ? t : "");
         title = Emoji.replaceEmoji(title, textPaint.getFontMetricsInt(), false);
         title = MessageObject.replaceAnimatedEmoji(title, e, textPaint.getFontMetricsInt());
         return title;
     }
 
-    public void addTab(int id, int stableId, String text, ArrayList<TLRPC.MessageEntity> entities, boolean noanimate, boolean isDefault, boolean isLocked) {
+    public void addTab(int id, int stableId, String text, String emoticon, ArrayList<TLRPC.MessageEntity> entities, boolean noanimate, boolean isDefault, boolean isLocked) {
         int position = tabs.size();
         if (position == 0 && selectedTabId == -1) {
             selectedTabId = id;
@@ -1397,14 +1396,14 @@ public class FilterTabsView extends FrameLayout {
             currentPosition = position;
         }
 
-        Tab tab = new Tab(id, text(text, entities), noanimate);
+        Tab tab = new Tab(id, text(text, entities), emoticon, noanimate);
         tab.isDefault = isDefault;
         tab.isLocked = isLocked;
-        allTabsWidth += tab.getWidth(true) + dp(TAB_PADDING_WIDTH);
+        allTabsWidth += tab.getWidth(true) + dp(FolderIconHelper.getTabPadding());
         tabs.add(tab);
     }
 
-    public void addTab(int id, int stableId, CharSequence text, boolean noanimate, boolean isDefault, boolean isLocked) {
+    public void addTab(int id, int stableId, CharSequence text, String emoticon, boolean noanimate, boolean isDefault, boolean isLocked) {
         int position = tabs.size();
         if (position == 0 && selectedTabId == -1) {
             selectedTabId = id;
@@ -1416,10 +1415,10 @@ public class FilterTabsView extends FrameLayout {
             currentPosition = position;
         }
 
-        Tab tab = new Tab(id, text, noanimate);
+        Tab tab = new Tab(id, text, emoticon, noanimate);
         tab.isDefault = isDefault;
         tab.isLocked = isLocked;
-        allTabsWidth += tab.getWidth(true) + dp(TAB_PADDING_WIDTH);
+        allTabsWidth += tab.getWidth(true) + dp(FolderIconHelper.getTabPadding());
         tabs.add(tab);
     }
 
@@ -1442,19 +1441,6 @@ public class FilterTabsView extends FrameLayout {
             delegate.onTabSelected(currentTab, false, false);
             oldAnimatedTab = currentPosition;
         }
-    }
-
-    public void setColors(int line, int active, int unactive, int selector, int background) {
-        tabLineColorKey = line;
-        backgroundColorKey = background;
-        activeTextColorKey = active;
-        unactiveTextColorKey = unactive;
-        selectorDrawable.setColor(Theme.getColor(tabLineColorKey, resourcesProvider));
-        listView.setSelectorDrawableColor(Theme.getColor(selector, resourcesProvider));
-
-        listView.invalidateViews();
-        listView.invalidate();
-        invalidate();
     }
 
     public void setColors(int line, int active, int unactive, int selector, int background) {
@@ -1526,7 +1512,7 @@ public class FilterTabsView extends FrameLayout {
             positionToWidth.put(a, tabWidth);
             positionToCount.put(a, tabs.get(a).counter);
             positionToX.put(a, xOffset + additionalTabWidth / 2);
-            xOffset += tabWidth + dp(TAB_PADDING_WIDTH) + additionalTabWidth;
+            xOffset += tabWidth + dp(FolderIconHelper.getTabPadding()) + additionalTabWidth;
         }
     }
 
@@ -1615,11 +1601,12 @@ public class FilterTabsView extends FrameLayout {
                     int newW = positionToWidth.get(idx2);
                     float prevH = positionToCount.get(idx1) != 0 ? 1 : 0;
                     float newH = positionToCount.get(idx2) != 0 ? 1 : 0;
+                    float padding = FolderIconHelper.getTabPadding();
                     if (additionalTabWidth != 0) {
-                        indicatorX = lerp(prevX, newX, animatingIndicatorProgress) + dp(TAB_PADDING_WIDTH / 2f);
+                        indicatorX = lerp(prevX, newX, animatingIndicatorProgress) + dp(padding / 2f);
                     } else {
                         int x = positionToX.get(position);
-                        indicatorX = lerp(prevX, newX, animatingIndicatorProgress) - (x - holder.itemView.getLeft()) + dp(TAB_PADDING_WIDTH / 2f);
+                        indicatorX = lerp(prevX, newX, animatingIndicatorProgress) - (x - holder.itemView.getLeft()) + dp(padding / 2f);
                     }
                     indicatorWidth = lerp(prevW, newW, animatingIndicatorProgress);
                     counterVisible = lerp(prevH, newH, animatingIndicatorProgress);
@@ -1651,7 +1638,8 @@ public class FilterTabsView extends FrameLayout {
             final float add = additionalTabWidth / 2f;
 
             final int y = height / 2 - dp(14);
-            selectorDrawable.setBounds((int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y, (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add), y + dp(28));
+            float internalPadding = FolderIconHelper.getTabInternalPadding();
+            selectorDrawable.setBounds((int) (indicatorX - dp(internalPadding) - add), y, (int) (indicatorX + indicatorWidth + dp(internalPadding) + add), y + dp(28));
             selectorDrawable.setAlpha(31);
             selectorDrawable.draw(canvas);
             canvas.restore();
@@ -1905,9 +1893,7 @@ public class FilterTabsView extends FrameLayout {
             invalidated = true;
             requestLayout();
             listView.setItemAnimator(itemAnimator);
-            if (adapter != null) {
-                adapter.notifyDataSetChanged();
-            }
+            adapter.notifyDataSetChanged();
             allTabsWidth = 0;
             if (!NekoConfig.hideAllTab.Bool()) {
                 findDefaultTab().setTitle(LocaleController.getString(R.string.FilterAllChats), null, false);

@@ -862,7 +862,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             } else if (!products.isEmpty()) {
                 long startMs = System.currentTimeMillis();
                 BillingController.getInstance().queryProductDetails(products, (billingResult, queryResult) -> {
-                    List<ProductDetails> list = queryResult.getProductDetailsList();
+                    List<ProductDetails> list = queryResult;
                     long pricePerMonthMaxStore = 0;
 
                     for (ProductDetails details : list) {

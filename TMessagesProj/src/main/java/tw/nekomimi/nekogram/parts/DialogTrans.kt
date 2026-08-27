@@ -39,7 +39,7 @@ fun startTrans(
 
     val scope = CoroutineScope(Dispatchers.IO + job)
     scope.launch {
-        runCatching {
+        runCatching<Unit> {
             val result = Translator.translate(finalToLang, text, finalProvider)
             if (!canceled.get()) {
                 withContext(Dispatchers.Main) {

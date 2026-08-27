@@ -11155,6 +11155,9 @@ public class MessagesController extends BaseController implements NotificationCe
                 promoDialogId = did;
                 if (res.proxy) {
                     promoDialogType = PROMO_TYPE_PROXY;
+                    if (tw.nekomimi.nekogram.NekoConfig.hideProxySponsorChannel.Bool()) {
+                        noDialog = true;
+                    }
                 } else if (!TextUtils.isEmpty(res.psa_type)) {
                     promoDialogType = PROMO_TYPE_PSA;
                     promoPsaType = res.psa_type;
@@ -21948,8 +21951,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public SponsoredMessagesInfo getSponsoredMessages(long dialogId) {
-        // na: disable ad
-        if (true) {
+        if (tw.nekomimi.nekogram.NekoConfig.hideSponsoredMessage.Bool()) {
             return null;
         }
         SponsoredMessagesInfo info = sponsoredMessages.get(dialogId);

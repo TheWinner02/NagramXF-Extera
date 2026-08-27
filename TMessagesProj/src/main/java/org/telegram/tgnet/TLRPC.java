@@ -2789,6 +2789,7 @@ public class TLRPC {
         
         public int unshuffled_index; // custom
         public long shuffle_hash; // custom
+        public String translatedText; // custom
 
         private static PollAnswer fromConstructor(int constructor) {
             switch (constructor) {
@@ -33499,6 +33500,7 @@ public class TLRPC {
         public long hash;
 
         public @Nullable ArrayList<PollAnswer> shuffled_answers; // custom
+        public String translatedQuestion; // custom
 
         private static Poll fromConstructor(int constructor) {
             switch (constructor) {
@@ -57514,6 +57516,11 @@ public class TLRPC {
         public int ephemeralAnchorMsgId; // custom
         public long ephemeralReceiverBotId; //custom
         public boolean welcomeTemplateFirst; // custom
+        public String translatedMessage; // custom
+        public boolean translated; // custom
+        public boolean hide; // custom
+        // ayuGram
+        public boolean ayuDeleted;
 
         private static Message fromConstructor(int constructor) {
             switch (constructor) {
