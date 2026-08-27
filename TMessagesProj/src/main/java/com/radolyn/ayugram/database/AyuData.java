@@ -59,17 +59,27 @@ public class AyuData {
 
     private static void initDaos() {
         if (editedMessageDao == null) {
-            final java.util.concurrent.ConcurrentHashMap<String, com.radolyn.ayugram.database.entities.EditedMessage> editedMap = new java.util.concurrent.ConcurrentHashMap<>();
             editedMessageDao = new EditedMessageDao() {
-                @Override public void deleteAll() { editedMap.clear(); }
+                @Override public void deleteAll() {
+                    AyuSQLiteHelper helper = getHelper();
+                    if (helper != null) helper.deleteAllEditedMessages();
+                }
                 @Override public void deleteMedia(long j) {}
-                @Override public List<com.radolyn.ayugram.database.entities.EditedMessage> getAllRevisions(long j, long j2, long j3, int i, int i2) { return new ArrayList<>(editedMap.values()); }
-                @Override public com.radolyn.ayugram.database.entities.EditedMessage getLastRevision(long j, long j2, long j3) { return null; }
-                @Override public boolean hasAnyRevisions(long j, long j2, long j3) { return false; }
+                @Override public List<com.radolyn.ayugram.database.entities.EditedMessage> getAllRevisions(long j, long j2, long j3, int i, int i2) {
+                    AyuSQLiteHelper helper = getHelper();
+                    return helper != null ? helper.getAllRevisions(j, j2, j3, i, i2) : new ArrayList<>();
+                }
+                @Override public com.radolyn.ayugram.database.entities.EditedMessage getLastRevision(long j, long j2, long j3) {
+                    AyuSQLiteHelper helper = getHelper();
+                    return helper != null ? helper.getLastRevision(j, j2, j3) : null;
+                }
+                @Override public boolean hasAnyRevisions(long j, long j2, long j3) {
+                    AyuSQLiteHelper helper = getHelper();
+                    return helper != null && helper.hasAnyRevisions(j, j2, j3);
+                }
                 @Override public void insert(com.radolyn.ayugram.database.entities.EditedMessage editedMessage) {
-                    if (editedMessage != null) {
-                        editedMap.put(editedMessage.userId + "_" + editedMessage.dialogId + "_" + editedMessage.messageId + "_" + editedMessage.editDate, editedMessage);
-                    }
+                    AyuSQLiteHelper helper = getHelper();
+                    if (helper != null) helper.insertEditedMessage(editedMessage);
                 }
                 @Override public void updateMediaPathForRevisionsBetweenDates(long j, long j2, long j3, String str, String str2) {}
             };
@@ -121,6 +131,11 @@ public class AyuData {
                 @Override public List<DeletedMessageFull> getMessagesTopicless(long j, long j2, int i, int i2) {
                     AyuSQLiteHelper helper = getHelper();
                     return helper != null ? helper.getDeletedMessages(j, j2, 0, i, i2) : new ArrayList<>();
+                }
+                @Override public List<DeletedMessageFull> getMessagesPaginated(long j, long j2, long j3, int i, int i2) {
+                    AyuSQLiteHelper helper = getHelper();
+                    if (helper == null) return new ArrayList<>();
+                    return j3 == 0 ? helper.getAllDeletedMessagesForDialog(j, j2, i, i2) : helper.getDeletedMessagesForTopic(j, j2, j3, i, i2);
                 }
                 @Override public long insert(com.radolyn.ayugram.database.entities.DeletedMessage deletedMessage) {
                     AyuSQLiteHelper helper = getHelper();

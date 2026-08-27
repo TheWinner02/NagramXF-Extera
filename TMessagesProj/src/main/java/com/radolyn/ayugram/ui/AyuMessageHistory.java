@@ -155,7 +155,7 @@ public class AyuMessageHistory extends BaseFragment {
                     }
                 }
             } else {
-                List<DeletedMessageFull> deleted = controller.getMessages(dialogId, topicId, offset, limit);
+                List<DeletedMessageFull> deleted = controller.getMessagesPaginated(dialogId, topicId, offset, limit);
                 if (deleted != null) {
                     for (int i = 0; i < deleted.size(); i++) {
                         DeletedMessageFull item = deleted.get(i);

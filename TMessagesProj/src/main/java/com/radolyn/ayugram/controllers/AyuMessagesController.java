@@ -161,8 +161,12 @@ public class AyuMessagesController extends BaseController {
         return this.deletedMessageService.getMessage(dialogId, messageId);
     }
 
-    public List<DeletedMessageFull> getMessages(long dialogId, long topicId, int offset, int limit) {
-        return this.deletedMessageService.getMessages(dialogId, topicId, offset, limit);
+    public List<DeletedMessageFull> getMessages(long dialogId, long topicId, int minId, int maxId) {
+        return this.deletedMessageService.getMessages(dialogId, topicId, minId, maxId);
+    }
+
+    public List<DeletedMessageFull> getMessagesPaginated(long dialogId, long topicId, int offset, int limit) {
+        return this.deletedMessageService.getMessagesPaginated(dialogId, topicId, offset, limit);
     }
 
     public List<DeletedMessageFull> getMessagesForScroll(long dialogId, long topicId, String query, int minId, int limit) {

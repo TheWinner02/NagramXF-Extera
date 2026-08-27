@@ -36,6 +36,8 @@ public interface DeletedMessageDao {
 
     List<DeletedMessageFull> getMessagesTopicless(long j, long j2, int i, int i2);
 
+    List<DeletedMessageFull> getMessagesPaginated(long j, long j2, long j3, int i, int i2);
+
     long insert(DeletedMessage deletedMessage);
 
     void insertReaction(DeletedMessageReaction deletedMessageReaction);

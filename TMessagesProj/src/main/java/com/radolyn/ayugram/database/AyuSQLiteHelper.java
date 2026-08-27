@@ -136,12 +136,22 @@ public class AyuSQLiteHelper extends SQLiteOpenHelper {
             SQLiteDatabase db = getReadableDatabase();
             String query;
             String[] args;
-            if (minId == 0 && maxId == Integer.MAX_VALUE) {
-                query = "SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? AND topicId = ? ORDER BY messageId DESC";
-                args = new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(topicId)};
+            if (topicId == 0) {
+                if (minId == 0 && maxId == Integer.MAX_VALUE) {
+                    query = "SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? ORDER BY messageId DESC";
+                    args = new String[]{String.valueOf(userId), String.valueOf(dialogId)};
+                } else {
+                    query = "SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? AND messageId >= ? AND messageId <= ? ORDER BY messageId DESC";
+                    args = new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(minId), String.valueOf(maxId)};
+                }
             } else {
-                query = "SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? AND topicId = ? AND messageId >= ? AND messageId <= ? ORDER BY messageId DESC";
-                args = new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(topicId), String.valueOf(minId), String.valueOf(maxId)};
+                if (minId == 0 && maxId == Integer.MAX_VALUE) {
+                    query = "SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? AND topicId = ? ORDER BY messageId DESC";
+                    args = new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(topicId)};
+                } else {
+                    query = "SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? AND topicId = ? AND messageId >= ? AND messageId <= ? ORDER BY messageId DESC";
+                    args = new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(topicId), String.valueOf(minId), String.valueOf(maxId)};
+                }
             }
             Cursor c = db.rawQuery(query, args);
             while (c.moveToNext()) {
@@ -161,6 +171,23 @@ public class AyuSQLiteHelper extends SQLiteOpenHelper {
             SQLiteDatabase db = getReadableDatabase();
             Cursor c = db.rawQuery("SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? ORDER BY messageId DESC LIMIT ? OFFSET ?",
                     new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(limit), String.valueOf(offset)});
+            while (c.moveToNext()) {
+                DeletedMessageFull full = parseDeletedMessage(c);
+                list.add(full);
+            }
+            c.close();
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
+        return list;
+    }
+
+    public synchronized List<DeletedMessageFull> getDeletedMessagesForTopic(long userId, long dialogId, long topicId, int offset, int limit) {
+        List<DeletedMessageFull> list = new ArrayList<>();
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT * FROM DeletedMessage WHERE userId = ? AND dialogId = ? AND topicId = ? ORDER BY messageId DESC LIMIT ? OFFSET ?",
+                    new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(topicId), String.valueOf(limit), String.valueOf(offset)});
             while (c.moveToNext()) {
                 DeletedMessageFull full = parseDeletedMessage(c);
                 list.add(full);
@@ -404,5 +431,149 @@ public class AyuSQLiteHelper extends SQLiteOpenHelper {
             FileLog.e(th);
             return 0;
         }
+    }
+
+    // --- EditedMessage Operations ---
+    public synchronized long insertEditedMessage(EditedMessage msg) {
+        if (msg == null) return 0;
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            ContentValues cv = new ContentValues();
+            cv.put("userId", msg.userId);
+            cv.put("dialogId", msg.dialogId);
+            cv.put("groupedId", msg.groupedId);
+            cv.put("peerId", msg.peerId);
+            cv.put("fromId", msg.fromId);
+            cv.put("topicId", msg.topicId);
+            cv.put("messageId", msg.messageId);
+            cv.put("date", msg.date);
+            cv.put("flags", msg.flags);
+            cv.put("editDate", msg.editDate);
+            cv.put("views", msg.views);
+            cv.put("fwdFlags", msg.fwdFlags);
+            cv.put("fwdFromId", msg.fwdFromId);
+            cv.put("fwdName", msg.fwdName);
+            cv.put("fwdDate", msg.fwdDate);
+            cv.put("fwdPostAuthor", msg.fwdPostAuthor);
+            cv.put("postAuthor", msg.postAuthor);
+            cv.put("replyFlags", msg.replyFlags);
+            cv.put("replyMessageId", msg.replyMessageId);
+            cv.put("replyPeerId", msg.replyPeerId);
+            cv.put("replyTopId", msg.replyTopId);
+            cv.put("replyForumTopic", msg.replyForumTopic ? 1 : 0);
+            cv.put("replySerialized", msg.replySerialized);
+            cv.put("replyMarkupSerialized", msg.replyMarkupSerialized);
+            cv.put("entityCreateDate", msg.entityCreateDate);
+            cv.put("text", msg.text);
+            cv.put("textEntities", msg.textEntities);
+            cv.put("mediaPath", msg.mediaPath);
+            cv.put("hqThumbPath", msg.hqThumbPath);
+            cv.put("documentType", msg.documentType);
+            cv.put("documentSerialized", msg.documentSerialized);
+            cv.put("thumbsSerialized", msg.thumbsSerialized);
+            cv.put("documentAttributesSerialized", msg.documentAttributesSerialized);
+            cv.put("mimeType", msg.mimeType);
+            return db.insertWithOnConflict("EditedMessage", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        } catch (Throwable th) {
+            FileLog.e(th);
+            return 0;
+        }
+    }
+
+    public synchronized List<EditedMessage> getAllRevisions(long userId, long dialogId, long messageId, int offset, int limit) {
+        List<EditedMessage> list = new ArrayList<>();
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT * FROM EditedMessage WHERE userId = ? AND dialogId = ? AND messageId = ? ORDER BY editDate DESC LIMIT ? OFFSET ?",
+                    new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(messageId), String.valueOf(limit), String.valueOf(offset)});
+            while (c.moveToNext()) {
+                EditedMessage msg = parseEditedMessage(c);
+                list.add(msg);
+            }
+            c.close();
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
+        return list;
+    }
+
+    public synchronized EditedMessage getLastRevision(long userId, long dialogId, long messageId) {
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT * FROM EditedMessage WHERE userId = ? AND dialogId = ? AND messageId = ? ORDER BY editDate DESC LIMIT 1",
+                    new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(messageId)});
+            EditedMessage msg = null;
+            if (c.moveToFirst()) {
+                msg = parseEditedMessage(c);
+            }
+            c.close();
+            return msg;
+        } catch (Throwable th) {
+            FileLog.e(th);
+            return null;
+        }
+    }
+
+    public synchronized boolean hasAnyRevisions(long userId, long dialogId, long messageId) {
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT 1 FROM EditedMessage WHERE userId = ? AND dialogId = ? AND messageId = ? LIMIT 1",
+                    new String[]{String.valueOf(userId), String.valueOf(dialogId), String.valueOf(messageId)});
+            boolean exists = c.moveToFirst();
+            c.close();
+            return exists;
+        } catch (Throwable th) {
+            FileLog.e(th);
+            return false;
+        }
+    }
+
+    public synchronized void deleteAllEditedMessages() {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            db.delete("EditedMessage", null, null);
+        } catch (Throwable th) {
+            FileLog.e(th);
+        }
+    }
+
+    private EditedMessage parseEditedMessage(Cursor c) {
+        EditedMessage msg = new EditedMessage();
+        msg.fakeId = c.getLong(c.getColumnIndexOrThrow("fakeId"));
+        msg.userId = c.getLong(c.getColumnIndexOrThrow("userId"));
+        msg.dialogId = c.getLong(c.getColumnIndexOrThrow("dialogId"));
+        msg.groupedId = c.getLong(c.getColumnIndexOrThrow("groupedId"));
+        msg.peerId = c.getLong(c.getColumnIndexOrThrow("peerId"));
+        msg.fromId = c.getLong(c.getColumnIndexOrThrow("fromId"));
+        msg.topicId = c.getLong(c.getColumnIndexOrThrow("topicId"));
+        msg.messageId = c.getInt(c.getColumnIndexOrThrow("messageId"));
+        msg.date = c.getInt(c.getColumnIndexOrThrow("date"));
+        msg.flags = c.getInt(c.getColumnIndexOrThrow("flags"));
+        msg.editDate = c.getInt(c.getColumnIndexOrThrow("editDate"));
+        msg.views = c.getInt(c.getColumnIndexOrThrow("views"));
+        msg.fwdFlags = c.getInt(c.getColumnIndexOrThrow("fwdFlags"));
+        msg.fwdFromId = c.getLong(c.getColumnIndexOrThrow("fwdFromId"));
+        msg.fwdName = c.getString(c.getColumnIndexOrThrow("fwdName"));
+        msg.fwdDate = c.getInt(c.getColumnIndexOrThrow("fwdDate"));
+        msg.fwdPostAuthor = c.getString(c.getColumnIndexOrThrow("fwdPostAuthor"));
+        msg.postAuthor = c.getString(c.getColumnIndexOrThrow("postAuthor"));
+        msg.replyFlags = c.getInt(c.getColumnIndexOrThrow("replyFlags"));
+        msg.replyMessageId = c.getInt(c.getColumnIndexOrThrow("replyMessageId"));
+        msg.replyPeerId = c.getLong(c.getColumnIndexOrThrow("replyPeerId"));
+        msg.replyTopId = c.getInt(c.getColumnIndexOrThrow("replyTopId"));
+        msg.replyForumTopic = c.getInt(c.getColumnIndexOrThrow("replyForumTopic")) == 1;
+        msg.replySerialized = c.getBlob(c.getColumnIndexOrThrow("replySerialized"));
+        msg.replyMarkupSerialized = c.getBlob(c.getColumnIndexOrThrow("replyMarkupSerialized"));
+        msg.entityCreateDate = c.getInt(c.getColumnIndexOrThrow("entityCreateDate"));
+        msg.text = c.getString(c.getColumnIndexOrThrow("text"));
+        msg.textEntities = c.getBlob(c.getColumnIndexOrThrow("textEntities"));
+        msg.mediaPath = c.getString(c.getColumnIndexOrThrow("mediaPath"));
+        msg.hqThumbPath = c.getString(c.getColumnIndexOrThrow("hqThumbPath"));
+        msg.documentType = c.getInt(c.getColumnIndexOrThrow("documentType"));
+        msg.documentSerialized = c.getBlob(c.getColumnIndexOrThrow("documentSerialized"));
+        msg.thumbsSerialized = c.getBlob(c.getColumnIndexOrThrow("thumbsSerialized"));
+        msg.documentAttributesSerialized = c.getBlob(c.getColumnIndexOrThrow("documentAttributesSerialized"));
+        msg.mimeType = c.getString(c.getColumnIndexOrThrow("mimeType"));
+        return msg;
     }
 }

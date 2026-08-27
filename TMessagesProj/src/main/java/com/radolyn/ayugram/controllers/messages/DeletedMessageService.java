@@ -116,11 +116,15 @@ public class DeletedMessageService {
         return AyuData.getDeletedMessageDao().getMessage(this.controller.getUserId(), dialogId, messageId);
     }
 
-    public List<DeletedMessageFull> getMessages(long dialogId, long topicId, int offset, int limit) {
+    public List<DeletedMessageFull> getMessages(long dialogId, long topicId, int minId, int maxId) {
         if (topicId == 0) {
-            return AyuData.getDeletedMessageDao().getMessagesTopicless(this.controller.getUserId(), dialogId, offset, limit);
+            return AyuData.getDeletedMessageDao().getMessagesTopicless(this.controller.getUserId(), dialogId, minId, maxId);
         }
-        return AyuData.getDeletedMessageDao().getMessagesForTopic(this.controller.getUserId(), dialogId, topicId, offset, limit);
+        return AyuData.getDeletedMessageDao().getMessagesForTopic(this.controller.getUserId(), dialogId, topicId, minId, maxId);
+    }
+
+    public List<DeletedMessageFull> getMessagesPaginated(long dialogId, long topicId, int offset, int limit) {
+        return AyuData.getDeletedMessageDao().getMessagesPaginated(this.controller.getUserId(), dialogId, topicId, offset, limit);
     }
 
     public List<DeletedMessageFull> getMessagesForScroll(long dialogId, long topicId, String query, int minId, int limit) {
