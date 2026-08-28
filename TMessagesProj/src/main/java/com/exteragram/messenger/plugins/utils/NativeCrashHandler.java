@@ -20,7 +20,18 @@ public class NativeCrashHandler {
         }
     }
 
-    public static native void init(String path);
+    public static void init(String path) {
+        if (!aliuHookLoaded) {
+            return;
+        }
+        try {
+            initNative(path);
+        } catch (Throwable t) {
+            FileLog.e(t);
+        }
+    }
+
+    private static native void initNative(String path);
 
     public static boolean isNativeLibraryLoaded() {
         return aliuHookLoaded;
