@@ -1553,7 +1553,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 videoPlayer.seekTo((int) (videoTimelineView.getLeftProgress() * getVideoDuration()));
                                 manuallyPaused = false;
                                 cancelVideoPlayRunnable();
-                                if (muteVideo || sendPhotoType == SELECT_TYPE_AVATAR || currentEditMode != EDIT_MODE_NONE || switchingToMode > 0) {
+                                if (muteVideo || sendPhotoType == SELECT_TYPE_AVATAR || currentEditMode != EDIT_MODE_NONE || switchingToMode > 0 || !imagesArrLocals.isEmpty()) {
                                     playVideoOrWeb();
                                 } else {
                                     pauseVideoOrWeb();
@@ -1651,6 +1651,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 firstFrameView.updateAlpha();
             }
             if (isPlaying) {
+                containerView.invalidate();
                 AndroidUtilities.runOnUIThread(updateProgressRunnable, 17);
             }
         }
@@ -10670,6 +10671,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void playVideoOrWeb() {
+        android.util.Log.d("PhotoViewerVideo", "playVideoOrWeb called: player=" + videoPlayer + ", isPlaying=" + (videoPlayer != null && videoPlayer.isPlaying()) + ", isCurrentVideo=" + isCurrentVideo);
         if (videoPlayer != null) {
             videoPlayer.play();
         } else if (photoViewerWebView != null) {
@@ -10678,6 +10680,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void pauseVideoOrWeb() {
+        android.util.Log.d("PhotoViewerVideo", "pauseVideoOrWeb called: player=" + videoPlayer);
         if (videoPlayer != null) {
             videoPlayer.pause();
         } else if (photoViewerWebView != null) {
@@ -10698,6 +10701,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void preparePlayer(ArrayList<VideoPlayer.Quality> videoUrises, Uri uri, boolean playWhenReady, boolean preview, MediaController.SavedFilterState savedFilterState, boolean livePhoto, long videoByteOffset) {
+        android.util.Log.d("PhotoViewerVideo", "preparePlayer: uri=" + uri + ", playWhenReady=" + playWhenReady + ", preview=" + preview + ", muteVideo=" + muteVideo + ", isCurrentVideo=" + isCurrentVideo + ", sendPhotoType=" + sendPhotoType);
         if (!preview) {
             currentPlayingVideoFile = uri;
             currentPlayingVideoQualityFiles = videoUrises;
@@ -10852,7 +10856,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 newPlayerCreated = true;
             }
             if (videoTextureView != null) {
-                videoPlayer.setTextureView(videoTextureView);
+                if (!(videoTextureView instanceof VideoEditTextureView)) {
+                    videoPlayer.setTextureView(videoTextureView);
+                }
             } else if (videoSurfaceView != null) {
                 videoPlayer.setSurfaceView(videoSurfaceView);
             }
@@ -10943,9 +10949,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                 @Override
                 public void onRenderedFirstFrame() {
+                    android.util.Log.d("PhotoViewerVideo", "onRenderedFirstFrame (no-arg) fired, was textureUploaded=" + textureUploaded);
                     if (!textureUploaded) {
                         textureUploaded = true;
-                        containerView.invalidate();
+                        videoCrossfadeStarted = true;
+                        videoCrossfadeAlpha = 1.0f;
+                        if (containerView != null) {
+                            containerView.invalidate();
+                        }
                     }
                     if (firstFrameView != null && (videoPlayer == null || !videoPlayer.isLooping())) {
                         AndroidUtilities.runOnUIThread(() -> firstFrameView.updateAlpha(), 64);
@@ -10954,6 +10965,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                 @Override
                 public void onRenderedFirstFrame(AnalyticsListener.EventTime eventTime) {
+                    android.util.Log.d("PhotoViewerVideo", "onRenderedFirstFrame(EventTime) pos=" + (eventTime != null ? eventTime.eventPlaybackPositionMs : -1) + ", was textureUploaded=" + textureUploaded);
+                    if (!textureUploaded) {
+                        textureUploaded = true;
+                        videoCrossfadeStarted = true;
+                        videoCrossfadeAlpha = 1.0f;
+                        if (containerView != null) {
+                            containerView.invalidate();
+                        }
+                    }
                     if (pipFirstFrameCallback != null) {
                         pipFirstFrameCallback.run();
                         pipFirstFrameCallback = null;
@@ -10995,6 +11015,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                 @Override
                 public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+                    android.util.Log.d("PhotoViewerVideo", "PhotoViewer onSurfaceTextureUpdated fired, was textureUploaded=" + textureUploaded);
+                    if (!textureUploaded) {
+                        textureUploaded = true;
+                        videoCrossfadeStarted = true;
+                        videoCrossfadeAlpha = 1.0f;
+                    }
                     checkChangedTextureView(false);
 
                     AndroidUtilities.runOnUIThread(() -> {
@@ -11002,13 +11028,38 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             firstFrameView.checkFromPlayer(videoPlayer);
                         }
                     });
+                    if (containerView != null) {
+                        containerView.invalidate();
+                    }
                 }
             });
         }
         if (!imagesArrLocals.isEmpty()) {
             createVideoTextureView(savedFilterState);
+            if (videoTextureView instanceof VideoEditTextureView) {
+                ((VideoEditTextureView) videoTextureView).setVideoPlayer(videoPlayer);
+                if (currentIndex >= 0 && currentIndex < imagesArrLocals.size()) {
+                    Object obj = imagesArrLocals.get(currentIndex);
+                    if (obj instanceof MediaController.PhotoEntry) {
+                        MediaController.PhotoEntry pe = (MediaController.PhotoEntry) obj;
+                        if (pe.width > 0 && pe.height > 0) {
+                            ((VideoEditTextureView) videoTextureView).setVideoSize(pe.width, pe.height);
+                            if (aspectRatioFrameLayout != null) {
+                                aspectRatioFrameLayout.setAspectRatio((float) pe.width / (float) pe.height, pe.orientation);
+                            }
+                        }
+                    }
+                }
+            }
+            videoCrossfadeAlpha = 1.0f;
+            textureUploaded = true;
+            videoSizeSet = true;
+            if (containerView != null) {
+                containerView.invalidate();
+            }
+        } else {
+            videoCrossfadeAlpha = 0.0f;
         }
-        videoCrossfadeAlpha = 0.0f;
         if (videoTextureView != null) {
             videoTextureView.setAlpha(videoCrossfadeAlpha);
         }
@@ -11080,6 +11131,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             updateQualityItems();
             videoPlayer.setPlayWhenReady(playWhenReady);
+            videoPlayer.setVolume(muteVideo || sendPhotoType == SELECT_TYPE_AVATAR ? 0f : 1.0f);
             if (pipSource != null) {
                 pipSource.setPlayer(videoPlayer.player);
                 if (videoPlayer.player != null) {
@@ -11256,7 +11308,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         };
         aspectRatioFrameLayout.setWillNotDraw(false);
-        aspectRatioFrameLayout.setVisibility(View.INVISIBLE);
+        aspectRatioFrameLayout.setVisibility(!imagesArrLocals.isEmpty() ? View.VISIBLE : View.INVISIBLE);
         containerView.addView(aspectRatioFrameLayout, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
         usedSurfaceView = false;
 
@@ -11273,6 +11325,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             videoEditTextureView.updateUiBlurManager(blurManager);
             if (savedFilterState != null) {
                 videoEditTextureView.setDelegate(thread -> thread.setFilterGLThreadDelegate(FilterShaders.getFilterShadersDelegate(savedFilterState)));
+            }
+            if (resultWidth != 0 && resultHeight != 0) {
+                videoEditTextureView.setVideoSize(resultWidth, resultHeight);
             }
             videoTextureView = videoEditTextureView;
         }
@@ -12212,8 +12267,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private void startVideoPlayer() {
         if (isCurrentVideo && videoPlayer != null && !videoPlayer.isPlaying()) {
-            if (!muteVideo || sendPhotoType == SELECT_TYPE_AVATAR) {
+            if (muteVideo || sendPhotoType == SELECT_TYPE_AVATAR) {
                 videoPlayer.setVolume(0);
+            } else {
+                videoPlayer.setVolume(1.0f);
             }
             manuallyPaused = false;
             toggleVideoPlayer();
@@ -16346,7 +16403,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             imageMoveAnimation = null;
             changeModeAnimation = null;
             if (aspectRatioFrameLayout != null) {
-                aspectRatioFrameLayout.setVisibility(View.INVISIBLE);
+                aspectRatioFrameLayout.setVisibility(!imagesArrLocals.isEmpty() ? View.VISIBLE : View.INVISIBLE);
             }
 
             pinchStartDistance = 0;
@@ -16381,7 +16438,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         if (isVideo && videoPath != null) {
             isStreaming = false;
-            preparePlayer(null, videoPath, sendPhotoType == SELECT_TYPE_AVATAR && (!isLivePhoto || !isUnalivePhoto()) || isLivePhoto && !isUnalivePhoto(), false, editState.savedFilterState, isLivePhoto, livePhotoVideoOffset);
+            preparePlayer(null, videoPath, sendPhotoType == SELECT_TYPE_AVATAR && (!isLivePhoto || !isUnalivePhoto()) || isLivePhoto && !isUnalivePhoto() || !imagesArrLocals.isEmpty(), false, editState.savedFilterState, isLivePhoto, livePhotoVideoOffset);
         }
 
         if (!imagesArrLocals.isEmpty()) {
@@ -20297,7 +20354,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             alpha = 1.0f - alpha;
             translateX = maxX;
         }
-        boolean drawTextureView = videoSizeSet && aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE;
+        boolean drawTextureView = (videoSizeSet || !imagesArrLocals.isEmpty()) && aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE;
         boolean drawCenterImage = false;
         float livePhotoVideoAlpha = 1.0f;
         if (centerImageIsLivePhoto && videoPlayer != null && sendPhotoType != SELECT_TYPE_STICKER) {
@@ -20396,7 +20453,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             int bitmapWidth, originalWidth;
             int bitmapHeight, originalHeight;
-            if (drawTextureView && textureUploaded && videoSizeSet) {
+            if (drawTextureView && textureUploaded && (videoSizeSet || !imagesArrLocals.isEmpty())) {
                 View view = usedSurfaceView ? videoSurfaceView : videoTextureView;
                 originalWidth = bitmapWidth = view.getMeasuredWidth();
                 originalHeight = bitmapHeight = view.getMeasuredHeight();
@@ -21381,6 +21438,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         } else if (sendPhotoType == 2) {
             if (isCurrentVideo) {
+                if (videoPlayer != null && !muteVideo && sendPhotoType != SELECT_TYPE_AVATAR) {
+                    videoPlayer.setVolume(1.0f);
+                }
                 manuallyPaused = true;
                 toggleVideoPlayer();
             }
@@ -22757,7 +22817,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             translateX = maxX;
         }
         boolean drawnCenterImage = false;
-        boolean drawTextureView = videoSizeSet && aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE;
+        boolean drawTextureView = (videoSizeSet || !imagesArrLocals.isEmpty()) && aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE;
         if (centerImage.hasBitmapImage() || drawTextureView && textureUploaded) {
             canvas.save();
             canvas.translate(containerWidth / 2 + getAdditionX(currentEditMode), containerHeight / 2 + getAdditionY(currentEditMode));
@@ -22782,7 +22842,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             int bitmapWidth, originalWidth;
             int bitmapHeight, originalHeight;
-            if (drawTextureView && textureUploaded && videoSizeSet) {
+            if (drawTextureView && textureUploaded && (videoSizeSet || !imagesArrLocals.isEmpty())) {
                 View view = usedSurfaceView ? videoSurfaceView : videoTextureView;
                 originalWidth = bitmapWidth = view.getMeasuredWidth();
                 originalHeight = bitmapHeight = view.getMeasuredHeight();
@@ -24068,7 +24128,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoPlayer.setTextureView(null);
         videoPlayer.play();
         if (videoTextureView != null) {
-            videoPlayer.setTextureView(videoTextureView);
+            if (!(videoTextureView instanceof VideoEditTextureView)) {
+                videoPlayer.setTextureView(videoTextureView);
+            }
         } else if (videoSurfaceView != null) {
             videoPlayer.setSurfaceView(videoSurfaceView);
         }

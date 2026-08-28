@@ -997,6 +997,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         if (state == 4) {
             if (videoEncoder != null && recordedTime > 800) {
                 videoEncoder.stopRecording(VideoRecorder.ENCODER_SEND_SEND, new SendOptions(notify, scheduleDate, scheduleRepeatPeriod, ttl, effectId, stars));
+                startAnimation(false, true);
                 return;
             }
             if (BuildVars.DEBUG_VERSION && !cameraFile.exists()) {
@@ -1064,6 +1065,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 saveLastCameraBitmap();
                 cameraThread.shutdown(send, notify, scheduleDate, scheduleRepeatPeriod, ttl, effectId);
                 cameraThread = null;
+                if (send == 1) {
+                    startAnimation(false, false);
+                }
             }
             if (cancelled) {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true, (int) recordedTime);
@@ -2250,6 +2254,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void run() {
+                if (audioRecorder == null || audioRecorder.getState() != AudioRecord.STATE_INITIALIZED) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("InstantCamera: audioRecorder is not initialized, stopping audio thread");
+                    }
+                    handler.sendMessage(handler.obtainMessage(MSG_STOP_RECORDING, sendWhenDone, 0));
+                    return;
+                }
                 long audioPresentationTimeUs = -1;
                 int readResult;
                 boolean done = false;
@@ -3232,10 +3243,36 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 skippedFirst = false;
                 skippedTime = 0;
 
-                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-                audioRecorder.startRecording();
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("InstantCamera initied audio record with channels " + audioRecorder.getChannelCount() + " sample rate = " + audioRecorder.getSampleRate() + " bufferSize = " + bufferSize);
+                int[] audioSources = new int[]{MediaRecorder.AudioSource.CAMCORDER, MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.DEFAULT};
+                AudioRecord tempRecord = null;
+                for (int source : audioSources) {
+                    try {
+                        tempRecord = new AudioRecord(source, audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+                        if (tempRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("InstantCamera initialized audio record with source " + source + " channels " + tempRecord.getChannelCount() + " sample rate = " + tempRecord.getSampleRate() + " bufferSize = " + bufferSize);
+                            }
+                            break;
+                        } else {
+                            tempRecord.release();
+                            tempRecord = null;
+                        }
+                    } catch (Throwable t) {
+                        if (tempRecord != null) {
+                            try {
+                                tempRecord.release();
+                            } catch (Throwable ignore) {}
+                            tempRecord = null;
+                        }
+                    }
+                }
+                audioRecorder = tempRecord;
+                if (audioRecorder != null && audioRecorder.getState() == AudioRecord.STATE_INITIALIZED) {
+                    try {
+                        audioRecorder.startRecording();
+                    } catch (Throwable th) {
+                        FileLog.e(th);
+                    }
                 }
                 pauseRecorder = false;
                 Thread thread = new Thread(recorderRunnable);

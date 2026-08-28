@@ -87,23 +87,29 @@ public class DispatchQueue extends Thread {
     public boolean postToFrontRunnable(Runnable runnable) {
         try {
             syncLatch.await();
+            if (handler != null) {
+                return handler.postAtFrontOfQueue(runnable);
+            }
         } catch (Exception e) {
             FileLog.e(e, false);
         }
-        return handler.postAtFrontOfQueue(runnable);
+        return false;
     }
 
     public boolean postRunnable(Runnable runnable, long delay) {
         try {
             syncLatch.await();
+            if (handler != null) {
+                if (delay <= 0) {
+                    return handler.post(runnable);
+                } else {
+                    return handler.postDelayed(runnable, delay);
+                }
+            }
         } catch (Exception e) {
             FileLog.e(e, false);
         }
-        if (delay <= 0) {
-            return handler.post(runnable);
-        } else {
-            return handler.postDelayed(runnable, delay);
-        }
+        return false;
     }
 
     public void cleanupQueue() {

@@ -278,6 +278,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 factory = new DefaultRenderersFactory(ApplicationLoader.applicationContext);
             }
             factory.setExtensionRendererMode(getPlayerExtensionRendererMode());
+            factory.setEnableDecoderFallback(true);
             ExoPlayer.Builder builder = new ExoPlayer.Builder(ApplicationLoader.applicationContext).setRenderersFactory(factory)
                     .setTrackSelector(trackSelector)
                     .setLoadControl(loadControl);
@@ -304,8 +305,11 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         }
         if (mixedAudio) {
             if (audioPlayer == null) {
+                DefaultRenderersFactory audioFactory = new DefaultRenderersFactory(ApplicationLoader.applicationContext);
+                audioFactory.setExtensionRendererMode(getPlayerExtensionRendererMode());
+                audioFactory.setEnableDecoderFallback(true);
                 audioPlayer = new ExoPlayer.Builder(ApplicationLoader.applicationContext)
-                        .setRenderersFactory(new DefaultRenderersFactory(ApplicationLoader.applicationContext).setExtensionRendererMode(getPlayerExtensionRendererMode()))
+                        .setRenderersFactory(audioFactory)
                         .setTrackSelector(trackSelector)
                         .setLoadControl(loadControl).buildSimpleExoPlayer();
                 audioPlayer.addListener(new Player.Listener() {
@@ -1438,6 +1442,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         fallbackPosition = C.TIME_UNSET;
         fallbackDuration = C.TIME_UNSET;
         if (delegate != null) {
+            delegate.onRenderedFirstFrame();
             delegate.onRenderedFirstFrame(eventTime);
         }
     }
@@ -1473,6 +1478,10 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             return;
         }
         player.setVideoSurface(surface);
+    }
+
+    public VideoPlayerDelegate getDelegate() {
+        return delegate;
     }
 
     public boolean getPlayWhenReady() {
@@ -1767,20 +1776,27 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                     return;
                 }
             }
-            if (textureView != null && (!triedReinit && cause instanceof MediaCodecRenderer.DecoderInitializationException || cause instanceof SurfaceNotValidException)) {
+            if ((textureView != null || surface != null) && !triedReinit && (cause instanceof MediaCodecRenderer.DecoderInitializationException || cause instanceof SurfaceNotValidException || cause instanceof MediaCodecDecoderException || cause instanceof IllegalStateException)) {
                 triedReinit = true;
                 if (player != null) {
-                    ViewGroup parent = (ViewGroup) textureView.getParent();
-                    if (parent != null) {
-                        int i = parent.indexOfChild(textureView);
-                        parent.removeView(textureView);
-                        parent.addView(textureView, i);
+                    if (textureView != null) {
+                        ViewGroup parent = (ViewGroup) textureView.getParent();
+                        if (parent != null) {
+                            int i = parent.indexOfChild(textureView);
+                            parent.removeView(textureView);
+                            parent.addView(textureView, i);
+                        }
                     }
                     if (workerQueue != null) {
                         workerQueue.postRunnable(() -> {
                             if (player != null) {
-                                player.clearVideoTextureView(textureView);
-                                player.setVideoTextureView(textureView);
+                                if (textureView != null) {
+                                    player.clearVideoTextureView(textureView);
+                                    player.setVideoTextureView(textureView);
+                                } else if (surface != null) {
+                                    player.clearVideoSurface(surface);
+                                    player.setVideoSurface(surface);
+                                }
                                 if (videoQualities != null) {
                                     preparePlayer(videoQualities, videoQualityToSelect);
                                 } else if (loopingMediaSource) {
@@ -1792,8 +1808,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                             }
                         });
                     } else {
-                        player.clearVideoTextureView(textureView);
-                        player.setVideoTextureView(textureView);
+                        if (textureView != null) {
+                            player.clearVideoTextureView(textureView);
+                            player.setVideoTextureView(textureView);
+                        } else if (surface != null) {
+                            player.clearVideoSurface(surface);
+                            player.setVideoSurface(surface);
+                        }
                         if (videoQualities != null) {
                             preparePlayer(videoQualities, videoQualityToSelect);
                         } else if (loopingMediaSource) {
@@ -1816,13 +1837,32 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
 
     @Override
     public void onVideoSizeChanged(VideoSize videoSize) {
-        delegate.onVideoSizeChanged(videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees, videoSize.pixelWidthHeightRatio);
+        android.util.Log.d("PhotoViewerVideo", "onVideoSizeChanged: " + videoSize.width + "x" + videoSize.height + ", rot=" + videoSize.unappliedRotationDegrees);
+        if (delegate != null) {
+            delegate.onVideoSizeChanged(videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees, videoSize.pixelWidthHeightRatio);
+        }
         Player.Listener.super.onVideoSizeChanged(videoSize);
     }
 
     @Override
+    public void onVideoSizeChanged(EventTime eventTime, VideoSize videoSize) {
+        onVideoSizeChanged(videoSize);
+    }
+
+    @Override
+    public void onVideoSizeChanged(EventTime eventTime, int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+        android.util.Log.d("PhotoViewerVideo", "Analytics onVideoSizeChanged: " + width + "x" + height + ", rot=" + unappliedRotationDegrees);
+        if (delegate != null) {
+            delegate.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio);
+        }
+    }
+
+    @Override
     public void onRenderedFirstFrame() {
-        delegate.onRenderedFirstFrame();
+        android.util.Log.d("PhotoViewerVideo", "VideoPlayer onRenderedFirstFrame called");
+        if (delegate != null) {
+            delegate.onRenderedFirstFrame();
+        }
     }
 
     @Override

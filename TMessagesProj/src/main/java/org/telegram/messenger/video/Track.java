@@ -283,7 +283,7 @@ public class Track {
             if (format.containsKey("mime")) {
                 mime = format.getString("mime");
             } else {
-                mime = "audio/mp4-latm";
+                mime = "audio/mp4a-latm";
             }
 
             DecoderConfigDescriptor decoderConfigDescriptor = new DecoderConfigDescriptor();
@@ -299,19 +299,32 @@ public class Track {
             } else {
                 decoderConfigDescriptor.setMaxBitRate(96000);
             }
-            decoderConfigDescriptor.setAvgBitRate(timeScale);
+            if (format.containsKey("bitrate")) {
+                decoderConfigDescriptor.setAvgBitRate(format.getInteger("bitrate"));
+            } else {
+                decoderConfigDescriptor.setAvgBitRate(64000);
+            }
+
+            int sampleRate = (int) audioSampleEntry.getSampleRate();
+            int channelCount = audioSampleEntry.getChannelCount();
+            Integer freqIndex = samplingFrequencyIndexMap.get(sampleRate);
+            int samplingFrequencyIndex = freqIndex != null ? freqIndex : 4;
 
             AudioSpecificConfig audioSpecificConfig = new AudioSpecificConfig();
+            // In isoparser 1.1.22, serializeConfigBytes() uses originalAudioObjectType.
+            // Both fields must be set to 2 (AAC-LC) to get mp4a.40.2 instead of mp4a.40.0.
             audioSpecificConfig.setAudioObjectType(2);
-            audioSpecificConfig.setSamplingFrequencyIndex(samplingFrequencyIndexMap.get((int) audioSampleEntry.getSampleRate()));
-            audioSpecificConfig.setChannelConfiguration(audioSampleEntry.getChannelCount());
+            audioSpecificConfig.setOriginalAudioObjectType(2);
+            audioSpecificConfig.setSamplingFrequencyIndex(samplingFrequencyIndex);
+            audioSpecificConfig.setChannelConfiguration(channelCount > 0 ? channelCount : 1);
             decoderConfigDescriptor.setAudioSpecificInfo(audioSpecificConfig);
 
             descriptor.setDecoderConfigDescriptor(decoderConfigDescriptor);
 
-            ByteBuffer data = descriptor.serialize();
-            //esds.setEsDescriptor(descriptor);
-            esds.setData(data);
+            // In isoparser 1.1.22, ESDescriptorBox.getContent() uses getEsDescriptor() when
+            // the descriptor field is set, falling back to raw data only if null.
+            // We must call setEsDescriptor() so it serializes correctly via the object graph.
+            esds.setEsDescriptor(descriptor);
             audioSampleEntry.addBox(esds);
             sampleDescriptionBox.addBox(audioSampleEntry);
         }
@@ -327,10 +340,20 @@ public class Track {
         if (syncSamples != null && isSyncFrame) {
             syncSamples.add(samples.size());
         }
-        samplePresentationTimes.add(new SamplePresentationTime(samplePresentationTimes.size(), (bufferInfo.presentationTimeUs * timeScale + 500000L) / 1000000L));
+        samplePresentationTimes.add(new SamplePresentationTime(samples.size() - 1, (bufferInfo.presentationTimeUs * timeScale + 500000L) / 1000000L));
     }
 
     public void prepare() {
+        if (!isAudio) {
+            int syncInterval = 0;
+            if (syncSamples != null) {
+                syncInterval = timeScale / (syncSamples.size() > 1 ? syncSamples.get(1) - 1 : 1);
+            }
+            headerBox = new VideoMediaHeaderBox();
+        } else {
+            headerBox = new SoundMediaHeaderBox();
+        }
+
         duration = 0;
 
         ArrayList<SamplePresentationTime> original = new ArrayList<>(samplePresentationTimes);
@@ -362,6 +385,9 @@ public class Track {
             }
         }
         if (sampleDurations.length > 0) {
+            if (minDelta == Long.MAX_VALUE) {
+                minDelta = isAudio ? 1024 : (timeScale / 30);
+            }
             sampleDurations[0] = minDelta;
             duration += minDelta;
         }

@@ -191,12 +191,18 @@ public class FilterGLThread extends DispatchQueue {
             int[] linkStatus = new int[1];
             GLES20.glGetProgramiv(simpleOESShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
             if (linkStatus[0] == 0) {
+                String log = GLES20.glGetProgramInfoLog(simpleOESShaderProgram);
+                android.util.Log.e("FilterGLThread", "simpleOESShaderProgram link failed: " + log);
                 GLES20.glDeleteProgram(simpleOESShaderProgram);
                 simpleOESShaderProgram = 0;
+                return false;
             } else {
                 simpleOESPositionHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "position");
                 simpleOESInputTexCoordHandle = GLES20.glGetAttribLocation(simpleOESShaderProgram, "inputTexCoord");
-                simpleOESSourceImageHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "sourceImage");
+                simpleOESSourceImageHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "sTexture");
+                if (simpleOESSourceImageHandle == -1) {
+                    simpleOESSourceImageHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "sourceImage");
+                }
                 simpleOESMatrixHandle = GLES20.glGetUniformLocation(simpleOESShaderProgram, "videoMatrix");
             }
         } else {
@@ -310,7 +316,10 @@ public class FilterGLThread extends DispatchQueue {
             } else {
                 simplePositionHandle = GLES20.glGetAttribLocation(simpleShaderProgram, "position");
                 simpleInputTexCoordHandle = GLES20.glGetAttribLocation(simpleShaderProgram, "inputTexCoord");
-                simpleSourceImageHandle = GLES20.glGetUniformLocation(simpleShaderProgram, "sourceImage");
+                simpleSourceImageHandle = GLES20.glGetUniformLocation(simpleShaderProgram, "sTexture");
+                if (simpleSourceImageHandle == -1) {
+                    simpleSourceImageHandle = GLES20.glGetUniformLocation(simpleShaderProgram, "sourceImage");
+                }
             }
         } else {
             return false;
@@ -408,8 +417,21 @@ public class FilterGLThread extends DispatchQueue {
         });
     }
 
+    private volatile boolean isShuttingDown;
+
     public void finish() {
+        isShuttingDown = true;
         currentBitmap = null;
+        // Detach the OnFrameAvailableListener before destroying the GL context.
+        // initGL() is called before super.run() (which does Looper.prepare()), so
+        // setOnFrameAvailableListener() attached to the main thread looper. After shutdown()
+        // the DispatchQueue handler is dead, so callbacks arriving on the main thread would
+        // call requestRender() on a dead handler → IllegalStateException + graphical glitch.
+        if (videoSurfaceTexture != null) {
+            videoSurfaceTexture.setOnFrameAvailableListener(null);
+            videoSurfaceTexture.release();
+            videoSurfaceTexture = null;
+        }
         if (eglSurface != null) {
             egl10.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
             egl10.eglDestroySurface(eglDisplay, eglSurface);
@@ -432,10 +454,15 @@ public class FilterGLThread extends DispatchQueue {
     }
 
     private void setRenderData() {
-        if (renderDataSet || videoWidth <= 0 || videoHeight <= 0) {
+        if (renderDataSet) {
             return;
         }
-        filterShaders.setRenderData(currentBitmap, orientation, videoTexture[0], videoWidth, videoHeight);
+        int w = videoWidth > 0 ? videoWidth : surfaceWidth;
+        int h = videoHeight > 0 ? videoHeight : surfaceHeight;
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        filterShaders.setRenderData(currentBitmap, orientation, videoTexture[0], w, h);
         renderDataSet = true;
         renderBufferWidth = filterShaders.getRenderBufferWidth();
         renderBufferHeight = filterShaders.getRenderBufferHeight();
@@ -576,6 +603,10 @@ public class FilterGLThread extends DispatchQueue {
         uiBlur.setBlurManager(manager);
     }
 
+    public SurfaceTexture getVideoSurfaceTexture() {
+        return videoSurfaceTexture;
+    }
+
     public Bitmap getTexture() {
         if (!initied || !isAlive()) {
             return null;
@@ -601,6 +632,7 @@ public class FilterGLThread extends DispatchQueue {
     }
 
     public void shutdown() {
+        isShuttingDown = true;
         postRunnable(() -> {
             finish();
             Looper looper = Looper.myLooper();
@@ -611,6 +643,9 @@ public class FilterGLThread extends DispatchQueue {
     }
 
     public void setSurfaceTextureSize(int width, int height) {
+        if (isShuttingDown) {
+            return;
+        }
         postRunnable(() -> {
             surfaceWidth = width;
             surfaceHeight = height;
@@ -628,6 +663,9 @@ public class FilterGLThread extends DispatchQueue {
     }
 
     public void requestRender(final boolean updateBlur, final boolean force, boolean surface) {
+        if (isShuttingDown) {
+            return;
+        }
         postRunnable(() -> {
             if (updateBlur) {
                 filterShaders.requestUpdateBlurTexture();

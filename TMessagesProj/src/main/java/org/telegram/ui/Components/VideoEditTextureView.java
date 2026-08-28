@@ -42,6 +42,19 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
         setSurfaceTextureListener(this);
     }
 
+    public void setVideoPlayer(VideoPlayer videoPlayer) {
+        currentVideoPlayer = videoPlayer;
+        if (eglThread != null && currentVideoPlayer != null) {
+            SurfaceTexture surfaceTexture = eglThread.getVideoSurfaceTexture();
+            if (surfaceTexture != null) {
+                Surface s = new Surface(surfaceTexture);
+                currentVideoPlayer.setSurface(s);
+            }
+        } else if (isAvailable() && eglThread == null && currentVideoPlayer != null) {
+            onSurfaceTextureAvailable(getSurfaceTexture(), getWidth(), getHeight());
+        }
+    }
+
     public void setDelegate(VideoEditTextureViewDelegate videoEditTextureViewDelegate) {
         delegate = videoEditTextureViewDelegate;
         if (eglThread != null) {
@@ -116,7 +129,14 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
+        android.util.Log.d("VideoEditTextureView", "onSurfaceTextureUpdated called, player=" + currentVideoPlayer);
+        if (currentVideoPlayer != null && currentVideoPlayer.getDelegate() != null) {
+            currentVideoPlayer.getDelegate().onSurfaceTextureUpdated(surface);
+        }
+        if (getParent() instanceof android.view.View) {
+            ((android.view.View) getParent()).invalidate();
+        }
+        postInvalidate();
     }
 
     public void release() {

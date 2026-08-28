@@ -2434,6 +2434,13 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
             @Override
             public void run() {
+                if (audioRecorder == null || audioRecorder.getState() != AudioRecord.STATE_INITIALIZED) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("CameraView: audioRecorder is not initialized, stopping audio thread");
+                    }
+                    handler.sendMessage(handler.obtainMessage(MSG_STOP_RECORDING, sendWhenDone, 0));
+                    return;
+                }
                 long audioPresentationTimeUs = -1;
                 int readResult;
                 boolean done = false;
@@ -2464,15 +2471,17 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                         ByteBuffer byteBuffer = buffer.buffer[a];
                         byteBuffer.rewind();
                         readResult = audioRecorder.read(byteBuffer, 2048);
-                        if (readResult > 0 && a % 2 == 0) {
+                        if (readResult > 0) {
                             byteBuffer.limit(readResult);
-                            double s = 0;
-                            for (int i = 0; i < readResult / 2; i++) {
-                                short p = byteBuffer.getShort();
-                                s += p * p;
+                            if (a % 2 == 0) {
+                                double s = 0;
+                                for (int i = 0; i < readResult / 2; i++) {
+                                    short p = byteBuffer.getShort();
+                                    s += p * p;
+                                }
+                                double amplitude = Math.sqrt(s / readResult / 2);
+                                AndroidUtilities.runOnUIThread(() -> receivedAmplitude(amplitude));
                             }
-                            double amplitude = Math.sqrt(s / readResult / 2);
-                            AndroidUtilities.runOnUIThread(() -> receivedAmplitude(amplitude));
                             byteBuffer.position(0);
                         }
                         if (readResult <= 0) {
@@ -2973,10 +2982,36 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 for (int a = 0; a < 3; a++) {
                     buffers.add(new InstantCameraView.AudioBufferInfo());
                 }
-                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-                audioRecorder.startRecording();
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("CameraView " + "initied audio record with channels " + audioRecorder.getChannelCount() + " sample rate = " + audioRecorder.getSampleRate() + " bufferSize = " + bufferSize);
+                int[] audioSources = new int[]{MediaRecorder.AudioSource.DEFAULT, MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.CAMCORDER};
+                AudioRecord tempRecord = null;
+                for (int source : audioSources) {
+                    try {
+                        tempRecord = new AudioRecord(source, audioSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+                        if (tempRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("CameraView initialized audio record with source " + source + " channels " + tempRecord.getChannelCount() + " sample rate = " + tempRecord.getSampleRate() + " bufferSize = " + bufferSize);
+                            }
+                            break;
+                        } else {
+                            tempRecord.release();
+                            tempRecord = null;
+                        }
+                    } catch (Throwable t) {
+                        if (tempRecord != null) {
+                            try {
+                                tempRecord.release();
+                            } catch (Throwable ignore) {}
+                            tempRecord = null;
+                        }
+                    }
+                }
+                audioRecorder = tempRecord;
+                if (audioRecorder != null && audioRecorder.getState() == AudioRecord.STATE_INITIALIZED) {
+                    try {
+                        audioRecorder.startRecording();
+                    } catch (Throwable th) {
+                        FileLog.e(th);
+                    }
                 }
                 Thread thread = new Thread(recorderRunnable);
                 thread.setPriority(Thread.MAX_PRIORITY);
@@ -2989,7 +3024,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 audioFormat.setString(MediaFormat.KEY_MIME, AUDIO_MIME_TYPE);
                 audioFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, audioSampleRate);
                 audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
-                audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, 32000);
+                audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, 64000);
+                audioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
                 audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 2048 * InstantCameraView.AudioBufferInfo.MAX_SAMPLES);
 
                 audioEncoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
@@ -3284,9 +3320,17 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                         throw new RuntimeException("encoderOutputBuffer " + encoderStatus + " was null");
                     }
                     if ((audioBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                        if (audioTrackIndex == -5) {
+                            MediaFormat newFormat = audioEncoder.getOutputFormat();
+                            audioTrackIndex = mediaMuxer.addTrack(newFormat, true);
+                        }
                         audioBufferInfo.size = 0;
                     }
                     if (audioBufferInfo.size != 0) {
+                        if (audioTrackIndex == -5) {
+                            MediaFormat newFormat = audioEncoder.getOutputFormat();
+                            audioTrackIndex = mediaMuxer.addTrack(newFormat, true);
+                        }
                         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
                         bufferInfo.size = audioBufferInfo.size;
                         bufferInfo.offset = audioBufferInfo.offset;

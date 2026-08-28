@@ -4751,7 +4751,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         requestRecordAudioFocus(true);
 //                        MediaDataController.getInstance(recordingCurrentAccount).pushDraftVoiceMessage(recordDialogId, recordTopicId, null);
 //
-                        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
+                        audioRecorder = createVoiceAudioRecord(sampleRate, recordBufferSize);
+                        if (audioRecorder == null) {
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.e("Failed to initialize audioRecorder for voice message resume");
+                            }
+                            return;
+                        }
                         recordStartTime = System.currentTimeMillis();
                         writtenFrame = 0;
                         samplesCount = 0;
@@ -4765,6 +4771,25 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 });
             }
         });
+    }
+
+    private static AudioRecord createVoiceAudioRecord(int sampleRate, int recordBufferSize) {
+        int[] sources = new int[]{MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.DEFAULT, MediaRecorder.AudioSource.VOICE_RECOGNITION};
+        for (int source : sources) {
+            try {
+                AudioRecord recorder = new AudioRecord(source, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
+                if (recorder.getState() == AudioRecord.STATE_INITIALIZED) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("Voice recorder initialized with source " + source + " at " + sampleRate + "Hz");
+                    }
+                    return recorder;
+                } else {
+                    recorder.release();
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+        return null;
     }
 
     public void startRecording(int currentAccount, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, TL_stories.StoryItem replyStory, int guid, boolean manual, SendMessageChatArguments sendMessageChatArguments, long monoForumPeerId, MessageSuggestionParams suggestionParams) {
@@ -4829,7 +4854,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
 
                 audioRecorderPaused = false;
-                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
+                audioRecorder = createVoiceAudioRecord(sampleRate, recordBufferSize);
+                if (audioRecorder == null) {
+                    throw new RuntimeException("Failed to initialize AudioRecord for voice message");
+                }
                 recordStartTime = System.currentTimeMillis();
                 recordTimeCount = 0;
                 writtenFrame = 0;

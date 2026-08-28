@@ -442,6 +442,7 @@ public class FilterShaders {
             "}";
 
     public static final String simpleFragmentShaderCode =
+            "precision mediump float;\n" +
             "varying highp vec2 vTextureCoord;" +
             "uniform sampler2D sTexture;" +
             "void main() {" +
@@ -1541,10 +1542,10 @@ public class FilterShaders {
         int[] compileStatus = new int[1];
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
         if (compileStatus[0] == 0) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e(GLES20.glGetShaderInfoLog(shader));
-                FileLog.e("shader code:\n " + shaderCode);
-            }
+            String error = GLES20.glGetShaderInfoLog(shader);
+            FileLog.e(error);
+            FileLog.e("shader code:\n " + shaderCode);
+            android.util.Log.e("FilterShaders", "Shader compilation failed: " + error + "\ncode:\n" + shaderCode);
             GLES20.glDeleteShader(shader);
             shader = 0;
         }
