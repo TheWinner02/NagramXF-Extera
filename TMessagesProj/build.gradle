@@ -20,10 +20,11 @@ idea {
     }
 }
 
-def buildTimestamp = System.getenv('BUILD_TIMESTAMP') ?: '0'
+def buildTimestamp = System.getenv('BUILD_TIMESTAMP') ?: (System.currentTimeMillis() as String)
+def buildTimeFormatted = new Date().format('yyyyMMddHHmm')
 def commitId = System.getenv('COMMIT_ID')
 def verName = "${APP_VERSION_NAME}${commitId?.take(7) ? "-${commitId.take(7)}" : ''}"
-def verCode = 1258
+def verCode = (APP_VERSION_CODE ?: 7038) as Integer
 
 def officialVer = APP_VERSION_NAME
 def officialCode = APP_VERSION_CODE
@@ -201,7 +202,7 @@ androidComponents {
     onVariants(selector().all()) { variant ->
         variant.outputs.forEach { output ->
             String gramName = 'NegramXFE'
-            String first = String.format('%s-v%s(%s)', gramName, verName, verCode)
+            String first = String.format('%s-v%s(%s)', gramName, verName, buildTimeFormatted)
             output.outputFileName.set(
                 output.outputFileName.get()
                     .replace('TMessagesProj', first)
