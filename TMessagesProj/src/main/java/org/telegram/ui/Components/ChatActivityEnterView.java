@@ -9761,17 +9761,27 @@ public class ChatActivityEnterView extends FrameLayout implements
         int oldRightMargin = layoutParams.rightMargin;
         if (isStories && isLiveComment) {
             layoutParams.rightMargin = dp(suggestButtonVisible ? 50 : 2) + Math.max(0, sendButton.width() - dp(DEFAULT_HEIGHT));
-        } else if (attachVisible == 1 || attachVisible == 2/* && layoutParams.rightMargin != dp(2)*/) {
-            if (botButton != null && botButton.getVisibility() == VISIBLE && scheduledButton != null && scheduledButton.getVisibility() == VISIBLE && attachButton != null && attachButton.getVisibility() == VISIBLE) {
-                layoutParams.rightMargin = dp(146);
-            } else if (botButton != null && botButton.getVisibility() == VISIBLE || notifyButton != null && notifyButton.getVisibility() == VISIBLE || scheduledButton != null && scheduledButton.getTag() != null) {
-                layoutParams.rightMargin = dp(98);
-            } else {
-                layoutParams.rightMargin = dp(50);
-            }
         } else {
-            if (scheduledButton != null && scheduledButton.getTag() != null) {
-                layoutParams.rightMargin = dp(50);
+            int buttonsCount = 0;
+            if (attachVisible == 1 || attachVisible == 2) {
+                if (attachButton != null && attachButton.getVisibility() == VISIBLE) {
+                    buttonsCount++;
+                }
+            }
+            if (giftButton != null && giftButton.getVisibility() == VISIBLE) {
+                buttonsCount++;
+            }
+            if (botButton != null && botButton.getVisibility() == VISIBLE) {
+                buttonsCount++;
+            }
+            if (notifyButton != null && notifyButton.getVisibility() == VISIBLE) {
+                buttonsCount++;
+            }
+            if (scheduledButton != null && (scheduledButton.getTag() != null || scheduledButton.getVisibility() == VISIBLE)) {
+                buttonsCount++;
+            }
+            if (buttonsCount > 0) {
+                layoutParams.rightMargin = dp(2 + buttonsCount * 48);
             } else {
                 layoutParams.rightMargin = dp(2);
             }
@@ -11997,6 +12007,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 scheduledButton.setTranslationX(scheduledButton.getTranslationX());
             }
         });
+        updateFieldRight(lastAttachVisible);
         if (visible) {
             checkBirthdayHint();
         }

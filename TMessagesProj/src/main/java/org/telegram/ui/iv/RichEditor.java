@@ -804,8 +804,6 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             }, getResourceProvider());
         });
 
-        bottomPanel.addView(blocksContainer2, LayoutHelper.createLinear(0, 44, 1f));
-
         addButton = new ImageView(context);
         addButton.setImageResource(R.drawable.outline_poll_attach_24);
         addButton.setScaleType(ImageView.ScaleType.CENTER);
