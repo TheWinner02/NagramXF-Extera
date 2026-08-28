@@ -45,6 +45,7 @@ public class PluginsInfoActivity extends BasePreferencesActivity implements Noti
 
     private static final String SMOKE_TEST_ASSET_PATH = "plugins/smoke_test.plugin";
     private Boolean smokeTestAssetAvailable;
+    private boolean manualSdkCheck;
 
     @Override
     public CharSequence getTitle() {
@@ -85,7 +86,8 @@ public class PluginsInfoActivity extends BasePreferencesActivity implements Noti
         items.add(UItem.asCheck(ITEM_SAFE_MODE, LocaleController.getString(R.string.PluginsSafeMode), R.drawable.msg_secret).setChecked(ExteraConfig.pluginsSafeMode));
         items.add(UItem.asShadow(LocaleController.getString(R.string.PluginsSafeModeInfo2)));
 
-        items.add(UItem.asAnimatedHeader(ITEM_PYSDK_HEADER, "Python SDK"));
+        CharSequence sdkVersion = PythonPluginsEngine.Updater.getVersion();
+        items.add(UItem.asAnimatedHeader(ITEM_PYSDK_HEADER, "Python SDK (" + sdkVersion + ")"));
         boolean sdkControlsEnabled = PythonPluginsEngine.Updater.status < PythonPluginsEngine.Updater.STATUS_DOWNLOADING;
         UItem sdkAutoUpdateItem = UItem.asCheck(
                         ITEM_PYSDK_AUTO_UPDATE,
@@ -206,6 +208,10 @@ public class PluginsInfoActivity extends BasePreferencesActivity implements Noti
                 if (PythonPluginsEngine.Updater.status >= PythonPluginsEngine.Updater.STATUS_DOWNLOADING) {
                     return;
                 }
+                manualSdkCheck = true;
+                BulletinFactory.of(this)
+                        .createSimpleBulletin(R.raw.dots_loading, LocaleController.getString(R.string.PluginsPySdkCheckingForUpdates))
+                        .show();
                 PythonPluginsEngine.Updater.checkUpdates(true);
                 if (listView != null) {
                     listView.adapter.update(true);
@@ -299,6 +305,24 @@ public class PluginsInfoActivity extends BasePreferencesActivity implements Noti
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.pluginsPySdkInfoChanged && listView != null && listView.adapter != null) {
             listView.adapter.update(true);
+            if (manualSdkCheck) {
+                int status = PythonPluginsEngine.Updater.status;
+                if (status == PythonPluginsEngine.Updater.STATUS_LATEST) {
+                    manualSdkCheck = false;
+                    BulletinFactory.of(this)
+                            .createSimpleBulletin(
+                                    R.raw.contact_check,
+                                    LocaleController.getString(R.string.PluginsPySdkLatestVersionInstalled) + " (" + PythonPluginsEngine.Updater.getVersion() + ")"
+                            ).show();
+                } else if (status == PythonPluginsEngine.Updater.STATUS_READY) {
+                    manualSdkCheck = false;
+                    BulletinFactory.of(this)
+                            .createSimpleBulletin(
+                                    R.raw.contact_check,
+                                    LocaleController.getString(R.string.RestartPluginSystemToApplyUpdate)
+                            ).show();
+                }
+            }
         }
     }
 }

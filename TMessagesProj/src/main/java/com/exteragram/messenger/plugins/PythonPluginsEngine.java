@@ -121,26 +121,35 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     private synchronized Python getPython() {
         if (python == null) {
+            FileLog.d("[PythonPluginsEngine] getPython: python instance is null, calling initPython()...");
             initPython();
             if (python == null) {
-                FileLog.e("Python initialization failed, unable to proceed.");
+                FileLog.e("[PythonPluginsEngine] Python initialization failed, unable to proceed.");
                 return null;
             }
         }
-        initSdk();
+        if (!sdkInitialized) {
+            FileLog.d("[PythonPluginsEngine] getPython: sdk not initialized, calling initSdk()...");
+            initSdk();
+        }
         return python;
     }
 
     private void initPython() {
         try {
+            long startMs = System.currentTimeMillis();
             if (!Python.isStarted()) {
+                FileLog.d("[PythonPluginsEngine] initPython: starting AndroidPlatform...");
                 Python.start(new AndroidPlatform(ApplicationLoader.applicationContext));
             }
             python = Python.getInstance();
+            FileLog.d("[PythonPluginsEngine] initPython: success (took " + (System.currentTimeMillis() - startMs) + "ms)");
         } catch (Throwable e) {
-            FileLog.e("Failed to initialize Python", e);
+            FileLog.e("[PythonPluginsEngine] Failed to initialize Python", e);
         }
     }
+
+    private volatile boolean isInitializing = false;
 
     @Override
     public boolean isPlugin(File file) {
@@ -148,36 +157,49 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     }
 
     @Override
+    public boolean isInitializing() {
+        return isInitializing;
+    }
+
+    @Override
     public boolean isEngineAvailable() {
-        return getPython() != null && Python.isStarted() && sdkInitialized && basePluginClass != null;
+        boolean available = python != null && Python.isStarted() && sdkInitialized && basePluginClass != null;
+        return available;
     }
 
     @Override
     public void init(Runnable runnable) {
+        isInitializing = true;
+        FileLog.d("[PythonPluginsEngine] init called, queuing initOnPluginsQueue...");
         PluginsController.runOnPluginsQueue(() -> initOnPluginsQueue(runnable));
     }
 
     private void initOnPluginsQueue(Runnable runnable) {
+        isInitializing = true;
+        FileLog.d("[PythonPluginsEngine] initOnPluginsQueue: started");
         long initStart = System.currentTimeMillis();
-        if (getPython() == null) {
-            if (runnable != null) {
-                AndroidUtilities.runOnUIThread(runnable);
-            }
-            return;
-        }
         try {
-            long pythonMs = System.currentTimeMillis();
-            if (!initSdk()) {
+            if (getPython() == null) {
+                FileLog.e("[PythonPluginsEngine] initOnPluginsQueue: getPython() returned null, aborting init.");
                 if (runnable != null) {
                     AndroidUtilities.runOnUIThread(runnable);
                 }
                 return;
             }
-            FileLog.d("init: getPython+initSdk took " + (System.currentTimeMillis() - pythonMs) + "ms");
+            long pythonMs = System.currentTimeMillis();
+            if (!initSdk()) {
+                FileLog.e("[PythonPluginsEngine] initOnPluginsQueue: initSdk() returned false!");
+                if (runnable != null) {
+                    AndroidUtilities.runOnUIThread(runnable);
+                }
+                return;
+            }
+            FileLog.d("[PythonPluginsEngine] init: getPython+initSdk took " + (System.currentTimeMillis() - pythonMs) + "ms");
             if (!ExteraConfig.pluginsSafeMode) {
                 AndroidUtilities.runOnUIThread(Updater::checkUpdates, 5000L);
             }
             try {
+                FileLog.d("[PythonPluginsEngine] init: initializing plugin_settings module...");
                 String[] migratedKeys = (String[]) getPython()
                         .getModule("plugin_settings")
                         .callAttr("init", getPluginsController().pluginsDir.getAbsolutePath(), getPluginsController().preferences.getAll())
@@ -188,19 +210,21 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                         editor.remove(key);
                     }
                     editor.apply();
-                    FileLog.d("Migrated " + migratedKeys.length + " plugin settings from SharedPreferences to JSON.");
+                    FileLog.d("[PythonPluginsEngine] Migrated " + migratedKeys.length + " plugin settings from SharedPreferences to JSON.");
                 }
             } catch (PyException e) {
-                FileLog.e("Failed to initialize plugin_settings module", e);
+                FileLog.e("[PythonPluginsEngine] Failed to initialize plugin_settings module", e);
             }
             loadPlugins(runnable);
             checkDevServer();
-            FileLog.d("init: total took " + (System.currentTimeMillis() - initStart) + "ms");
+            FileLog.d("[PythonPluginsEngine] init: total initialization finished in " + (System.currentTimeMillis() - initStart) + "ms. isEngineAvailable=" + isEngineAvailable());
         } catch (Throwable t) {
-            FileLog.e("Failed to initialize Python plugin engine", t);
+            FileLog.e("[PythonPluginsEngine] Failed to initialize Python plugin engine", t);
             if (runnable != null) {
                 AndroidUtilities.runOnUIThread(runnable);
             }
+        } finally {
+            isInitializing = false;
         }
     }
 
@@ -222,16 +246,19 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         File sdkUpdateFile = Updater.getPythonSdkUpdateFile();
         File currentSdkFile = Updater.getPythonCurrentSdkFile();
         boolean fromApk = requestSdkFromApkFile.exists();
+        FileLog.d("[PythonPluginsEngine] initSdk: checking SDK files. fromApk=" + fromApk + ", currentSdk=" + currentSdkFile.getAbsolutePath() + ", updateFileExists=" + sdkUpdateFile.exists());
         if (fromApk) {
+            FileLog.d("[PythonPluginsEngine] initSdk: requested SDK restore from APK, deleting " + SDK_DIR);
             deleteRecursive(SDK_DIR);
             deleteFileIfExists(requestSdkFromApkFile);
         }
         if (!fromApk && sdkUpdateFile.exists()) {
             try {
+                FileLog.d("[PythonPluginsEngine] initSdk: installing updated SDK from " + sdkUpdateFile);
                 copyFile(sdkUpdateFile, currentSdkFile);
                 installSdkArchive(currentSdkFile, false);
             } catch (IOException e) {
-                FileLog.e("Failed to install updated Python SDK archive", e);
+                FileLog.e("[PythonPluginsEngine] Failed to install updated Python SDK archive", e);
                 fromApk = true;
             }
         }
@@ -250,18 +277,24 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                         builder.append(line).append('\n');
                     }
                     String apkVersion = builder.toString().trim();
+                    FileLog.d("[PythonPluginsEngine] initSdk: installedVersion=" + installedVersion + " (beta=" + installedBeta + "), apkVersion=" + apkVersion);
                     if (AppUtils.compareVersions(installedBeta ? ">=" : ">", apkVersion, installedVersion)) {
+                        FileLog.d("[PythonPluginsEngine] initSdk: APK version is newer, restoring SDK from APK.");
                         fromApk = true;
                     }
                 }
             } catch (IOException e) {
-                FileLog.e("Failed to read Python SDK version (v.txt) from APK assets", e);
+                FileLog.e("[PythonPluginsEngine] Failed to read Python SDK version (v.txt) from APK assets", e);
                 return false;
             }
+        } else {
+            FileLog.d("[PythonPluginsEngine] initSdk: v.txt does not exist at " + vFile.getAbsolutePath());
         }
-        if (fromApk || !isSdkDirValid(SDK_DIR)) {
+        boolean isSdkValid = isSdkDirValid(SDK_DIR);
+        FileLog.d("[PythonPluginsEngine] initSdk: fromApk=" + fromApk + ", isSdkDirValid=" + isSdkValid);
+        if (fromApk || !isSdkValid) {
             if (!fromApk) {
-                FileLog.w("Python SDK directory is missing required files. Restoring SDK from APK.");
+                FileLog.w("[PythonPluginsEngine] Python SDK directory is missing required files. Restoring SDK from APK.");
             }
             deleteRecursive(SDK_DIR);
             try {
@@ -272,16 +305,18 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                     sdkStream.close();
                 }
                 installSdkArchive(currentSdkFile, true);
+                FileLog.d("[PythonPluginsEngine] initSdk: successfully installed SDK from APK to " + SDK_DIR);
             } catch (IOException e) {
-                FileLog.e("Failed to install Python SDK from APK", e);
+                FileLog.e("[PythonPluginsEngine] Failed to install Python SDK from APK", e);
                 return false;
             }
         }
         Updater.deleteSdkUpdateFile();
         if (!preparePythonCompatShims()) {
-            FileLog.e("Failed to prepare plugin SDK Python shims");
+            FileLog.e("[PythonPluginsEngine] Failed to prepare plugin SDK Python shims");
         }
         try {
+            FileLog.d("[PythonPluginsEngine] initSdk: configuring sys.path with SDK_DIR=" + SDK_DIR);
             PyObject sys = python.getModule("sys");
             PyObject sysPath = sys.get("path");
             if (sysPath != null) {
@@ -290,9 +325,11 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                     sysPath.callAttr("append", SDK_COMPAT_SHIMS_DIR.getAbsolutePath());
                 }
             }
+            FileLog.d("[PythonPluginsEngine] initSdk: importing _sdk_version module...");
             PyObject sdkVersionModule = python.getModule("_sdk_version");
             PyObject startResult = sdkVersionModule.callAttr("__start__");
             sdkInitialized = startResult != null && startResult.toBoolean();
+            FileLog.d("[PythonPluginsEngine] initSdk: _sdk_version.__start__() returned " + startResult + " -> sdkInitialized=" + sdkInitialized);
             // The SDK is now pure Python (bundled in assets/plugins_pysdk), so the
             // Cython .so version / safe-mode checks that used to need patching are gone.
             if (sdkInitialized) {
@@ -307,8 +344,9 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                             modulesDict.callAttr("setdefault", "elyx", elyxCoreModule);
                         }
                     }
+                    FileLog.d("[PythonPluginsEngine] initSdk: registered elyx module alias");
                 } catch (Throwable t) {
-                    FileLog.e("Failed to register elyx alias", t);
+                    FileLog.e("[PythonPluginsEngine] Failed to register elyx alias", t);
                 }
             }
             PyObject versionAttr = sdkVersionModule.get("__version__");
@@ -325,20 +363,22 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                     SDK_BETA = beta;
                 }
             }
+            FileLog.d("[PythonPluginsEngine] initSdk: SDK_VERSION=" + SDK_VERSION + ", SDK_BETA=" + SDK_BETA);
             if (basePluginClass == null && sdkInitialized && !ExteraConfig.pluginsSafeMode) {
                 try {
                     requireBasePluginClass();
                 } catch (Exception e) {
-                    FileLog.e("Failed to load BasePlugin class", e);
+                    FileLog.e("[PythonPluginsEngine] Failed to load BasePlugin class", e);
                 }
             }
+            FileLog.d("[PythonPluginsEngine] initSdk: finished! sdkInitialized=" + sdkInitialized + ", basePluginClass=" + (basePluginClass != null));
             return sdkInitialized;
         } catch (Throwable t) {
-            FileLog.e("Failed to initialize Python SDK bootstrap", t);
+            FileLog.e("[PythonPluginsEngine] Failed to initialize Python SDK bootstrap", t);
             try {
                 Updater.restoreSdkFromApk();
             } catch (Throwable t2) {
-                FileLog.e("Failed to schedule Python SDK restore from APK", t2);
+                FileLog.e("[PythonPluginsEngine] Failed to schedule Python SDK restore from APK", t2);
             }
             return false;
         }
@@ -358,11 +398,13 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             throw new Exception("Python interpreter is not initialized");
         }
         try {
+            FileLog.d("[PythonPluginsEngine] requireBasePluginClass: importing base_plugin.BasePlugin...");
             PyObject klass = python.getModule("base_plugin").get("BasePlugin");
             if (klass == null) {
                 throw new Exception("BasePlugin class is missing from the Python SDK");
             }
             basePluginClass = klass;
+            FileLog.d("[PythonPluginsEngine] requireBasePluginClass: BasePlugin class loaded successfully.");
             return klass;
         } catch (Throwable t) {
             throw new Exception("Failed to initialize Python plugin runtime", t);
@@ -373,7 +415,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         if (new File(sdkDir, moduleName + ".so").exists()) {
             return true;
         }
-        return new File(sdkDir, moduleName + ".pyc").exists();
+        return new File(sdkDir, moduleName + ".py").exists();
     }
 
     private static void deleteFileIfExists(File file) {
@@ -392,6 +434,11 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     private static boolean isSdkDirValid(File sdkDir) {
         if (sdkDir == null || !sdkDir.isDirectory()) {
             return false;
+        }
+        for (String module : SDK_REQUIRED_MODULES) {
+            if (new File(sdkDir, module + ".pyc").exists() && !new File(sdkDir, module + ".py").exists()) {
+                return false;
+            }
         }
         for (String module : SDK_REQUIRED_MODULES) {
             if (!sdkModuleExists(sdkDir, module)) {
@@ -901,7 +948,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     }
 
     private void runDevServer() {
-        if (getPython() == null) {
+        if (!isEngineAvailable() || getPython() == null) {
             return;
         }
         if (devServerClass != null) {
@@ -1051,7 +1098,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                     }
                 }
                 getPluginsController().notifyPluginsChanged();
-                FileLog.d("loadPlugins: loaded " + files.length + " plugins in " + (System.currentTimeMillis() - loadStart) + "ms");
+                FileLog.d("[PythonPluginsEngine] loadPlugins: fully completed loading " + files.length + " plugins in " + (System.currentTimeMillis() - loadStart) + "ms");
 
                 int enabledCount = 0;
                 for (Plugin plugin : getPluginsController().plugins.values()) {
@@ -1059,9 +1106,9 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                         enabledCount++;
                     }
                 }
-                FileLog.d("Python plugin system initialized. Total: " + getPluginsController().plugins.size() + ", Enabled: " + enabledCount);
+                FileLog.d("[PythonPluginsEngine] Python plugin system initialized. Total: " + getPluginsController().plugins.size() + ", Enabled: " + enabledCount);
             } catch (PyException e) {
-                FileLog.e("Failed to setup Python environment for plugins", e);
+                FileLog.e("[PythonPluginsEngine] Failed to setup Python environment for plugins", e);
             }
         });
     }

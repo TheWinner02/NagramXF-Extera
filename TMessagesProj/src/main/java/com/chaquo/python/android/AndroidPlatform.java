@@ -9,6 +9,7 @@ import com.chaquo.python.Python;
 import com.chaquo.python.internal.Common;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +24,7 @@ import java.util.List;
 import okhttp3.internal.url._UrlKt;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.telegram.messenger.FileLog;
 
 /* JADX INFO: loaded from: classes.dex */
 public class AndroidPlatform extends Python.Platform {
@@ -37,17 +39,28 @@ public class AndroidPlatform extends Python.Platform {
     public native void redirectStdioToLogcat();
 
     public AndroidPlatform(Context context) {
+        FileLog.d("[AndroidPlatform] constructor: initializing AndroidPlatform...");
         Application application = (Application) context.getApplicationContext();
         this.mContext = application;
         this.sp = application.getSharedPreferences(Common.ASSET_DIR, 0);
         this.am = this.mContext.getAssets();
         try {
             this.buildJson = new JSONObject(streamToString(this.am.open("chaquopy/build.json")));
+            FileLog.d("[AndroidPlatform] build.json loaded successfully. python_version=" + this.buildJson.optString("python_version"));
             loadNativeLibs();
+            FileLog.d("[AndroidPlatform] loadNativeLibs finished successfully.");
+            try {
+                redirectStdioToLogcat();
+                FileLog.d("[AndroidPlatform] redirectStdioToLogcat initialized.");
+            } catch (Throwable t) {
+                FileLog.e("[AndroidPlatform] redirectStdioToLogcat error", t);
+            }
             for (String str : Build.SUPPORTED_ABIS) {
                 try {
-                    this.am.open("chaquopy/" + Common.assetZip(Common.ASSET_STDLIB, str));
+                    InputStream testStream = this.am.open("chaquopy/" + Common.assetZip(Common.ASSET_STDLIB, str));
+                    testStream.close();
                     ABI = str;
+                    FileLog.d("[AndroidPlatform] found supported ABI asset for: " + ABI);
                     break;
                 } catch (IOException unused) {
                 }
@@ -56,7 +69,8 @@ public class AndroidPlatform extends Python.Platform {
                 return;
             }
             throw new RuntimeException("None of this device's ABIs " + Arrays.toString(Build.SUPPORTED_ABIS) + " are supported by this app.");
-        } catch (IOException | JSONException e) {
+        } catch (Throwable e) {
+            FileLog.e("[AndroidPlatform] constructor failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -67,67 +81,87 @@ public class AndroidPlatform extends Python.Platform {
 
     @Override // com.chaquo.python.Python.Platform
     public String getPath() {
+        FileLog.d("[AndroidPlatform] getPath() called, ABI=" + ABI);
         String str = this.mContext.getFilesDir() + "/chaquopy";
-        ArrayList arrayList = new ArrayList(Arrays.asList(Common.assetZip(Common.ASSET_STDLIB, Common.ABI_COMMON), Common.assetZip(Common.ASSET_BOOTSTRAP), "bootstrap-native/" + ABI));
+        ArrayList<String> pathList = new ArrayList<>(Arrays.asList(
+            Common.assetZip(Common.ASSET_STDLIB, Common.ABI_COMMON),
+            Common.assetZip(Common.ASSET_BOOTSTRAP),
+            "bootstrap-native/" + ABI
+        ));
         String strConcat = _UrlKt.FRAGMENT_ENCODE_SET;
-        for (int i = 0; i < arrayList.size(); i++) {
-            strConcat = strConcat + str + "/" + arrayList.get(i);
-            if (i < arrayList.size() - 1) {
+        for (int i = 0; i < pathList.size(); i++) {
+            strConcat = strConcat + str + "/" + pathList.get(i);
+            if (i < pathList.size() - 1) {
                 strConcat = strConcat.concat(":");
             }
         }
-        Collections.addAll(arrayList, Common.ASSET_CACERT);
+        ArrayList<String> extractList = new ArrayList<>(pathList);
+        Collections.addAll(extractList,
+            Common.ASSET_CACERT,
+            Common.assetZip(Common.ASSET_APP),
+            Common.assetZip(Common.ASSET_REQUIREMENTS, Common.ABI_COMMON),
+            Common.assetZip(Common.ASSET_REQUIREMENTS, ABI),
+            Common.assetZip(Common.ASSET_STDLIB, ABI)
+        );
         try {
             deleteObsolete(this.mContext.getFilesDir(), OBSOLETE_FILES);
             deleteObsolete(this.mContext.getCacheDir(), OBSOLETE_CACHE);
-            extractAssets(arrayList);
+            FileLog.d("[AndroidPlatform] getPath: extracting assets for " + extractList);
+            extractAssets(extractList);
+            FileLog.d("[AndroidPlatform] getPath: extractAssets completed successfully! Python path=" + strConcat);
             return strConcat;
-        } catch (IOException | JSONException e) {
+        } catch (Throwable e) {
+            FileLog.e("[AndroidPlatform] getPath failed", e);
             throw new RuntimeException(e);
         }
     }
 
     private void deleteObsolete(File file, String[] strArr) {
+        if (file == null || !file.exists()) {
+            return;
+        }
         for (String str : strArr) {
-            deleteRecursive(new File(file, "chaquopy/" + str.replace("<abi>", ABI)));
+            deleteRecursive(new File(file, "chaquopy/" + str.replace("<abi>", ABI != null ? ABI : "")));
         }
     }
 
     @Override // com.chaquo.python.Python.Platform
     public void onStart(Python python) {
-        python.getModule("java.android").callAttr("initialize", this.mContext, this.buildJson, new String[]{Common.ASSET_APP, Common.ASSET_REQUIREMENTS, "stdlib-" + ABI});
+        try {
+            FileLog.d("[AndroidPlatform] onStart: initializing java.android module...");
+            python.getModule("java.android").callAttr("initialize", this.mContext, this.buildJson, new String[]{Common.ASSET_APP, Common.ASSET_REQUIREMENTS, "stdlib-" + ABI});
+            FileLog.d("[AndroidPlatform] onStart: java.android module initialized successfully.");
+        } catch (Throwable t) {
+            FileLog.e("[AndroidPlatform] onStart failed", t);
+            throw t;
+        }
     }
 
     private void extractAssets(List<String> list) throws JSONException, IOException {
         JSONObject jSONObject = this.buildJson.getJSONObject("assets");
-        HashSet hashSet = new HashSet(list);
-        HashSet hashSet2 = new HashSet();
+        HashSet<String> hashSet = new HashSet<>(list);
+        HashSet<String> hashSet2 = new HashSet<>();
         SharedPreferences.Editor editorEdit = this.sp.edit();
         Iterator<String> itKeys = jSONObject.keys();
         while (itKeys.hasNext()) {
             String next = itKeys.next();
-            Iterator<String> it = list.iterator();
-            while (true) {
-                if (it.hasNext()) {
-                    String next2 = it.next();
-                    if (!next.equals(next2)) {
-                        if (next.startsWith(next2 + "/")) {
-                        }
-                    }
+            for (String next2 : list) {
+                if (next.equals(next2) || next.startsWith(next2 + "/")) {
                     extractAsset(jSONObject, editorEdit, next);
                     hashSet.remove(next2);
                     if (next.startsWith(next2 + "/")) {
                         hashSet2.add(next2);
                     }
+                    break;
                 }
             }
         }
         if (!hashSet.isEmpty()) {
-            throw new RuntimeException();
+            FileLog.e("[AndroidPlatform] extractAssets: missing assets in build.json: " + hashSet);
+            throw new RuntimeException("Missing assets in build.json: " + hashSet);
         }
-        Iterator it2 = hashSet2.iterator();
-        while (it2.hasNext()) {
-            cleanExtractedDir((String) it2.next(), jSONObject);
+        for (String str : hashSet2) {
+            cleanExtractedDir(str, jSONObject);
         }
         editorEdit.apply();
     }
@@ -142,33 +176,35 @@ public class AndroidPlatform extends Python.Platform {
         }
         file.delete();
         File parentFile = file.getParentFile();
-        if (!parentFile.exists()) {
+        if (parentFile != null && !parentFile.exists()) {
             parentFile.mkdirs();
-            if (!parentFile.isDirectory()) {
-                throw new RuntimeException();
-            }
         }
-        InputStream inputStreamOpen = this.am.open(str2);
         File file2 = new File(parentFile, file.getName() + ".tmp");
         file2.delete();
-        FileOutputStream fileOutputStream = new FileOutputStream(file2);
-        try {
+        try (InputStream inputStreamOpen = this.am.open(str2);
+             FileOutputStream fileOutputStream = new FileOutputStream(file2)) {
             transferStream(inputStreamOpen, fileOutputStream);
-            fileOutputStream.close();
-            if (!file2.renameTo(file)) {
-                throw new RuntimeException();
-            } else {
-                editor.putString(str3, string);
-            }
-        } catch (Throwable th) {
-            fileOutputStream.close();
-            throw th;
         }
+        if (!file2.renameTo(file)) {
+            file.delete();
+            if (!file2.renameTo(file)) {
+                try (InputStream in = new FileInputStream(file2);
+                     OutputStream out = new FileOutputStream(file)) {
+                    transferStream(in, out);
+                }
+                file2.delete();
+            }
+        }
+        editor.putString(str3, string);
     }
 
     private void cleanExtractedDir(String str, JSONObject jSONObject) {
         File file = new File(this.mContext.getFilesDir(), "chaquopy/" + str);
-        for (String str2 : file.list()) {
+        String[] list = file.list();
+        if (list == null) {
+            return;
+        }
+        for (String str2 : list) {
             File file2 = new File(file, str2);
             if (file2.isDirectory()) {
                 cleanExtractedDir(str + "/" + str2, jSONObject);
@@ -181,6 +217,9 @@ public class AndroidPlatform extends Python.Platform {
     }
 
     private void deleteRecursive(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
         File[] fileArrListFiles = file.listFiles();
         if (fileArrListFiles != null) {
             for (File file2 : fileArrListFiles) {
@@ -192,24 +231,20 @@ public class AndroidPlatform extends Python.Platform {
 
     private void transferStream(InputStream inputStream, OutputStream outputStream) throws IOException {
         byte[] bArr = new byte[1048576];
-        int i = inputStream.read(bArr);
-        while (i != -1) {
+        int i;
+        while ((i = inputStream.read(bArr)) != -1) {
             outputStream.write(bArr, 0, i);
-            i = inputStream.read(bArr);
         }
     }
 
     private String streamToString(InputStream inputStream) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        StringBuilder sb = new StringBuilder();
-        while (true) {
-            String line = bufferedReader.readLine();
-            if (line != null) {
-                sb.append(line);
-                sb.append("\n");
-            } else {
-                return sb.toString();
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                sb.append(line).append("\n");
             }
+            return sb.toString();
         }
     }
 

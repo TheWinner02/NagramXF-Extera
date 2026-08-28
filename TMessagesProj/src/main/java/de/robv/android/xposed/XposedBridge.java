@@ -46,12 +46,20 @@ public class XposedBridge {
             throw new RuntimeException("Failed to initialize XposedBridge metadata", t);
         }
         try {
+            try {
+                System.loadLibrary("c++_shared");
+            } catch (Throwable ignored) {
+            }
+            try {
+                System.loadLibrary("lsplant");
+            } catch (Throwable ignored) {
+            }
             System.loadLibrary("aliuhook");
             nativeAvailable = true;
+            FileLog.d("[XposedBridge] libaliuhook.so loaded successfully. nativeAvailable=true");
         } catch (Throwable t) {
             nativeAvailable = false;
-            Log.e("XposedBridge", "Xposed native runtime (libaliuhook.so) is unavailable; method hooking is disabled. " +
-                    "Plugins that hook Java methods will not function until the native library is provided.", t);
+            FileLog.e("[XposedBridge] Xposed native runtime (libaliuhook.so) is unavailable", t);
         }
     }
 

@@ -417,7 +417,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == translatorRow) {
                         textCell.setTextAndIcon(getString(R.string.TranslatorSettings), R.drawable.ic_translate, true);
                     } else if (position == pluginsRow) {
-                        textCell.setTextAndIcon("Plugin & Add-on (Python)", R.drawable.plugins_filled_remix, true);
+                        textCell.setTextAndIcon("Plugin", R.drawable.plugins_filled_remix, true);
                     } else if (position == passcodeRow) {
                         textCell.setTextAndIcon(getString(R.string.PasscodeNeko), R.drawable.msg_permissions, true);
                     } else if (position == experimentRow) {

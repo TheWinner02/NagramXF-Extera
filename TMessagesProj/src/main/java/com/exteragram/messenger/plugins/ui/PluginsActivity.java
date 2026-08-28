@@ -307,7 +307,8 @@ public class PluginsActivity extends BasePreferencesActivity implements Notifica
 
     private UItem createRuntimeIssueItem() {
         String issue = PluginsController.getPluginRuntimeIssue();
-        if (TextUtils.isEmpty(issue) || "disabled".equals(issue) || "unsupported".equals(issue)) {
+        FileLog.d("[PluginsActivity] createRuntimeIssueItem: issue=" + issue);
+        if (TextUtils.isEmpty(issue) || "disabled".equals(issue) || "unsupported".equals(issue) || "initializing".equals(issue)) {
             return null;
         }
         CharSequence text;

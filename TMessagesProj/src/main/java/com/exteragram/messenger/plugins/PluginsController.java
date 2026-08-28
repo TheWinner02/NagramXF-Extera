@@ -133,6 +133,8 @@ public class PluginsController implements PluginsHooks {
 
         void init(Runnable runnable);
 
+        boolean isInitializing();
+
         boolean isEngineAvailable();
 
         boolean isPlugin(File file);
@@ -297,22 +299,41 @@ public class PluginsController implements PluginsHooks {
         return isPluginEngineAvailable() && isPluginNativeRuntimeAvailable();
     }
 
+    public static boolean isPluginEngineInitializing() {
+        for (PluginsEngine engine : engines.values()) {
+            if (engine != null && engine.isInitializing()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String getPluginRuntimeIssue() {
         if (!isPluginEngineSupported()) {
+            FileLog.d("[PluginsController] getPluginRuntimeIssue -> unsupported (SDK_INT < 24)");
             return "unsupported";
         }
         if (!ExteraConfig.pluginsEngine) {
+            FileLog.d("[PluginsController] getPluginRuntimeIssue -> disabled");
             return "disabled";
         }
         if (ExteraConfig.pluginsSafeMode) {
+            FileLog.d("[PluginsController] getPluginRuntimeIssue -> safe_mode");
             return "safe_mode";
         }
+        if (isPluginEngineInitializing()) {
+            FileLog.d("[PluginsController] getPluginRuntimeIssue -> initializing");
+            return "initializing";
+        }
         if (!hasAvailablePluginsEngine()) {
+            FileLog.d("[PluginsController] getPluginRuntimeIssue -> python_runtime_unavailable");
             return "python_runtime_unavailable";
         }
         if (!isPluginNativeRuntimeAvailable()) {
+            FileLog.d("[PluginsController] getPluginRuntimeIssue -> native_runtime_unavailable");
             return "native_runtime_unavailable";
         }
+        FileLog.d("[PluginsController] getPluginRuntimeIssue -> null (runtime fully operational)");
         return null;
     }
 
@@ -599,11 +620,13 @@ public class PluginsController implements PluginsHooks {
     }
 
     public void checkDevServers() {
-        for (PluginsEngine engine : engines.values()) {
-            if (engine != null) {
-                engine.checkDevServer();
+        runOnPluginsQueue(() -> {
+            for (PluginsEngine engine : engines.values()) {
+                if (engine != null) {
+                    engine.checkDevServer();
+                }
             }
-        }
+        });
     }
 
     public void shutdown(Runnable runnable) {
