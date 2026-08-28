@@ -4230,6 +4230,10 @@ public class AndroidUtilities {
     }
 
     public static void openDocument(MessageObject message, Activity activity, BaseFragment parentFragment) {
+        openDocument(message, activity, parentFragment, com.exteragram.messenger.plugins.IntentsController.resolvePlace(parentFragment));
+    }
+
+    public static void openDocument(MessageObject message, Activity activity, BaseFragment parentFragment, int place) {
         if (message == null) {
             return;
         }
@@ -4246,6 +4250,11 @@ public class AndroidUtilities {
             f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(message.messageOwner);
         }
         if (f != null && f.exists()) {
+            if (com.exteragram.messenger.plugins.IntentsController.dispatchFileOpen(
+                    place,
+                    f, fileName, message, activity, parentFragment)) {
+                return;
+            }
             if (parentFragment != null && f.getName().toLowerCase().endsWith("attheme")) {
                 Theme.ThemeInfo themeInfo = Theme.applyThemeFile(f, message.getDocumentName(), null, true);
                 if (themeInfo != null) {
@@ -4321,16 +4330,6 @@ public class AndroidUtilities {
 
     public static boolean openForView(File f, String fileName, String mimeType, final Activity activity, Theme.ResourcesProvider resourcesProvider, boolean restrict) {
         if (f != null && f.exists()) {
-            if (fileName != null) {
-                String lowerName = fileName.toLowerCase(java.util.Locale.ROOT);
-                if (lowerName.endsWith(".plugin") || lowerName.endsWith(".py") || lowerName.endsWith(".zip") || com.exteragram.messenger.plugins.PluginsController.isPlugin(f, null)) {
-                    org.telegram.ui.ActionBar.BaseFragment fragment = org.telegram.ui.LaunchActivity.getLastFragment();
-                    if (fragment != null) {
-                        com.exteragram.messenger.plugins.PluginsController.INSTANCE.getInstance().showInstallDialog(fragment, f.getAbsolutePath(), true);
-                        return true;
-                    }
-                }
-            }
             String realMimeType = null;
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -4381,13 +4380,6 @@ public class AndroidUtilities {
     }
 
     public static boolean openForView(MessageObject message, Activity activity, Theme.ResourcesProvider resourcesProvider, boolean restrict) {
-        if (com.exteragram.messenger.plugins.PluginsController.isPlugin(message)) {
-            org.telegram.ui.ActionBar.BaseFragment fragment = org.telegram.ui.LaunchActivity.getLastFragment();
-            if (fragment != null) {
-                com.exteragram.messenger.plugins.PluginsController.INSTANCE.getInstance().showInstallDialog(fragment, message);
-                return true;
-            }
-        }
         File f = null;
         if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
             f = new File(message.messageOwner.attachPath);

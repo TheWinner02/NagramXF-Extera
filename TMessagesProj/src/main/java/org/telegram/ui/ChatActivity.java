@@ -43749,8 +43749,8 @@ public class ChatActivity extends BaseFragment implements
                 } else if (message.getDocumentName().toLowerCase().endsWith(".nekox-settings.json")) {
                     File finalLocFile = locFile;
                     SettingsBackupHelper.importSettings(getParentActivity(), finalLocFile);
-                } else if (com.exteragram.messenger.plugins.PluginsController.isPlugin(message) || (locFile != null && com.exteragram.messenger.plugins.PluginsController.isPlugin(locFile, message))) {
-                    com.exteragram.messenger.plugins.PluginsController.INSTANCE.getInstance().showInstallDialog(ChatActivity.this, message);
+                } else if (com.exteragram.messenger.plugins.PluginsController.isPlugin(message)) {
+                    com.exteragram.messenger.plugins.PluginsController.getInstance().showInstallDialog(ChatActivity.this, message);
                 } else {
                     boolean handled = false;
                     if (message.canPreviewDocument()) {

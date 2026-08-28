@@ -1,60 +1,72 @@
 package com.exteragram.messenger.utils;
 
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
+import android.content.Context;
 import android.graphics.Point;
 import android.os.Looper;
-import android.util.Base64;
 import android.util.Log;
+
 import androidx.annotation.Keep;
-import com.exteragram.messenger.utils.text.LocaleUtils;
+
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
-import java.security.MessageDigest;
 import java.util.Calendar;
-import okhttp3.internal.url._UrlKt;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.ui.ActionBar.Theme;
 
-/* JADX INFO: loaded from: classes.dex */
+@Keep
 public class AppUtils {
     private static Gson gson;
 
+    private AppUtils() {
+    }
+
+    @Keep
     public static Gson getGson() {
         if (gson == null) {
-            gson = new GsonBuilder().setPrettyPrinting().serializeSpecialFloatingPointValues().addSerializationExclusionStrategy(new ExclusionStrategy() { // from class: com.exteragram.messenger.utils.AppUtils.1
-                @Override // com.google.gson.ExclusionStrategy
-                public boolean shouldSkipField(FieldAttributes fieldAttributes) {
-                    if (fieldAttributes.getDeclaringClass().getPackage() == null) {
-                        return false;
-                    }
-                    String name = fieldAttributes.getDeclaringClass().getPackage().getName();
-                    return name.startsWith("android.") || name.startsWith("androidx.");
-                }
+            gson = new GsonBuilder()
+                    .setPrettyPrinting()
+                    .serializeSpecialFloatingPointValues()
+                    .addSerializationExclusionStrategy(new ExclusionStrategy() {
+                        @Override
+                        public boolean shouldSkipField(FieldAttributes fieldAttributes) {
+                            Package pkg = fieldAttributes.getDeclaringClass().getPackage();
+                            if (pkg == null) {
+                                return false;
+                            }
+                            String name = pkg.getName();
+                            return name.startsWith("android.") || name.startsWith("androidx.");
+                        }
 
-                @Override // com.google.gson.ExclusionStrategy
-                public boolean shouldSkipClass(Class<?> cls) {
-                    if (cls.getPackage() == null) {
-                        return false;
-                    }
-                    String name = cls.getPackage().getName();
-                    return name.startsWith("android.") || name.startsWith("androidx.");
-                }
-            }).create();
+                        @Override
+                        public boolean shouldSkipClass(Class<?> cls) {
+                            Package pkg = cls.getPackage();
+                            if (pkg == null) {
+                                return false;
+                            }
+                            String name = pkg.getName();
+                            return name.startsWith("android.") || name.startsWith("androidx.");
+                        }
+                    })
+                    .create();
         }
         return gson;
     }
 
+    @Keep
     public static void ensureRunningOnUi(Runnable runnable) {
+        if (runnable == null) {
+            return;
+        }
         if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
             AndroidUtilities.runOnUIThread(runnable);
         } else {
@@ -62,251 +74,277 @@ public class AppUtils {
         }
     }
 
+    @Keep
     public static int getNotificationColor() {
-        int accentColor = Theme.getActiveTheme().hasAccentColors() ? Theme.getActiveTheme().getAccentColor(Theme.getActiveTheme().currentAccentId) : 0;
+        int accentColor = Theme.getActiveTheme().hasAccentColors()
+                ? Theme.getActiveTheme().getAccentColor(Theme.getActiveTheme().currentAccentId)
+                : 0;
         if (accentColor == 0) {
-            accentColor = Theme.getColor(Theme.key_actionBarDefault) | (-16777216);
+            accentColor = Theme.getColor(Theme.key_actionBarDefault) | 0xFF000000;
         }
-        float fComputePerceivedBrightness = AndroidUtilities.computePerceivedBrightness(accentColor);
-        return (fComputePerceivedBrightness >= 0.721f || fComputePerceivedBrightness <= 0.279f) ? Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader) | (-16777216) : accentColor;
+        float brightness = AndroidUtilities.computePerceivedBrightness(accentColor);
+        return (brightness >= 0.721f || brightness <= 0.279f)
+                ? (Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader) | 0xFF000000)
+                : accentColor;
     }
 
+    @Keep
+    public static int[] getDrawerIconPack() {
+        int eventType = Theme.getEventType();
+        if (eventType == 0) {
+            return new int[]{
+                    resolveDrawable("msg_groups_ny", R.drawable.msg_groups),
+                    resolveDrawable("msg_secret_ny_solar", R.drawable.msg_secret),
+                    resolveDrawable("msg_channel_ny_solar", R.drawable.msg_channel),
+                    resolveDrawable("msg_contacts_ny", R.drawable.msg_contacts),
+                    resolveDrawable("msg_calls_ny", R.drawable.msg_calls),
+                    resolveDrawable("msg_saved_ny_solar", R.drawable.msg_saved)
+            };
+        }
+        if (eventType == 1) {
+            return new int[]{
+                    resolveDrawable("msg_groups_14", R.drawable.msg_groups),
+                    resolveDrawable("msg_secret_14", R.drawable.msg_secret),
+                    resolveDrawable("msg_channel_14_solar", R.drawable.msg_channel),
+                    resolveDrawable("msg_contacts_14", R.drawable.msg_contacts),
+                    resolveDrawable("msg_calls_14", R.drawable.msg_calls),
+                    resolveDrawable("msg_saved_14_solar", R.drawable.msg_saved)
+            };
+        }
+        if (eventType == 2) {
+            return new int[]{
+                    resolveDrawable("msg_groups_hw", R.drawable.msg_groups),
+                    resolveDrawable("msg_secret_hw", R.drawable.msg_secret),
+                    resolveDrawable("msg_channel_hw_solar", R.drawable.msg_channel),
+                    resolveDrawable("msg_contacts_hw", R.drawable.msg_contacts),
+                    resolveDrawable("msg_calls_hw", R.drawable.msg_calls),
+                    resolveDrawable("msg_saved_hw_solar", R.drawable.msg_saved)
+            };
+        }
+        return new int[]{
+                R.drawable.msg_groups,
+                R.drawable.msg_secret,
+                R.drawable.msg_channel,
+                R.drawable.msg_contacts,
+                R.drawable.msg_calls,
+                R.drawable.msg_saved
+        };
+    }
+
+    @Keep
     public static boolean isWinter() {
-        int i = Calendar.getInstance().get(2);
-        return i == 11 || i == 0 || i == 1;
+        int month = Calendar.getInstance().get(Calendar.MONTH);
+        return month == Calendar.DECEMBER || month == Calendar.JANUARY || month == Calendar.FEBRUARY;
     }
 
+    @Keep
     public static int getSwipeVelocity() {
         Point point = AndroidUtilities.displaySize;
         return point.x > point.y ? 1250 : 850;
     }
 
-    public static boolean isAppModified() {
-        try {
-            PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 64);
-            return (BuildConfig.APPLICATION_ID.equals(packageInfo.packageName) && "VdBS+IkXbbu+mQuHS4vyXw==".equals(Base64.encodeToString(MessageDigest.getInstance("MD5").digest(packageInfo.signatures[0].toByteArray()), 0).trim())) ? false : true;
-        } catch (Exception e) {
-            FileLog.e(e);
-            return true;
-        }
+    @Keep
+    public static void log(String message) {
+        logInternal(message, null, 5);
     }
 
     @Keep
-    public static void log(String str) {
-        logInternal(str, null, 5);
+    public static void log(Throwable throwable) {
+        logInternal("", throwable, 5);
     }
 
     @Keep
-    public static void log(Throwable th) {
-        logInternal(_UrlKt.FRAGMENT_ENCODE_SET, th, 5);
+    public static void log(String message, Throwable throwable) {
+        logInternal(message, throwable, 5);
     }
 
-    @Keep
-    public static void log(String str, Throwable th) {
-        logInternal(str, th, 5);
-    }
-
-    private static void logInternal(String str, Throwable th, int i) {
+    private static void logInternal(String message, Throwable throwable, int stackIndex) {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        StackTraceElement stackTraceElement = stackTrace[Math.max(3, Math.min(i, stackTrace.length - 1))];
-        String className = stackTraceElement.getClassName();
+        StackTraceElement element = stackTrace[Math.max(3, Math.min(stackIndex, stackTrace.length - 1))];
+        String className = element.getClassName();
         if (className.contains(".")) {
-            className = className.substring(className.lastIndexOf(46) + 1);
+            className = className.substring(className.lastIndexOf('.') + 1);
         }
         if (className.contains("$")) {
-            className = className.substring(className.lastIndexOf(36) + 1);
+            className = className.substring(className.lastIndexOf('$') + 1);
         }
-        String str2 = "[" + className + "]";
-        String str3 = String.format("[%s] %s", stackTraceElement.getMethodName(), str);
-        if (th != null) {
-            Log.e(str2, str3, th);
+        String tag = "[" + className + "]";
+        String text = String.format("[%s] %s", element.getMethodName(), message == null ? "" : message);
+        if (throwable != null) {
+            Log.e(tag, text, throwable);
+            FileLog.e(tag + " " + text, throwable);
         } else {
-            Log.d(str2, str3);
+            Log.d(tag, text);
+            FileLog.d(tag + " " + text);
         }
     }
 
     @Keep
-    public static void printObjectDetails(Object obj) {
-        if (obj == null) {
+    public static void printObjectDetails(Object object) {
+        if (object == null) {
             return;
         }
         try {
-            logInternal(obj.getClass().getName() + ": " + getGson().toJson(obj), null, 6);
+            logInternal(object.getClass().getName() + ": " + getGson().toJson(object), null, 6);
         } catch (Exception e) {
-            logInternal(obj.getClass().getName(), e, 6);
+            logInternal(object.getClass().getName(), e, 6);
         }
     }
 
     @Keep
-    public static Object getPrivateField(Object obj, String str) {
+    public static Object getPrivateField(Object object, String fieldName) {
+        if (object == null || fieldName == null) {
+            return null;
+        }
         try {
-            Class<?> superclass = obj.getClass();
-            Field declaredField = null;
-            while (superclass != null) {
-                try {
-                    declaredField = superclass.getDeclaredField(str);
-                } catch (NoSuchFieldException unused) {
-                    superclass = superclass.getSuperclass();
-                }
-            }
-            if (declaredField != null) {
-                declaredField.setAccessible(true);
-                return declaredField.get(obj);
+            Field field = findField(object.getClass(), fieldName);
+            if (field != null) {
+                field.setAccessible(true);
+                return field.get(object);
             }
         } catch (Exception e) {
-            logInternal(obj.getClass().getName(), e, 6);
+            logInternal(object.getClass().getName(), e, 6);
         }
         return null;
     }
 
     @Keep
-    public static void setPrivateField(Object obj, String str, Object obj2) {
+    public static void setPrivateField(Object object, String fieldName, Object value) {
+        if (object == null || fieldName == null) {
+            return;
+        }
         try {
-            Class<?> superclass = obj.getClass();
-            Field declaredField = null;
-            while (superclass != null) {
-                try {
-                    declaredField = superclass.getDeclaredField(str);
-                } catch (NoSuchFieldException unused) {
-                    superclass = superclass.getSuperclass();
-                }
-            }
-            if (declaredField != null) {
-                declaredField.setAccessible(true);
-                declaredField.set(obj, obj2);
+            Field field = findField(object.getClass(), fieldName);
+            if (field != null) {
+                field.setAccessible(true);
+                field.set(object, value);
             }
         } catch (Exception e) {
-            logInternal(obj.getClass().getName(), e, 6);
+            logInternal(object.getClass().getName(), e, 6);
         }
     }
 
     @Keep
-    public static Object getPrivateStaticField(Class<?> cls, String str) {
-        Class<?> superclass = cls;
-        Field declaredField = null;
-        while (superclass != null) {
-            try {
-                try {
-                    declaredField = superclass.getDeclaredField(str);
-                } catch (NoSuchFieldException unused) {
-                    superclass = superclass.getSuperclass();
-                }
-            } catch (Exception e) {
-                logInternal(cls.getName(), e, 6);
-            }
+    public static Object getPrivateStaticField(Class<?> cls, String fieldName) {
+        if (cls == null || fieldName == null) {
+            return null;
         }
-        if (declaredField != null) {
-            try {
-                declaredField.setAccessible(true);
-                return declaredField.get(null);
-            } catch (Exception e) {
-                logInternal(cls.getName(), e, 6);
+        try {
+            Field field = findField(cls, fieldName);
+            if (field != null) {
+                field.setAccessible(true);
+                return field.get(null);
             }
+        } catch (Exception e) {
+            logInternal(cls.getName(), e, 6);
         }
         return null;
     }
 
     @Keep
-    public static void setPrivateStaticField(Class<?> cls, String str, Object obj) {
-        Class<?> superclass = cls;
-        Field declaredField = null;
-        while (superclass != null) {
-            try {
-                try {
-                    declaredField = superclass.getDeclaredField(str);
-                } catch (NoSuchFieldException unused) {
-                    superclass = superclass.getSuperclass();
-                }
-            } catch (Exception e) {
-                logInternal(cls.getName(), e, 6);
-                return;
-            }
+    public static void setPrivateStaticField(Class<?> cls, String fieldName, Object value) {
+        if (cls == null || fieldName == null) {
+            return;
         }
-        if (declaredField != null) {
-            try {
-                declaredField.setAccessible(true);
-                declaredField.set(null, obj);
-            } catch (Exception e) {
-                logInternal(cls.getName(), e, 6);
+        try {
+            Field field = findField(cls, fieldName);
+            if (field != null) {
+                field.setAccessible(true);
+                field.set(null, value);
             }
+        } catch (Exception e) {
+            logInternal(cls.getName(), e, 6);
         }
     }
 
-    public static String stackTraceToString(Throwable th) {
+    @Keep
+    public static String stackTraceToString(Throwable throwable) {
+        if (throwable == null) {
+            return "";
+        }
         StringWriter stringWriter = new StringWriter();
-        th.printStackTrace(new PrintWriter(stringWriter));
+        throwable.printStackTrace(new PrintWriter(stringWriter));
         return stringWriter.toString();
     }
 
-    public static String getVersionText() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(LocaleUtils.getAppName());
-        sb.append(" ");
-        sb.append(BuildVars.BUILD_VERSION_STRING);
-        try {
-            PackageInfo packageInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            sb.append(" (");
-            sb.append(packageInfo.versionCode);
-            sb.append(")");
-        } catch (PackageManager.NameNotFoundException e) {
-            FileLog.e(e);
-        }
-        if (isAppModified()) {
-            sb.append("\nbased on @exteraGram");
-        }
-        return sb.toString();
-    }
-
-    public static boolean compareVersions(String str, String str2, String str3) {
-        int iCompareVersionValues = compareVersionValues(str2, str3);
-        str.getClass();
-        switch (str) {
-            case "<":
-                return iCompareVersionValues < 0;
-            case ">":
-                return iCompareVersionValues > 0;
-            case "<=":
-                return iCompareVersionValues <= 0;
-            case "==":
-                return iCompareVersionValues == 0;
-            case ">=":
-                return iCompareVersionValues >= 0;
-            default:
-                throw new IllegalArgumentException("Unsupported operator: ".concat(str));
-        }
-    }
-
-    public static boolean compareVersions(String str, int i, int i2) {
-        int iCompare = Integer.compare(i, i2);
-        str.getClass();
-        switch (str) {
-            case "<":
-                return iCompare < 0;
-            case ">":
-                return iCompare > 0;
-            case "<=":
-                return iCompare <= 0;
-            case "==":
-                return iCompare == 0;
-            case ">=":
-                return iCompare >= 0;
-            default:
-                throw new IllegalArgumentException("Unsupported operator: ".concat(str));
-        }
-    }
-
-    public static int compareVersionValues(String str, String str2) {
-        String[] strArrSplit = str.split("\\.");
-        String[] strArrSplit2 = str2.split("\\.");
-        int iMax = Math.max(strArrSplit.length, strArrSplit2.length);
-        int i = 0;
-        while (i < iMax) {
-            int i2 = i < strArrSplit.length ? Integer.parseInt(strArrSplit[i]) : 0;
-            int i3 = i < strArrSplit2.length ? Integer.parseInt(strArrSplit2[i]) : 0;
-            if (i2 != i3) {
-                return Integer.compare(i2, i3);
+    private static Field findField(Class<?> cls, String fieldName) {
+        Class<?> current = cls;
+        while (current != null) {
+            try {
+                return current.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException ignore) {
+                current = current.getSuperclass();
             }
-            i++;
+        }
+        return null;
+    }
+
+    private static int resolveDrawable(String name, int fallback) {
+        try {
+            Context context = ApplicationLoader.applicationContext;
+            if (context != null) {
+                int id = context.getResources().getIdentifier(name, "drawable", context.getPackageName());
+                if (id != 0) {
+                    return id;
+                }
+            }
+        } catch (Exception e) {
+            logInternal("Failed to resolve drawable " + name, e, 6);
+        }
+        return fallback;
+    }
+
+    @Keep
+    public static boolean compareVersions(String operator, String left, String right) {
+        int comparison = compareVersionValues(left, right);
+        switch (operator) {
+            case "<":
+                return comparison < 0;
+            case ">":
+                return comparison > 0;
+            case "<=":
+                return comparison <= 0;
+            case "==":
+                return comparison == 0;
+            case ">=":
+                return comparison >= 0;
+            default:
+                FileLog.e("Unsupported operator: " + operator);
+                return false;
+        }
+    }
+
+    @Keep
+    public static boolean compareVersions(String operator, int left, int right) {
+        int comparison = Integer.compare(left, right);
+        switch (operator) {
+            case "<":
+                return comparison < 0;
+            case ">":
+                return comparison > 0;
+            case "<=":
+                return comparison <= 0;
+            case "==":
+                return comparison == 0;
+            case ">=":
+                return comparison >= 0;
+            default:
+                FileLog.e("Unsupported operator: " + operator);
+                return false;
+        }
+    }
+
+    @Keep
+    public static int compareVersionValues(String left, String right) {
+        String[] leftParts = left.split("\\.");
+        String[] rightParts = right.split("\\.");
+        int max = Math.max(leftParts.length, rightParts.length);
+        for (int i = 0; i < max; i++) {
+            int leftValue = i < leftParts.length ? Integer.parseInt(leftParts[i]) : 0;
+            int rightValue = i < rightParts.length ? Integer.parseInt(rightParts[i]) : 0;
+            if (leftValue != rightValue) {
+                return Integer.compare(leftValue, rightValue);
+            }
         }
         return 0;
     }

@@ -1,9 +1,25 @@
 package com.exteragram.messenger.utils.network;
 
 import android.content.SharedPreferences;
+
+import org.telegram.messenger.AccountInstance;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.TLRPC.TL_error;
+import org.telegram.tgnet.TLRPC.TL_inputPeerChannel;
+import org.telegram.tgnet.TLRPC.TL_messages_getHistory;
+import org.telegram.tgnet.TLRPC.TL_messages_search;
+import org.telegram.tgnet.TLRPC.messages_Messages;
+
 import com.exteragram.messenger.utils.AppUtils;
 import com.exteragram.messenger.utils.chats.ChatUtils;
-import com.google.android.gms.cast.MediaError;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -11,24 +27,16 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
 
-/* JADX INFO: loaded from: classes.dex */
 public abstract class RemoteUtils {
-    private static final long CONFIG_REFRESH_INTERVAL = 600000L;
+    private static final long CONFIG_REFRESH_INTERVAL = 10 * 60 * 1000L;
+    // Our own fork channel (the same one the app updates ship from; see
+    // tw.nekomimi.nekogram.helpers.remote.BaseRemoteHelper.CHANNEL_METADATA_ID/NAME).
+    private static final long SDK_CHANNEL_ID = -3499386246L;
+    private static final String SDK_CHANNEL_USERNAME = "nagram_fork_remote_metadata";
     private static final Object messagesRequestLock = new Object();
-    private static ArrayList<Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error>> pendingMessagesCallbacks;
+    private static ArrayList<Utilities.Callback2<messages_Messages, TL_error>> pendingMessagesCallbacks;
     public static SharedPreferences sharedPreferences;
-
-    public static /* synthetic */ void $r8$lambda$eNTNmIzDWEebkWIkwoFUzANQvM8() {
-    }
 
     private static SharedPreferences getPrefs() {
         if (sharedPreferences == null) {
@@ -45,11 +53,11 @@ public abstract class RemoteUtils {
 
     public static void init() {
         initCached();
-        long jCurrentTimeMillis = System.currentTimeMillis();
-        if (Math.abs(jCurrentTimeMillis - sharedPreferences.getLong("__last_fetch_attempt_time", 0L)) < CONFIG_REFRESH_INTERVAL) {
+        long now = System.currentTimeMillis();
+        if (Math.abs(now - sharedPreferences.getLong("__last_fetch_attempt_time", 0L)) < CONFIG_REFRESH_INTERVAL) {
             return;
         }
-        sharedPreferences.edit().putLong("__last_fetch_attempt_time", jCurrentTimeMillis).apply();
+        sharedPreferences.edit().putLong("__last_fetch_attempt_time", now).apply();
         loadConfig();
     }
 
@@ -60,423 +68,342 @@ public abstract class RemoteUtils {
     }
 
     private static void loadConfig() {
-        getMessages(new Utilities.Callback2() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda5
-            @Override // org.telegram.messenger.Utilities.Callback2
-            public final void run(Object obj, Object obj2) {
-                RemoteUtils.$r8$lambda$LmfFRuJdEdEVAug9vbi59pl5km0((TLRPC.messages_Messages) obj, (TLRPC.TL_error) obj2);
+        getMessages((res, error) -> {
+            if (error != null || res == null) {
+                return;
             }
-        });
-    }
-
-    public static /* synthetic */ void $r8$lambda$LmfFRuJdEdEVAug9vbi59pl5km0(TLRPC.messages_Messages messages_messages, TLRPC.TL_error tL_error) {
-        if (tL_error != null || messages_messages == null) {
-            return;
-        }
-        HashSet hashSet = new HashSet();
-        ArrayList<TLRPC.Message> arrayList = messages_messages.messages;
-        int size = arrayList.size();
-        int i = 0;
-        while (i < size) {
-            TLRPC.Message message = arrayList.get(i);
-            i++;
-            TLRPC.Message message2 = message;
-            if ((message2 instanceof TLRPC.TL_message) && message2.message.startsWith("remote_config")) {
-                String[] strArrSplit = message2.message.split("\n");
-                if (strArrSplit.length > 1) {
-                    for (String str : strArrSplit) {
-                        String[] strArrSplit2 = str.split("=", 2);
-                        if (strArrSplit2.length == 2) {
-                            String strTrim = strArrSplit2[0].trim();
-                            String strTrim2 = strArrSplit2[1].trim();
-                            if (!strTrim2.equals("null")) {
-                                updateValue(strTrim, strTrim2);
-                                hashSet.add(strTrim);
+            HashSet<String> keys = new HashSet<>();
+            for (TLRPC.Message message : res.messages) {
+                if (message instanceof TLRPC.TL_message && message.message != null && message.message.startsWith("remote_config")) {
+                    String[] lines = message.message.split("\n");
+                    if (lines.length > 1) {
+                        for (String line : lines) {
+                            String[] parts = line.split("=", 2);
+                            if (parts.length == 2) {
+                                String key = parts[0].trim();
+                                String value = parts[1].trim();
+                                if (!value.equals("null")) {
+                                    updateValue(key, value);
+                                    keys.add(key);
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        removeOldPreferences(hashSet);
+            removeOldPreferences(keys);
+        });
     }
 
-    private static void removeOldPreferences(Set<String> set) {
-        SharedPreferences.Editor editorEdit = sharedPreferences.edit();
-        for (String str : sharedPreferences.getAll().keySet()) {
-            if (!set.contains(str) && !"__last_fetch_attempt_time".equals(str)) {
-                editorEdit.remove(str);
+    private static void removeOldPreferences(Set<String> keepKeys) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        for (String key : sharedPreferences.getAll().keySet()) {
+            if (!keepKeys.contains(key) && !"__last_fetch_attempt_time".equals(key)) {
+                editor.remove(key);
             }
         }
-        editorEdit.apply();
+        editor.apply();
     }
 
-    private static void updateValue(String str, String str2) {
-        if (areValuesEqual(sharedPreferences.getAll().get(str), parseConfigValue(str2))) {
+    private static void updateValue(String key, String value) {
+        if (areValuesEqual(sharedPreferences.getAll().get(key), parseConfigValue(value))) {
             return;
         }
-        saveToPreferences(str, str2);
+        saveToPreferences(key, value);
     }
 
-    private static boolean areValuesEqual(Object obj, Object obj2) {
-        if (obj == null || obj2 == null) {
-            return obj == obj2;
+    private static boolean areValuesEqual(Object a, Object b) {
+        if (a == null || b == null) {
+            return a == b;
         }
-        return obj.equals(obj2);
+        return a.equals(b);
     }
 
-    private static void saveToPreferences(String str, String str2) {
-        SharedPreferences.Editor editorEdit = sharedPreferences.edit();
-        saveConfigValueToPreferences(editorEdit, str, parseConfigValue(str2));
-        editorEdit.apply();
+    private static void saveToPreferences(String key, String value) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        saveConfigValueToPreferences(editor, key, parseConfigValue(value));
+        editor.apply();
     }
 
-    private static Object parseConfigValue(String str) {
-        if (str.matches("-?\\d+")) {
+    private static Object parseConfigValue(String value) {
+        if (value.matches("-?\\d+")) {
             try {
-                return Long.valueOf(Long.parseLong(str));
-            } catch (NumberFormatException unused) {
-                return Float.valueOf(Float.parseFloat(str));
+                return Long.parseLong(value);
+            } catch (NumberFormatException e) {
+                return Float.parseFloat(value);
             }
         }
-        if (str.matches("-?\\d+(\\.\\d+)")) {
-            return Float.valueOf(Float.parseFloat(str));
+        if (value.matches("-?\\d+(\\.\\d+)")) {
+            return Float.parseFloat(value);
         }
-        if (str.equalsIgnoreCase("true")) {
+        if (value.equalsIgnoreCase("true")) {
             return Boolean.TRUE;
         }
-        if (str.equalsIgnoreCase("false")) {
+        if (value.equalsIgnoreCase("false")) {
             return Boolean.FALSE;
         }
-        if (!str.startsWith("[") || !str.endsWith("]")) {
-            return str;
+        if (value.startsWith("[") && value.endsWith("]")) {
+            String inner = value.substring(1, value.length() - 1);
+            if (inner.isEmpty()) {
+                return new HashSet<>();
+            }
+            return new HashSet<>(Arrays.asList(inner.split(",\\s*")));
         }
-        String strSubstring = str.substring(1, str.length() - 1);
-        if (strSubstring.isEmpty()) {
-            return new HashSet();
-        }
-        return new HashSet(Arrays.asList(strSubstring.split(",\\s*")));
+        return value;
     }
 
-    private static void saveConfigValueToPreferences(SharedPreferences.Editor editor, String str, Object obj) {
-        if (obj instanceof Long) {
-            editor.putLong(str, ((Long) obj).longValue());
-            return;
-        }
-        if (obj instanceof Float) {
-            editor.putFloat(str, ((Float) obj).floatValue());
-            return;
-        }
-        if (obj instanceof Boolean) {
-            editor.putBoolean(str, ((Boolean) obj).booleanValue());
-        } else if (obj instanceof Set) {
-            editor.putStringSet(str, (Set) obj);
-        } else if (obj instanceof String) {
-            editor.putString(str, (String) obj);
+    private static void saveConfigValueToPreferences(SharedPreferences.Editor editor, String key, Object value) {
+        if (value instanceof Long) {
+            editor.putLong(key, (Long) value);
+        } else if (value instanceof Float) {
+            editor.putFloat(key, (Float) value);
+        } else if (value instanceof Boolean) {
+            editor.putBoolean(key, (Boolean) value);
+        } else if (value instanceof Set) {
+            editor.putStringSet(key, (Set) value);
+        } else if (value instanceof String) {
+            editor.putString(key, (String) value);
         }
     }
 
-    public static void getMessages(Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error> callback2) {
+    public static void getMessages(Utilities.Callback2<messages_Messages, TL_error> callback) {
         synchronized (messagesRequestLock) {
-            try {
-                ArrayList<Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error>> arrayList = pendingMessagesCallbacks;
-                if (arrayList != null) {
-                    arrayList.add(callback2);
-                    return;
-                }
-                ArrayList<Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error>> arrayList2 = new ArrayList<>();
-                pendingMessagesCallbacks = arrayList2;
-                arrayList2.add(callback2);
-                final AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-                final TLRPC.TL_messages_getHistory tL_messages_getHistory = new TLRPC.TL_messages_getHistory();
-                tL_messages_getHistory.peer = accountInstance.getMessagesController().getInputPeer(-2227431611L);
-                tL_messages_getHistory.offset_id = 0;
-                tL_messages_getHistory.limit = 75;
-                final Runnable runnable = new Runnable() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda7
-                    @Override // java.lang.Runnable
-                    public final void run() {
-                        accountInstance.getConnectionsManager().sendRequest(tL_messages_getHistory, new RequestDelegate() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda9
-                            @Override // org.telegram.tgnet.RequestDelegate
-                            public final void run(TLObject tLObject, TLRPC.TL_error tL_error) {
-                                RemoteUtils.$r8$lambda$V4VBJH1NEvfcBnItgWjxPBLnJKs(tLObject, tL_error);
-                            }
-                        });
-                    }
-                };
-                if (tL_messages_getHistory.peer.access_hash != 0) {
-                    AndroidUtilities.runOnUIThread(runnable);
+            if (pendingMessagesCallbacks != null) {
+                pendingMessagesCallbacks.add(callback);
+                return;
+            }
+            ArrayList<Utilities.Callback2<messages_Messages, TL_error>> callbacks = new ArrayList<>();
+            pendingMessagesCallbacks = callbacks;
+            callbacks.add(callback);
+            final AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
+            final TL_messages_getHistory request = new TL_messages_getHistory();
+            request.peer = accountInstance.getMessagesController().getInputPeer(SDK_CHANNEL_ID);
+            request.offset_id = 0;
+            request.limit = 75;
+            final Runnable send = () -> accountInstance.getConnectionsManager().sendRequest(request, (res, error) -> {
+                if (error != null || res == null) {
+                    deliverMessagesResult(null, error);
                 } else {
-                    ChatUtils.getInstance().resolveChannel("XS6GEcz5ZXMu82UvXQc", new Utilities.Callback() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda8
-                        @Override // org.telegram.messenger.Utilities.Callback
-                        public final void run(Object obj) {
-                            RemoteUtils.m1510$r8$lambda$wpFmLdCTd4P2BQcJG8DkR6gPJ8(tL_messages_getHistory, runnable, (TLRPC.Chat) obj);
-                        }
-                    });
+                    deliverMessagesResult((messages_Messages) res, null);
                 }
-            } catch (Throwable th) {
-                throw th;
+            });
+            if (request.peer != null && request.peer.access_hash != 0) {
+                AndroidUtilities.runOnUIThread(send);
+            } else {
+                ChatUtils.getInstance().resolveChannel(SDK_CHANNEL_USERNAME, chat -> {
+                    if (chat != null && chat.id == -SDK_CHANNEL_ID) {
+                        TL_inputPeerChannel peer = new TL_inputPeerChannel();
+                        request.peer = peer;
+                        peer.channel_id = chat.id;
+                        peer.access_hash = chat.access_hash;
+                        AndroidUtilities.runOnUIThread(send);
+                        return;
+                    }
+                    TL_error error = new TL_error();
+                    error.code = 400;
+                    error.text = "CHANNEL_RESOLVE_FAILED";
+                    deliverMessagesResult(null, error);
+                });
             }
         }
     }
 
-    public static /* synthetic */ void $r8$lambda$V4VBJH1NEvfcBnItgWjxPBLnJKs(TLObject tLObject, TLRPC.TL_error tL_error) {
-        if (tL_error != null || tLObject == null) {
-            deliverMessagesResult(null, tL_error);
-        } else {
-            deliverMessagesResult((TLRPC.messages_Messages) tLObject, null);
-        }
-    }
-
-    /* JADX INFO: renamed from: $r8$lambda$wpFmLdCTd4P2-BQcJG8DkR6gPJ8, reason: not valid java name */
-    public static /* synthetic */ void m1510$r8$lambda$wpFmLdCTd4P2BQcJG8DkR6gPJ8(TLRPC.TL_messages_getHistory tL_messages_getHistory, Runnable runnable, TLRPC.Chat chat) {
-        if (chat != null && chat.id == -2227431611L) {
-            TLRPC.TL_inputPeerChannel tL_inputPeerChannel = new TLRPC.TL_inputPeerChannel();
-            tL_messages_getHistory.peer = tL_inputPeerChannel;
-            tL_inputPeerChannel.channel_id = chat.id;
-            tL_inputPeerChannel.access_hash = chat.access_hash;
-            AndroidUtilities.runOnUIThread(runnable);
-            return;
-        }
-        TLRPC.TL_error tL_error = new TLRPC.TL_error();
-        tL_error.code = MediaError.DetailedErrorCode.MANIFEST_UNKNOWN;
-        tL_error.text = "CHANNEL_RESOLVE_FAILED";
-        deliverMessagesResult(null, tL_error);
-    }
-
-    private static void deliverMessagesResult(TLRPC.messages_Messages messages_messages, TLRPC.TL_error tL_error) {
-        ArrayList<Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error>> arrayList;
+    private static void deliverMessagesResult(messages_Messages messages, TL_error error) {
+        ArrayList<Utilities.Callback2<messages_Messages, TL_error>> callbacks;
         synchronized (messagesRequestLock) {
-            arrayList = pendingMessagesCallbacks;
+            callbacks = pendingMessagesCallbacks;
             pendingMessagesCallbacks = null;
         }
-        if (arrayList == null) {
+        if (callbacks == null) {
             return;
         }
-        int size = arrayList.size();
-        int i = 0;
-        while (i < size) {
-            Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error> callback2 = arrayList.get(i);
-            i++;
-            callback2.run(messages_messages, tL_error);
+        for (Utilities.Callback2<messages_Messages, TL_error> callback : callbacks) {
+            callback.run(messages, error);
         }
     }
 
-    public static void searchMessages(String str, TLRPC.MessagesFilter messagesFilter, Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error> callback2, int i) {
-        searchMessages(50, str, messagesFilter, callback2, i);
+    public static void searchMessages(String query, TLRPC.MessagesFilter filter, Utilities.Callback2<messages_Messages, TL_error> callback, int timeout) {
+        searchMessages(50, query, filter, callback, timeout);
     }
 
-    public static void searchMessages(int i, String str, TLRPC.MessagesFilter messagesFilter, final Utilities.Callback2<TLRPC.messages_Messages, TLRPC.TL_error> callback2, final int i2) {
+    public static void searchMessages(int limit, String query, TLRPC.MessagesFilter filter, final Utilities.Callback2<messages_Messages, TL_error> callback, final int timeout) {
         final AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-        final TLRPC.TL_messages_search tL_messages_search = new TLRPC.TL_messages_search();
-        tL_messages_search.peer = accountInstance.getMessagesController().getInputPeer(-2227431611L);
-        tL_messages_search.q = str;
-        tL_messages_search.offset_id = 0;
-        tL_messages_search.limit = i;
-        tL_messages_search.filter = messagesFilter;
-        final AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-        final AtomicInteger atomicInteger = new AtomicInteger();
-        final AtomicInteger atomicInteger2 = new AtomicInteger();
-        final AtomicReference atomicReference = new AtomicReference(new Runnable() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda0
-            @Override // java.lang.Runnable
-            public final void run() {
-                RemoteUtils.$r8$lambda$eNTNmIzDWEebkWIkwoFUzANQvM8();
-            }
-        });
-        final Runnable runnable = new Runnable() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda1
-            @Override // java.lang.Runnable
-            public final void run() {
-                RemoteUtils.m1508$r8$lambda$UB_3HLxwoCbba6lUHVL1F5wfA(atomicBoolean, callback2);
+        final TL_messages_search request = new TL_messages_search();
+        request.peer = accountInstance.getMessagesController().getInputPeer(SDK_CHANNEL_ID);
+        request.q = query;
+        request.offset_id = 0;
+        request.limit = limit;
+        request.filter = filter;
+        final AtomicBoolean finished = new AtomicBoolean(false);
+        final AtomicInteger attempts = new AtomicInteger(0);
+        final AtomicInteger requestId = new AtomicInteger();
+        final AtomicReference<Runnable> timeoutRunnableRef = new AtomicReference<>();
+        final Runnable timeoutRunnable = () -> {
+            if (finished.compareAndSet(false, true)) {
+                TL_error error = new TL_error();
+                error.code = 408;
+                error.text = "REQUEST_TIMEOUT";
+                callback.run(null, error);
             }
         };
-        final Runnable runnable2 = new Runnable() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda2
-            @Override // java.lang.Runnable
-            public final void run() {
-                RemoteUtils.m1509$r8$lambda$XRVIe9RERxrqY2e8aTEDV9B8B8(atomicBoolean, atomicInteger, atomicInteger2, accountInstance, tL_messages_search, atomicReference, callback2);
+        final Runnable sendRequest = () -> {
+            if (finished.get()) {
+                return;
+            }
+            attempts.incrementAndGet();
+            requestId.set(accountInstance.getConnectionsManager().sendRequest(request, new RequestDelegate() {
+                @Override
+                public void run(TLObject response, TL_error error) {
+                    if (finished.compareAndSet(false, true)) {
+                        AndroidUtilities.cancelRunOnUIThread(timeoutRunnableRef.get());
+                        if (error != null || response == null) {
+                            callback.run(null, error);
+                        } else {
+                            callback.run((messages_Messages) response, null);
+                        }
+                    }
+                }
+            }));
+        };
+        final Runnable retryRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (finished.get()) {
+                    return;
+                }
+                accountInstance.getConnectionsManager().cancelRequest(requestId.get(), false);
+                if (attempts.get() < 3) {
+                    AndroidUtilities.runOnUIThread(sendRequest);
+                    AndroidUtilities.runOnUIThread(timeoutRunnableRef.get(), timeout);
+                } else {
+                    timeoutRunnable.run();
+                }
             }
         };
-        atomicReference.set(new Runnable() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda3
-            @Override // java.lang.Runnable
-            public final void run() {
-                RemoteUtils.m1506$r8$lambda$DWE3IlXIJYUbvGajyIcIoAEsuk(atomicBoolean, accountInstance, atomicInteger2, atomicInteger, runnable2, atomicReference, i2, runnable);
-            }
-        });
-        if (tL_messages_search.peer.access_hash != 0) {
-            AndroidUtilities.runOnUIThread(runnable2);
-            AndroidUtilities.runOnUIThread((Runnable) atomicReference.get(), i2);
+        timeoutRunnableRef.set(retryRunnable);
+        if (request.peer != null && request.peer.access_hash != 0) {
+            AndroidUtilities.runOnUIThread(sendRequest);
+            AndroidUtilities.runOnUIThread(timeoutRunnableRef.get(), timeout);
         } else {
-            ChatUtils.getInstance().resolveChannel("XS6GEcz5ZXMu82UvXQc", new Utilities.Callback() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda4
-                @Override // org.telegram.messenger.Utilities.Callback
-                public final void run(Object obj) {
-                    RemoteUtils.$r8$lambda$AjHQ7MB3X57c7essAWT021npCFk(tL_messages_search, runnable2, atomicReference, i2, atomicBoolean, callback2, (TLRPC.Chat) obj);
+            ChatUtils.getInstance().resolveChannel(SDK_CHANNEL_USERNAME, chat -> {
+                if (chat != null && chat.id == -SDK_CHANNEL_ID) {
+                    TL_inputPeerChannel peer = new TL_inputPeerChannel();
+                    request.peer = peer;
+                    peer.channel_id = chat.id;
+                    peer.access_hash = chat.access_hash;
+                    AndroidUtilities.runOnUIThread(sendRequest);
+                    AndroidUtilities.runOnUIThread(timeoutRunnableRef.get(), timeout);
+                    return;
+                }
+                if (finished.compareAndSet(false, true)) {
+                    TL_error error = new TL_error();
+                    error.code = 400;
+                    error.text = "CHANNEL_RESOLVE_FAILED";
+                    callback.run(null, error);
                 }
             });
         }
     }
 
-    /* JADX INFO: renamed from: $r8$lambda$UB_-3HLxwoCbba6l-UHVL1F5wfA, reason: not valid java name */
-    public static /* synthetic */ void m1508$r8$lambda$UB_3HLxwoCbba6lUHVL1F5wfA(AtomicBoolean atomicBoolean, Utilities.Callback2 callback2) {
-        if (atomicBoolean.compareAndSet(false, true)) {
-            TLRPC.TL_error tL_error = new TLRPC.TL_error();
-            tL_error.code = 408;
-            tL_error.text = "REQUEST_TIMEOUT";
-            callback2.run(null, tL_error);
-        }
-    }
-
-    /* JADX INFO: renamed from: $r8$lambda$XRVIe9RE-RxrqY2e8aTEDV9B8B8, reason: not valid java name */
-    public static /* synthetic */ void m1509$r8$lambda$XRVIe9RERxrqY2e8aTEDV9B8B8(final AtomicBoolean atomicBoolean, AtomicInteger atomicInteger, AtomicInteger atomicInteger2, AccountInstance accountInstance, TLRPC.TL_messages_search tL_messages_search, final AtomicReference atomicReference, final Utilities.Callback2 callback2) {
-        if (atomicBoolean.get()) {
-            return;
-        }
-        atomicInteger.incrementAndGet();
-        atomicInteger2.set(accountInstance.getConnectionsManager().sendRequest(tL_messages_search, new RequestDelegate() { // from class: com.exteragram.messenger.utils.network.RemoteUtils$$ExternalSyntheticLambda6
-            @Override // org.telegram.tgnet.RequestDelegate
-            public final void run(TLObject tLObject, TLRPC.TL_error tL_error) {
-                RemoteUtils.m1507$r8$lambda$DT1VPJLc_jQIEOnKaPDKhvhjOA(atomicBoolean, atomicReference, callback2, tLObject, tL_error);
-            }
-        }));
-    }
-
-    /* JADX INFO: renamed from: $r8$lambda$DT1VPJLc-_jQIEOnKaPDKhvhjOA, reason: not valid java name */
-    public static /* synthetic */ void m1507$r8$lambda$DT1VPJLc_jQIEOnKaPDKhvhjOA(AtomicBoolean atomicBoolean, AtomicReference atomicReference, Utilities.Callback2 callback2, TLObject tLObject, TLRPC.TL_error tL_error) {
-        if (atomicBoolean.compareAndSet(false, true)) {
-            AndroidUtilities.cancelRunOnUIThread((Runnable) atomicReference.get());
-            if (tL_error != null || tLObject == null) {
-                callback2.run(null, tL_error);
-            } else {
-                callback2.run((TLRPC.messages_Messages) tLObject, null);
-            }
-        }
-    }
-
-    /* JADX INFO: renamed from: $r8$lambda$D-WE3IlXIJYUbvGajyIcIoAEsuk, reason: not valid java name */
-    public static /* synthetic */ void m1506$r8$lambda$DWE3IlXIJYUbvGajyIcIoAEsuk(AtomicBoolean atomicBoolean, AccountInstance accountInstance, AtomicInteger atomicInteger, AtomicInteger atomicInteger2, Runnable runnable, AtomicReference atomicReference, int i, Runnable runnable2) {
-        if (atomicBoolean.get()) {
-            return;
-        }
-        accountInstance.getConnectionsManager().cancelRequest(atomicInteger.get(), false);
-        if (atomicInteger2.get() < 3) {
-            AndroidUtilities.runOnUIThread(runnable);
-            AndroidUtilities.runOnUIThread((Runnable) atomicReference.get(), i);
-        } else {
-            runnable2.run();
-        }
-    }
-
-    public static /* synthetic */ void $r8$lambda$AjHQ7MB3X57c7essAWT021npCFk(TLRPC.TL_messages_search tL_messages_search, Runnable runnable, AtomicReference atomicReference, int i, AtomicBoolean atomicBoolean, Utilities.Callback2 callback2, TLRPC.Chat chat) {
-        if (chat != null && chat.id == -2227431611L) {
-            TLRPC.TL_inputPeerChannel tL_inputPeerChannel = new TLRPC.TL_inputPeerChannel();
-            tL_messages_search.peer = tL_inputPeerChannel;
-            tL_inputPeerChannel.channel_id = chat.id;
-            tL_inputPeerChannel.access_hash = chat.access_hash;
-            AndroidUtilities.runOnUIThread(runnable);
-            AndroidUtilities.runOnUIThread((Runnable) atomicReference.get(), i);
-            return;
-        }
-        if (atomicBoolean.compareAndSet(false, true)) {
-            TLRPC.TL_error tL_error = new TLRPC.TL_error();
-            tL_error.code = MediaError.DetailedErrorCode.MANIFEST_UNKNOWN;
-            tL_error.text = "CHANNEL_RESOLVE_FAILED";
-            callback2.run(null, tL_error);
-        }
-    }
-
-    public static Integer getIntConfigValue(String str, int i) {
+    public static Integer getIntConfigValue(String key, int defaultValue) {
         try {
             SharedPreferences prefs = getPrefs();
             if (prefs == null) {
-                return Integer.valueOf(i);
+                return defaultValue;
             }
-            Object obj = prefs.getAll().get(str);
-            if (obj instanceof String) {
-                return Integer.valueOf(Integer.parseInt((String) obj));
+            Object value = prefs.getAll().get(key);
+            if (value instanceof String) {
+                return Integer.parseInt((String) value);
             }
-            if (obj instanceof Long) {
-                return Integer.valueOf(((Long) obj).intValue());
+            if (value instanceof Long) {
+                return ((Long) value).intValue();
             }
-            if (obj instanceof Integer) {
-                return (Integer) obj;
+            if (value instanceof Integer) {
+                return (Integer) value;
             }
-            return Integer.valueOf(i);
+            return defaultValue;
         } catch (Exception e) {
-            AppUtils.log("Error getting int config value for key: " + str, e);
-            return Integer.valueOf(i);
+            AppUtils.log("Error getting int config value for key: " + key, e);
+            return defaultValue;
         }
     }
 
-    public static Float getFloatConfigValue(String str, float f) {
+    public static Float getFloatConfigValue(String key, float defaultValue) {
         try {
             SharedPreferences prefs = getPrefs();
             if (prefs == null) {
-                return Float.valueOf(f);
+                return defaultValue;
             }
-            Object obj = prefs.getAll().get(str);
-            if (obj instanceof String) {
-                return Float.valueOf(Float.parseFloat((String) obj));
+            Object value = prefs.getAll().get(key);
+            if (value instanceof String) {
+                return Float.parseFloat((String) value);
             }
-            if (obj instanceof Float) {
-                return (Float) obj;
+            if (value instanceof Float) {
+                return (Float) value;
             }
-            if (obj instanceof Long) {
-                return Float.valueOf(((Long) obj).floatValue());
+            if (value instanceof Long) {
+                return ((Long) value).floatValue();
             }
-            if (obj instanceof Integer) {
-                return Float.valueOf(((Integer) obj).floatValue());
+            if (value instanceof Integer) {
+                return ((Integer) value).floatValue();
             }
-            return Float.valueOf(f);
+            return defaultValue;
         } catch (Exception e) {
-            AppUtils.log("Error getting value for key: " + str, e);
-            return Float.valueOf(f);
+            AppUtils.log("Error getting value for key: " + key, e);
+            return defaultValue;
         }
     }
 
-    public static Boolean getBooleanConfigValue(String str, boolean z) {
+    public static Boolean getBooleanConfigValue(String key, boolean defaultValue) {
         try {
             SharedPreferences prefs = getPrefs();
             if (prefs == null) {
-                return Boolean.valueOf(z);
+                return defaultValue;
             }
             try {
-                return Boolean.valueOf(prefs.getBoolean(str, z));
-            } catch (ClassCastException unused) {
-                Object obj = prefs.getAll().get(str);
-                return Boolean.valueOf(obj instanceof String ? Boolean.parseBoolean((String) obj) : z);
+                return prefs.getBoolean(key, defaultValue);
+            } catch (ClassCastException e) {
+                Object value = prefs.getAll().get(key);
+                return value instanceof String ? Boolean.parseBoolean((String) value) : defaultValue;
             }
         } catch (Exception e) {
-            AppUtils.log("Error getting value for key: " + str, e);
-            return Boolean.valueOf(z);
+            AppUtils.log("Error getting value for key: " + key, e);
+            return defaultValue;
         }
     }
 
-    public static Set<String> getStringSetConfigValue(String str, Set<String> set) {
+    public static Set<String> getStringSetConfigValue(String key, Set<String> defaultValue) {
         try {
             SharedPreferences prefs = getPrefs();
             if (prefs != null) {
-                Object obj = prefs.getAll().get(str);
-                if (obj instanceof Set) {
-                    return (Set) obj;
+                Object value = prefs.getAll().get(key);
+                if (value instanceof Set) {
+                    return (Set) value;
                 }
-                if (obj instanceof String) {
-                    return new HashSet(Arrays.asList(((String) obj).split(",\\s*")));
+                if (value instanceof String) {
+                    return new HashSet<>(Arrays.asList(((String) value).split(",\\s*")));
                 }
             }
-            return set;
+            return defaultValue;
         } catch (Exception e) {
-            AppUtils.log("Error getting value for key: " + str, e);
-            return set;
+            AppUtils.log("Error getting value for key: " + key, e);
+            return defaultValue;
         }
     }
 
-    public static String getStringConfigValue(String str, String str2) {
-        Object obj;
+    public static String getStringConfigValue(String key, String defaultValue) {
         try {
             SharedPreferences prefs = getPrefs();
-            if (prefs != null && (obj = prefs.getAll().get(str)) != null) {
-                return String.valueOf(obj);
+            if (prefs != null) {
+                Object value = prefs.getAll().get(key);
+                if (value != null) {
+                    return String.valueOf(value);
+                }
             }
-            return str2;
+            return defaultValue;
         } catch (Exception e) {
-            AppUtils.log("Error getting value for key: " + str, e);
-            return str2;
+            AppUtils.log("Error getting value for key: " + key, e);
+            return defaultValue;
         }
     }
 }

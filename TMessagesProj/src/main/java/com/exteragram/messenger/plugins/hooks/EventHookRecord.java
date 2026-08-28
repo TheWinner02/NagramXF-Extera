@@ -1,75 +1,61 @@
 package com.exteragram.messenger.plugins.hooks;
 
-import kotlin.Metadata;
-import kotlin.jvm.internal.Intrinsics;
-import kotlin.text.StringsKt;
-import okhttp3.internal.url._UrlKt;
+import java.util.Objects;
 
-/* JADX INFO: loaded from: classes.dex */
-public final class EventHookRecord implements HookRecord {
+public class EventHookRecord implements HookRecord {
+    private final String pluginId;
     private final String hookName;
     private final boolean matchSubstring;
-    private final String pluginId;
     private final int priority;
 
-    @Override // com.exteragram.messenger.plugins.hooks.HookRecord
+    public EventHookRecord(String pluginId, String hookName, boolean matchSubstring, int priority) {
+        this.pluginId = pluginId;
+        this.hookName = hookName;
+        this.matchSubstring = matchSubstring;
+        this.priority = priority;
+    }
+
+    public String getPluginId() {
+        return pluginId;
+    }
+
+    public String getHookName() {
+        return hookName;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    public boolean isMatchSubstring() {
+        return matchSubstring;
+    }
+
+    @Override
     public void cleanup() {
     }
 
-    public EventHookRecord(String str, String str2, boolean z, int i) {
-        this.pluginId = str;
-        this.hookName = str2;
-        this.matchSubstring = z;
-        this.priority = i;
-    }
-
-    public final String getPluginId() {
-        return this.pluginId;
-    }
-
-    public final String getHookName() {
-        return this.hookName;
-    }
-
-    public final int getPriority() {
-        return this.priority;
-    }
-
-    /* JADX INFO: renamed from: isMatchSubstring, reason: from getter */
-    public final boolean getMatchSubstring() {
-        return this.matchSubstring;
-    }
-
-    @Override // com.exteragram.messenger.plugins.hooks.HookRecord
-    public boolean matches(Object criteria) {
-        String str;
-        String str2 = criteria instanceof String ? (String) criteria : null;
-        if (str2 == null || (str = this.hookName) == null) {
+    @Override
+    public boolean matches(Object obj) {
+        if (!(obj instanceof String value) || hookName == null) {
             return false;
         }
-        if (this.matchSubstring) {
-            return str.length() > 0 && str2.contains(str);
-        }
-        return Intrinsics.areEqual(str, str2);
+        return matchSubstring ? (!hookName.isEmpty() && value.contains(hookName)) : hookName.equals(value);
     }
 
-    public boolean equals(Object other) {
-        if (this == other) {
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if (other != null && Intrinsics.areEqual(EventHookRecord.class, other.getClass())) {
-            EventHookRecord eventHookRecord = (EventHookRecord) other;
-            if (this.matchSubstring == eventHookRecord.matchSubstring && Intrinsics.areEqual(this.pluginId, eventHookRecord.pluginId) && Intrinsics.areEqual(this.hookName, eventHookRecord.hookName)) {
-                return true;
-            }
+        if (!(obj instanceof EventHookRecord other)) {
+            return false;
         }
-        return false;
+        return matchSubstring == other.matchSubstring && Objects.equals(pluginId, other.pluginId) && Objects.equals(hookName, other.hookName);
     }
 
+    @Override
     public int hashCode() {
-        String str = this.pluginId;
-        int iHashCode = (str != null ? str.hashCode() : 0) * 31;
-        String str2 = this.hookName;
-        return ((iHashCode + (str2 != null ? str2.hashCode() : 0)) * 31) + Boolean.hashCode(this.matchSubstring);
+        return Objects.hash(pluginId, hookName, matchSubstring);
     }
 }

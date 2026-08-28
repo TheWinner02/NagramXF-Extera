@@ -1,17 +1,16 @@
 package com.exteragram.messenger.utils;
 
 import android.text.TextUtils;
-import com.google.android.gms.cast.HlsSegmentFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import okhttp3.internal.url._UrlKt;
+
 import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_iv;
 
-/* JADX INFO: loaded from: classes4.dex */
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+
 public abstract class MarkdownUtils {
     private static final String[] MARKDOWN_TEXT_EXTENSIONS = {"txt", "text"};
     private static final String[] MARKDOWN_MIME_PREFIXES = {"text/plain", "text/x-diff", "text/x-patch", "text/csv", "text/xml", "text/yaml", "text/x-yaml", "text/css", "text/javascript", "application/json", "application/ld+json", "application/json5", "application/xml", "application/yaml", "application/x-yaml", "application/javascript", "application/x-javascript", "application/x-sh"};
@@ -32,7 +31,7 @@ public abstract class MarkdownUtils {
         addLanguage("less", "less");
         addLanguage("javascript", "js", "mjs", "cjs");
         addLanguage("jsx", "jsx");
-        addLanguage("typescript", HlsSegmentFormat.TS);
+        addLanguage("typescript", "ts");
         addLanguage("tsx", "tsx");
         addLanguage("java", "java");
         addLanguage("kotlin", "kt", "kts");
@@ -86,20 +85,20 @@ public abstract class MarkdownUtils {
         return isExteraMarkdownExtension(messageObject.getExtension()) || isExteraMarkdownMime(messageObject.getMimeType()) || !TextUtils.isEmpty(getPreformattedLanguage(getDocumentFileName(messageObject.getDocument()), messageObject.getExtension(), messageObject.getMimeType()));
     }
 
-    public static boolean isExteraMarkdownExtension(String str) {
-        if (isMarkdownTextExtension(str)) {
+    public static boolean isExteraMarkdownExtension(String extension) {
+        if (isMarkdownTextExtension(extension)) {
             return true;
         }
-        return !TextUtils.isEmpty(getPreformattedLanguage(null, str, null));
+        return !TextUtils.isEmpty(getPreformattedLanguage(null, extension, null));
     }
 
-    public static boolean isExteraMarkdownMime(String str) {
-        if (TextUtils.isEmpty(str)) {
+    public static boolean isExteraMarkdownMime(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
             return false;
         }
-        String lowerCase = str.toLowerCase(Locale.ROOT);
-        for (String str2 : MARKDOWN_MIME_PREFIXES) {
-            if (lowerCase.startsWith(str2)) {
+        String lowerCase = mimeType.toLowerCase(Locale.ROOT);
+        for (String prefix : MARKDOWN_MIME_PREFIXES) {
+            if (lowerCase.startsWith(prefix)) {
                 return true;
             }
         }
@@ -107,37 +106,36 @@ public abstract class MarkdownUtils {
     }
 
     public static String getDocumentFileName(TLRPC.Document document) {
-        ArrayList<TLRPC.DocumentAttribute> arrayList;
-        if (document != null && (arrayList = document.attributes) != null) {
-            int size = arrayList.size();
-            int i = 0;
-            while (i < size) {
-                TLRPC.DocumentAttribute documentAttribute = arrayList.get(i);
-                i++;
-                TLRPC.DocumentAttribute documentAttribute2 = documentAttribute;
-                if (documentAttribute2 instanceof TLRPC.TL_documentAttributeFilename) {
-                    return documentAttribute2.file_name;
+        if (document != null) {
+            ArrayList<TLRPC.DocumentAttribute> attributes = document.attributes;
+            if (attributes != null) {
+                int size = attributes.size();
+                for (int i = 0; i < size; i++) {
+                    TLRPC.DocumentAttribute attribute = attributes.get(i);
+                    if (attribute instanceof TLRPC.TL_documentAttributeFilename) {
+                        return attribute.file_name;
+                    }
                 }
             }
         }
         return null;
     }
 
-    public static String getPreformattedLanguage(String str, String str2, String str3) {
-        String preformattedLanguageByFileName = getPreformattedLanguageByFileName(str);
-        if (!TextUtils.isEmpty(preformattedLanguageByFileName)) {
-            return preformattedLanguageByFileName;
+    public static String getPreformattedLanguage(String fileName, String extension, String mimeType) {
+        String language = getPreformattedLanguageByFileName(fileName);
+        if (!TextUtils.isEmpty(language)) {
+            return language;
         }
-        String strNormalizeExtension = normalizeExtension(str2);
-        if (TextUtils.isEmpty(strNormalizeExtension)) {
-            strNormalizeExtension = getExtensionFromFileName(str);
+        String normalizedExtension = normalizeExtension(extension);
+        if (TextUtils.isEmpty(normalizedExtension)) {
+            normalizedExtension = getExtensionFromFileName(fileName);
         }
-        String str4 = PREFORMATTED_EXTENSION_LANGUAGES.get(strNormalizeExtension);
-        if (!TextUtils.isEmpty(str4)) {
-            return str4;
+        String languageFromExtension = PREFORMATTED_EXTENSION_LANGUAGES.get(normalizedExtension);
+        if (!TextUtils.isEmpty(languageFromExtension)) {
+            return languageFromExtension;
         }
-        if (!TextUtils.isEmpty(str3)) {
-            String lowerCase = str3.toLowerCase(Locale.ROOT);
+        if (!TextUtils.isEmpty(mimeType)) {
+            String lowerCase = mimeType.toLowerCase(Locale.ROOT);
             if (lowerCase.startsWith("text/x-diff") || lowerCase.startsWith("text/x-patch")) {
                 return "diff";
             }
@@ -165,68 +163,67 @@ public abstract class MarkdownUtils {
             if (lowerCase.startsWith("application/x-sh")) {
                 return "bash";
             }
-            return _UrlKt.FRAGMENT_ENCODE_SET;
+            return "";
         }
-        return _UrlKt.FRAGMENT_ENCODE_SET;
+        return "";
     }
 
-    public static void appendPreformattedBlocks(List<TL_iv.PageBlock> list, String str, String str2, int i) {
-        int iLastIndexOf;
-        int iMax = Math.max(1, i);
-        if (TextUtils.isEmpty(str)) {
-            TL_iv.pageBlockPreformatted pageblockpreformatted = new TL_iv.pageBlockPreformatted();
-            pageblockpreformatted.text = plain(_UrlKt.FRAGMENT_ENCODE_SET);
-            if (str2 == null) {
-                str2 = _UrlKt.FRAGMENT_ENCODE_SET;
-            }
-            pageblockpreformatted.language = str2;
-            list.add(pageblockpreformatted);
+    public static void appendPreformattedBlocks(List<TL_iv.PageBlock> blocks, String text, String language, int maxBlockLength) {
+        int maxLength = Math.max(1, maxBlockLength);
+        if (TextUtils.isEmpty(text)) {
+            TL_iv.pageBlockPreformatted emptyBlock = new TL_iv.pageBlockPreformatted();
+            emptyBlock.text = plain("");
+            emptyBlock.language = language == null ? "" : language;
+            blocks.add(emptyBlock);
             return;
         }
-        int i2 = 0;
-        while (i2 < str.length()) {
-            int iMin = Math.min(str.length(), i2 + iMax);
-            if (iMin < str.length() && (iLastIndexOf = str.lastIndexOf(10, iMin - 1)) > i2) {
-                iMin = iLastIndexOf + 1;
+        int start = 0;
+        while (start < text.length()) {
+            int end = Math.min(text.length(), start + maxLength);
+            if (end < text.length()) {
+                int lastNewLine = text.lastIndexOf('\n', end - 1);
+                if (lastNewLine > start) {
+                    end = lastNewLine + 1;
+                }
             }
-            TL_iv.pageBlockPreformatted pageblockpreformatted2 = new TL_iv.pageBlockPreformatted();
-            pageblockpreformatted2.text = plain(str.substring(i2, iMin));
-            pageblockpreformatted2.language = str2 == null ? _UrlKt.FRAGMENT_ENCODE_SET : str2;
-            list.add(pageblockpreformatted2);
-            i2 = iMin;
+            TL_iv.pageBlockPreformatted block = new TL_iv.pageBlockPreformatted();
+            block.text = plain(text.substring(start, end));
+            block.language = language == null ? "" : language;
+            blocks.add(block);
+            start = end;
         }
     }
 
-    private static void addLanguage(String str, String... strArr) {
-        for (String str2 : strArr) {
-            PREFORMATTED_EXTENSION_LANGUAGES.put(str2, str);
+    private static void addLanguage(String language, String... extensions) {
+        for (String extension : extensions) {
+            PREFORMATTED_EXTENSION_LANGUAGES.put(extension, language);
         }
     }
 
-    private static void addFilename(String str, String... strArr) {
-        for (String str2 : strArr) {
-            PREFORMATTED_FILENAMES.put(str2.toLowerCase(Locale.ROOT), str);
+    private static void addFilename(String language, String... fileNames) {
+        for (String fileName : fileNames) {
+            PREFORMATTED_FILENAMES.put(fileName.toLowerCase(Locale.ROOT), language);
         }
     }
 
-    private static boolean isMarkdownTextExtension(String str) {
-        String strNormalizeExtension = normalizeExtension(str);
-        for (String str2 : MARKDOWN_TEXT_EXTENSIONS) {
-            if (str2.equals(strNormalizeExtension)) {
+    private static boolean isMarkdownTextExtension(String extension) {
+        String normalizedExtension = normalizeExtension(extension);
+        for (String textExtension : MARKDOWN_TEXT_EXTENSIONS) {
+            if (textExtension.equals(normalizedExtension)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static String getPreformattedLanguageByFileName(String str) {
-        if (TextUtils.isEmpty(str)) {
-            return _UrlKt.FRAGMENT_ENCODE_SET;
+    private static String getPreformattedLanguageByFileName(String fileName) {
+        if (TextUtils.isEmpty(fileName)) {
+            return "";
         }
-        String lowerCase = getBaseName(str).toLowerCase(Locale.ROOT);
-        String str2 = PREFORMATTED_FILENAMES.get(lowerCase);
-        if (!TextUtils.isEmpty(str2)) {
-            return str2;
+        String lowerCase = getBaseName(fileName).toLowerCase(Locale.ROOT);
+        String language = PREFORMATTED_FILENAMES.get(lowerCase);
+        if (!TextUtils.isEmpty(language)) {
+            return language;
         }
         if (lowerCase.startsWith("dockerfile.")) {
             return "docker";
@@ -234,37 +231,37 @@ public abstract class MarkdownUtils {
         if (lowerCase.startsWith("makefile.")) {
             return "makefile";
         }
-        return lowerCase.startsWith(".env.") ? "ini" : _UrlKt.FRAGMENT_ENCODE_SET;
+        return lowerCase.startsWith(".env.") ? "ini" : "";
     }
 
-    private static String getExtensionFromFileName(String str) {
-        String baseName;
-        int iLastIndexOf;
-        return (!TextUtils.isEmpty(str) && (iLastIndexOf = (baseName = getBaseName(str)).lastIndexOf(46)) > 0 && iLastIndexOf < baseName.length() + (-1)) ? normalizeExtension(baseName.substring(iLastIndexOf + 1)) : _UrlKt.FRAGMENT_ENCODE_SET;
-    }
-
-    private static String getBaseName(String str) {
-        int iMax = Math.max(str.lastIndexOf(47), str.lastIndexOf(92));
-        return iMax >= 0 ? str.substring(iMax + 1) : str;
-    }
-
-    private static String normalizeExtension(String str) {
-        if (TextUtils.isEmpty(str)) {
-            return _UrlKt.FRAGMENT_ENCODE_SET;
+    private static String getExtensionFromFileName(String fileName) {
+        if (TextUtils.isEmpty(fileName)) {
+            return "";
         }
-        String strTrim = str.trim();
-        while (strTrim.startsWith(".")) {
-            strTrim = strTrim.substring(1);
-        }
-        return strTrim.toLowerCase(Locale.ROOT);
+        String baseName = getBaseName(fileName);
+        int lastDot = baseName.lastIndexOf('.');
+        return lastDot > 0 && lastDot < baseName.length() - 1 ? normalizeExtension(baseName.substring(lastDot + 1)) : "";
     }
 
-    private static TL_iv.RichText plain(String str) {
-        TL_iv.textPlain textplain = new TL_iv.textPlain();
-        if (str == null) {
-            str = _UrlKt.FRAGMENT_ENCODE_SET;
+    private static String getBaseName(String fileName) {
+        int lastSlash = Math.max(fileName.lastIndexOf('/'), fileName.lastIndexOf('\\'));
+        return lastSlash >= 0 ? fileName.substring(lastSlash + 1) : fileName;
+    }
+
+    private static String normalizeExtension(String extension) {
+        if (TextUtils.isEmpty(extension)) {
+            return "";
         }
-        textplain.text = str;
-        return textplain;
+        String trimmed = extension.trim();
+        while (trimmed.startsWith(".")) {
+            trimmed = trimmed.substring(1);
+        }
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private static TL_iv.RichText plain(String text) {
+        TL_iv.textPlain textPlain = new TL_iv.textPlain();
+        textPlain.text = text == null ? "" : text;
+        return textPlain;
     }
 }

@@ -1,191 +1,178 @@
 package com.exteragram.messenger.plugins.ui.components;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+
 import androidx.core.content.ContextCompat;
+
 import com.exteragram.messenger.plugins.PluginsController;
 import com.exteragram.messenger.plugins.hooks.MenuItemRecord;
-import java.util.List;
-import java.util.Map;
-import kotlin.Metadata;
-import okhttp3.internal.url._UrlKt;
-import org.lsposed.lsparanoid.Deobfuscator$exteraGramDev$TMessagesProj;
-import org.scilab.forge.jlatexmath.TeXSymbolParser;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PopupSwipeBackLayout;
 
-/* JADX INFO: loaded from: classes4.dex */
+import java.util.List;
+import java.util.Map;
+
 public class PluginsMenuWrapper {
     public static final int GAP_ITEM_HEIGHT = 8;
     public static final int ITEM_HEIGHT = 48;
     public static final int SUBTITLE_ITEM_HEIGHT = 56;
-    private final Map<String, Object> contextData;
+
+    private Map<String, Object> contextData;
+    private final BaseFragment fragment;
     private final LinearLayout menuItemsContainer;
     private final String menuType;
     private final Theme.ResourcesProvider resourcesProvider;
-    private final LinearLayout swipeBack;
+    public final LinearLayout swipeBack;
 
-    public void closeMenu() {
+    protected void closeMenu() {
     }
 
-    public PluginsMenuWrapper(final PopupSwipeBackLayout popupSwipeBackLayout, List<MenuItemRecord> list, String str, Map<String, ? extends Object> map, Theme.ResourcesProvider resourcesProvider) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-123383542203951L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-124002017494575L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-124100801742383L);
-        this.menuType = str;
-        this.contextData = (Map) map;
+    public PluginsMenuWrapper(BaseFragment fragment, PopupSwipeBackLayout popupSwipeBackLayout, String menuType, Map<String, Object> contextData, Theme.ResourcesProvider resourcesProvider) {
+        this(fragment, popupSwipeBackLayout, null, menuType, contextData, resourcesProvider);
+    }
+
+    public PluginsMenuWrapper(BaseFragment fragment, final PopupSwipeBackLayout popupSwipeBackLayout, List<MenuItemRecord> items, String menuType, Map<String, Object> contextData, Theme.ResourcesProvider resourcesProvider) {
+        this.fragment = fragment;
         this.resourcesProvider = resourcesProvider;
-        Context context = popupSwipeBackLayout.getContext();
-        LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setOrientation(1);
-        this.swipeBack = linearLayout;
-        ActionBarMenuSubItem actionBarMenuSubItem = new ActionBarMenuSubItem(context, true, false, resourcesProvider);
-        actionBarMenuSubItem.setItemHeight(44);
-        actionBarMenuSubItem.setTextAndIcon(LocaleController.getString(R.string.Back), R.drawable.msg_arrow_back);
-        actionBarMenuSubItem.getTextView().setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(40.0f), 0, LocaleController.isRTL ? AndroidUtilities.dp(40.0f) : 0, 0);
-        actionBarMenuSubItem.setOnClickListener(new View.OnClickListener() { // from class: com.exteragram.messenger.plugins.ui.components.PluginsMenuWrapper$$ExternalSyntheticLambda1
-            @Override // android.view.View.OnClickListener
-            public final void onClick(View view) {
-                popupSwipeBackLayout.closeForeground();
+        this.menuType = menuType;
+        this.contextData = contextData;
+
+        Activity parentActivity = fragment.getParentActivity();
+        swipeBack = new LinearLayout(parentActivity);
+        swipeBack.setOrientation(LinearLayout.VERTICAL);
+
+        ActionBarMenuSubItem backItem = new ActionBarMenuSubItem(parentActivity, true, false, resourcesProvider);
+        backItem.setItemHeight(44);
+        backItem.setTextAndIcon(LocaleController.getString(R.string.Back), R.drawable.msg_arrow_back);
+        backItem.getTextView().setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), 0, LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0);
+        backItem.setOnClickListener(v -> popupSwipeBackLayout.closeForeground());
+        swipeBack.addView(backItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        ScrollView scrollView = createScrollView(parentActivity);
+        menuItemsContainer = new LinearLayout(parentActivity);
+        menuItemsContainer.setOrientation(LinearLayout.VERTICAL);
+        scrollView.addView(menuItemsContainer);
+        swipeBack.addView(scrollView);
+
+        rebuildMenu(items);
+    }
+
+    public View getSwipeBackView() {
+        return swipeBack;
+    }
+
+    public void setContextData(Map<String, Object> contextData) {
+        this.contextData = contextData;
+    }
+
+    public void rebuildMenu(List<MenuItemRecord> items) {
+        menuItemsContainer.removeAllViews();
+        if (items == null) {
+            items = PluginsController.getInstance().getMenuItemsForLocation(menuType, contextData);
+        }
+
+        menuItemsContainer.addView(createGap(), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, GAP_ITEM_HEIGHT));
+        int totalHeight = 0;
+        for (final MenuItemRecord item : items) {
+            if (item == null) {
+                menuItemsContainer.addView(createGap(), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, GAP_ITEM_HEIGHT));
+                totalHeight += GAP_ITEM_HEIGHT;
+                continue;
             }
-        });
-        linearLayout.addView(actionBarMenuSubItem, LayoutHelper.createLinear(-1, -2));
-        LinearLayout linearLayout2 = new LinearLayout(context);
-        linearLayout2.setOrientation(1);
-        this.menuItemsContainer = linearLayout2;
-        ScrollView scrollViewCreateScrollView = createScrollView(context);
-        scrollViewCreateScrollView.addView(linearLayout2);
-        linearLayout.addView(scrollViewCreateScrollView);
-        rebuildMenu(list);
-    }
-
-    public final LinearLayout getMenuItemsContainer() {
-        return this.menuItemsContainer;
-    }
-
-    public final LinearLayout getSwipeBack() {
-        return this.swipeBack;
-    }
-
-    /* JADX WARN: 'this' call moved to the top of the method (can break code semantics) */
-    public PluginsMenuWrapper(PopupSwipeBackLayout popupSwipeBackLayout, String str, Map<String, ? extends Object> map, Theme.ResourcesProvider resourcesProvider) {
-        this(popupSwipeBackLayout, null, str, map, resourcesProvider);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-124152341349935L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-124221060826671L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-124182406121007L);
-    }
-
-    public final void rebuildMenu(List<MenuItemRecord> existingItems) {
-        int i;
-        this.menuItemsContainer.removeAllViews();
-        if (existingItems == null) {
-            existingItems = PluginsController.INSTANCE.getInstance().getMenuItemsForLocation(this.menuType, this.contextData);
-        }
-        Context context = this.menuItemsContainer.getContext();
-        this.menuItemsContainer.addView(createGap(), LayoutHelper.createLinear(-1, 8));
-        int i2 = 0;
-        for (final MenuItemRecord menuItemRecord : existingItems) {
-            String text = menuItemRecord.getText();
-            if (text != null && text.length() != 0) {
-                ActionBarMenuSubItem actionBarMenuSubItem = new ActionBarMenuSubItem(context, false, false, this.resourcesProvider);
-                actionBarMenuSubItem.setTextAndIcon(menuItemRecord.getText(), menuItemRecord.getIconResId());
-                actionBarMenuSubItem.setMinimumWidth(AndroidUtilities.dp(196.0f));
-                actionBarMenuSubItem.setOnClickListener(new View.OnClickListener() { // from class: com.exteragram.messenger.plugins.ui.components.PluginsMenuWrapper$$ExternalSyntheticLambda0
-                    @Override // android.view.View.OnClickListener
-                    public final void onClick(View view) {
-                        PluginsMenuWrapper.rebuildMenu$lambda$0$0(PluginsMenuWrapper.this, menuItemRecord, view);
-                    }
-                });
-                if (TextUtils.isEmpty(menuItemRecord.getSubtext())) {
-                    i = 48;
-                } else {
-                    actionBarMenuSubItem.setSubtext(menuItemRecord.getSubtext());
-                    i = 56;
-                    actionBarMenuSubItem.setItemHeight(56);
-                }
-                this.menuItemsContainer.addView(actionBarMenuSubItem, LayoutHelper.createLinear(-1, i));
-                i2 += i;
-                actionBarMenuSubItem.setTag(menuItemRecord);
+            if (TextUtils.isEmpty(item.text)) {
+                continue;
             }
+
+            ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(fragment.getParentActivity(), false, false, resourcesProvider);
+            subItem.setTextAndIcon(item.text, item.iconResId != 0 ? item.iconResId : R.drawable.msg_plugins);
+            subItem.setMinimumWidth(AndroidUtilities.dp(196));
+            subItem.setOnClickListener(v -> {
+                closeMenu();
+                item.executeClick(contextData);
+            });
+
+            int itemHeight = ITEM_HEIGHT;
+            if (!TextUtils.isEmpty(item.subtext)) {
+                subItem.setSubtext(item.subtext);
+                subItem.setItemHeight(SUBTITLE_ITEM_HEIGHT);
+                itemHeight = SUBTITLE_ITEM_HEIGHT;
+            }
+            menuItemsContainer.addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, itemHeight));
+            totalHeight += itemHeight;
+            subItem.setTag(item);
         }
-        int iDp = AndroidUtilities.dp(436.0f);
-        Object parent = this.menuItemsContainer.getParent();
-        View view = parent instanceof View ? (View) parent : null;
-        if (view == null) {
-            return;
+
+        int maxHeight = AndroidUtilities.dp(436);
+        View scrollView = (View) menuItemsContainer.getParent();
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) scrollView.getLayoutParams();
+        if (params == null) {
+            params = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
         }
-        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-        LinearLayout.LayoutParams layoutParamsCreateLinear = layoutParams instanceof LinearLayout.LayoutParams ? (LinearLayout.LayoutParams) layoutParams : null;
-        if (layoutParamsCreateLinear == null) {
-            layoutParamsCreateLinear = LayoutHelper.createLinear(-1, -2);
+        if (totalHeight > maxHeight && Math.abs(totalHeight - maxHeight) > 112) {
+            params.height = maxHeight;
+        } else {
+            params.height = LayoutHelper.WRAP_CONTENT;
         }
-        if (i2 <= iDp || Math.abs(i2 - iDp) <= 112) {
-            iDp = -2;
-        }
-        layoutParamsCreateLinear.height = iDp;
-        view.setLayoutParams(layoutParamsCreateLinear);
+        scrollView.setLayoutParams(params);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final void rebuildMenu$lambda$0$0(PluginsMenuWrapper pluginsMenuWrapper, MenuItemRecord menuItemRecord, View view) {
-        pluginsMenuWrapper.closeMenu();
-        menuItemRecord.executeClick(pluginsMenuWrapper.contextData);
-    }
-
-    private final ScrollView createScrollView(Context context) {
+    private ScrollView createScrollView(Context context) {
         return new ScrollView(context) {
-            private final AnimatedFloat alphaFloat = new AnimatedFloat(this, 350L, CubicBezierInterpolator.EASE_OUT_QUINT);
-            private Drawable topShadowDrawable;
+            final AnimatedFloat alphaFloat = new AnimatedFloat(this, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+            Drawable topShadowDrawable;
             private boolean wasCanScrollVertically;
 
-            @Override // android.widget.ScrollView, android.view.ViewGroup, android.view.ViewParent
+            @Override
             public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-123241808283183L);
                 super.onNestedScroll(target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed);
-                boolean zCanScrollVertically = canScrollVertically(-1);
-                if (this.wasCanScrollVertically != zCanScrollVertically) {
+                boolean canScroll = canScrollVertically(-1);
+                if (wasCanScrollVertically != canScroll) {
                     invalidate();
-                    this.wasCanScrollVertically = zCanScrollVertically;
+                    wasCanScrollVertically = canScroll;
                 }
             }
 
-            @Override // android.view.ViewGroup, android.view.View
-            public void dispatchDraw(Canvas canvas) {
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-123349182465583L);
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
                 super.dispatchDraw(canvas);
-                float f = this.alphaFloat.set(canScrollVertically(-1) ? 1.0f : 0.0f) * 0.5f;
-                if (f <= 0.0f) {
+                float alpha = alphaFloat.set(canScrollVertically(-1) ? 1.0f : 0.0f) * 0.5f;
+                if (alpha <= 0.0f) {
                     return;
                 }
-                if (this.topShadowDrawable == null) {
-                    this.topShadowDrawable = ContextCompat.getDrawable(context, R.drawable.header_shadow);
+                if (topShadowDrawable == null) {
+                    topShadowDrawable = ContextCompat.getDrawable(getContext(), R.drawable.header_shadow);
                 }
-                Drawable drawable = this.topShadowDrawable;
-                if (drawable != null) {
-                    drawable.setBounds(0, getScrollY(), getWidth(), getScrollY() + drawable.getIntrinsicHeight());
-                    drawable.setAlpha((int) (255.0f * f));
-                    drawable.draw(canvas);
+                if (topShadowDrawable == null) {
+                    return;
                 }
+                topShadowDrawable.setBounds(0, getScrollY(), getWidth(), getScrollY() + topShadowDrawable.getIntrinsicHeight());
+                topShadowDrawable.setAlpha((int) (alpha * 255));
+                topShadowDrawable.draw(canvas);
             }
         };
     }
 
-    private final View createGap() {
-        ActionBarPopupWindow.GapView gapView = new ActionBarPopupWindow.GapView(this.menuItemsContainer.getContext(), this.resourcesProvider);
-        return gapView;
+    private View createGap() {
+        FrameLayout gap = new FrameLayout(fragment.getContext());
+        gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
+        return gap;
     }
 }

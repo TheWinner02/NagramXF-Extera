@@ -1,10 +1,9 @@
 package de.robv.android.xposed;
 
-/* JADX INFO: loaded from: classes.dex */
 public abstract class XC_MethodReplacement extends XC_MethodHook {
-    public static final XC_MethodReplacement DO_NOTHING = new XC_MethodReplacement(20000) { // from class: de.robv.android.xposed.XC_MethodReplacement.1
-        @Override // de.robv.android.xposed.XC_MethodReplacement
-        public Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) {
+    public static final XC_MethodReplacement DO_NOTHING = new XC_MethodReplacement(20000) {
+        @Override
+        protected Object replaceHookedMethod(MethodHookParam param) {
             return null;
         }
     };
@@ -12,34 +11,34 @@ public abstract class XC_MethodReplacement extends XC_MethodHook {
     public XC_MethodReplacement() {
     }
 
-    public static XC_MethodReplacement returnConstant(Object obj) {
-        return returnConstant(50, obj);
+    public XC_MethodReplacement(int priority) {
+        super(priority);
     }
 
-    @Override // de.robv.android.xposed.XC_MethodHook
-    public final void afterHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) {
-    }
-
-    @Override // de.robv.android.xposed.XC_MethodHook
-    public final void beforeHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) {
+    @Override
+    protected final void beforeHookedMethod(MethodHookParam param) {
         try {
-            methodHookParam.setResult(replaceHookedMethod(methodHookParam));
-        } catch (Throwable th) {
-            methodHookParam.setThrowable(th);
+            param.setResult(replaceHookedMethod(param));
+        } catch (Throwable t) {
+            param.setThrowable(t);
         }
     }
 
-    public abstract Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam);
-
-    public XC_MethodReplacement(int i) {
-        super(i);
+    @Override
+    protected final void afterHookedMethod(MethodHookParam param) {
     }
 
-    public static XC_MethodReplacement returnConstant(int i, final Object obj) {
-        return new XC_MethodReplacement(i) { // from class: de.robv.android.xposed.XC_MethodReplacement.2
-            @Override // de.robv.android.xposed.XC_MethodReplacement
-            public Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) {
-                return obj;
+    protected abstract Object replaceHookedMethod(MethodHookParam param);
+
+    public static XC_MethodReplacement returnConstant(Object value) {
+        return returnConstant(50, value);
+    }
+
+    public static XC_MethodReplacement returnConstant(int priority, final Object value) {
+        return new XC_MethodReplacement(priority) {
+            @Override
+            protected Object replaceHookedMethod(MethodHookParam param) {
+                return value;
             }
         };
     }

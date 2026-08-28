@@ -1,377 +1,521 @@
 package com.exteragram.messenger.plugins.ui;
 
-import android.content.Context;
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.OpenableColumns;
+import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
+
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.plugins.Plugin;
+import com.exteragram.messenger.plugins.PluginsConstants;
 import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.preferences.BasePreferencesActivity;
 import com.exteragram.messenger.plugins.ui.components.EmptyPluginsView;
 import com.exteragram.messenger.plugins.ui.components.PluginCell;
 import com.exteragram.messenger.plugins.ui.components.PluginCellDelegate;
 import com.exteragram.messenger.plugins.utils.PluginsWatchdog;
-import com.exteragram.messenger.preferences.BasePreferencesActivity;
 import com.exteragram.messenger.utils.text.LocaleUtils;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import kotlin.Metadata;
-import kotlin.collections.CollectionsKt;
-import kotlin.jvm.functions.Function1;
-import kotlin.jvm.internal.FunctionReferenceImpl;
-import kotlin.jvm.internal.SourceDebugExtension;
-import kotlin.text.StringsKt;
-import okhttp3.internal.url._UrlKt;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 
-/* JADX INFO: loaded from: classes.dex */
-@SourceDebugExtension({"SMAP\nPluginsActivity.kt\nKotlin\n*S Kotlin\n*F\n+ 1 PluginsActivity.kt\ncom/exteragram/messenger/plugins/ui/PluginsActivity\n+ 2 fake.kt\nkotlin/jvm/internal/FakeKt\n*L\n1#1,407:1\n1#2:408\n*E\n"})
-public final class PluginsActivity extends BasePreferencesActivity implements NotificationCenter.NotificationCenterDelegate {
-    private EmptyPluginsView emptyView;
-    private ActionBarMenuItem infoItem;
-    private boolean isSwitchingEngineState;
-    private String query;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class PluginsActivity extends BasePreferencesActivity implements NotificationCenter.NotificationCenterDelegate {
+    private static final int REQUEST_PICK_PLUGIN = 9001;
+    private static final int BUTTON_TOGGLE_ENGINE = 1;
+
     private ActionBarMenuItem searchItem;
+    private ActionBarMenuItem installItem;
+    private ActionBarMenuItem infoItem;
     private boolean searching;
+    private String query;
+    private boolean isSwitchingEngineState;
 
-    @Override // com.exteragram.messenger.preferences.BasePreferencesActivity, org.telegram.ui.ActionBar.BaseFragment
-    public View createView(Context context) {
-        View viewCreateView = super.createView(context);
-        ActionBarMenuItem actionBarMenuItemSearchListener = this.actionBar.menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() { // from class: com.exteragram.messenger.plugins.ui.PluginsActivity.createView.1
-            @Override // org.telegram.ui.ActionBar.ActionBarMenuItem.ActionBarMenuItemSearchListener
-            public void onSearchExpand() {
-                PluginsActivity.this.searching = true;
-                ((BasePreferencesActivity) PluginsActivity.this).listView.adapter.update(true);
-                ((BasePreferencesActivity) PluginsActivity.this).listView.scrollToPosition(0);
-                ActionBarMenuItem actionBarMenuItem = PluginsActivity.this.infoItem;
-                if (actionBarMenuItem != null) {
-                    actionBarMenuItem.setVisibility(8);
-                }
-            }
+    @Override
+    public CharSequence getTitle() {
+        return LocaleController.getString(R.string.Plugins);
+    }
 
-            @Override // org.telegram.ui.ActionBar.ActionBarMenuItem.ActionBarMenuItemSearchListener
-            public void onSearchCollapse() {
-                PluginsActivity.this.searching = false;
-                PluginsActivity.this.query = null;
-                ((BasePreferencesActivity) PluginsActivity.this).listView.adapter.update(true);
-                ((BasePreferencesActivity) PluginsActivity.this).listView.scrollToPosition(0);
-                ActionBarMenuItem actionBarMenuItem = PluginsActivity.this.infoItem;
-                if (actionBarMenuItem != null) {
-                    actionBarMenuItem.setVisibility(0);
-                }
-            }
-
-            @Override // org.telegram.ui.ActionBar.ActionBarMenuItem.ActionBarMenuItemSearchListener
-            public void onTextChanged(EditText editText) {
-                PluginsActivity.this.query = editText.getText().toString();
-                ((BasePreferencesActivity) PluginsActivity.this).listView.adapter.update(true);
-                ((BasePreferencesActivity) PluginsActivity.this).listView.scrollToPosition(0);
-            }
-        });
-        this.searchItem = actionBarMenuItemSearchListener;
-        if (actionBarMenuItemSearchListener != null) {
-            actionBarMenuItemSearchListener.setSearchFieldHint(LocaleController.getString(R.string.Search));
-        }
-        AndroidUtilities.updateViewVisibilityAnimated(this.searchItem, ExteraConfig.getPluginsEngine() && !PluginsController.INSTANCE.getInstance().getPlugins().isEmpty(), 0.5f, false);
-        ActionBarMenuItem actionBarMenuItemAddItem = this.actionBar.menu.addItem(1, R.drawable.msg_info);
-        this.infoItem = actionBarMenuItemAddItem;
-        if (actionBarMenuItemAddItem != null) {
-            actionBarMenuItemAddItem.setOnClickListener(new View.OnClickListener() { // from class: com.exteragram.messenger.plugins.ui.PluginsActivity$$ExternalSyntheticLambda0
-                @Override // android.view.View.OnClickListener
-                public final void onClick(View view) {
-                    presentFragment(new PluginsInfoActivity());
-                }
-            });
-        }
-        this.listView.setOnScrollListener(new RecyclerView.OnScrollListener() { // from class: com.exteragram.messenger.plugins.ui.PluginsActivity.createView.3
-            @Override // androidx.recyclerview.widget.RecyclerView.OnScrollListener
+    @Override
+    public View createView(android.content.Context context) {
+        View view = super.createView(context);
+        listView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight + AndroidUtilities.dp(12));
+        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                if (newState == 1) {
-                    AndroidUtilities.hideKeyboard(PluginsActivity.this.getParentActivity().getCurrentFocus());
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING && getParentActivity() != null) {
+                    AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                 }
             }
         });
-        this.fragmentView = viewCreateView;
-        return viewCreateView;
-    }
 
-    @Override // com.exteragram.messenger.preferences.BasePreferencesActivity
-    public String getTitle() {
-        return "Plugins";
-    }
-
-    @Override // com.exteragram.messenger.preferences.BasePreferencesActivity
-    public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        Plugin plugin;
-        if (!this.searching) {
-            items.add(UItem.asRippleCheck(0, "Enable Python Plugins Engine").setChecked(ExteraConfig.getPluginsEngine()));
-        }
-        if (ExteraConfig.getPluginsEngine()) {
-            HashMap map = new HashMap(PluginsController.INSTANCE.getInstance().getPlugins());
-            UItem uItemAsSpace = UItem.asSpace(AndroidUtilities.dp(8.0f));
-            uItemAsSpace.transparent = true;
-            items.add(uItemAsSpace);
-            if (this.searching && !TextUtils.isEmpty(this.query)) {
-                map.values().removeIf(pluginItem -> m1343$r8$lambda$pqUrQXSOvACq2ucF3IrTdNqGZA(this, (Plugin) pluginItem));
-            }
-            if (map.isEmpty()) {
-                if (this.emptyView == null) {
-                    this.emptyView = new EmptyPluginsView(getContext(), this.resourceProvider);
-                }
-                EmptyPluginsView emptyPluginsView = this.emptyView;
-                if (emptyPluginsView == null) {
-                    return;
-                }
-                if (this.searching) {
-                    if (emptyPluginsView.getTag() == null || ((Integer) emptyPluginsView.getTag()).intValue() != 1) {
-                        MediaDataController.getInstance(UserConfig.selectedAccount).setPlaceholderImage(emptyPluginsView.getBackupImageView(), "AnimatedEmojies", "🔎", "100_100");
-                        emptyPluginsView.setText("No plugins found");
-                        emptyPluginsView.setTag(1);
-                    }
-                } else if (emptyPluginsView.getTag() == null || ((Integer) emptyPluginsView.getTag()).intValue() != 2) {
-                    MediaDataController.getInstance(UserConfig.selectedAccount).setPlaceholderImage(emptyPluginsView.getBackupImageView(), "AnimatedEmojies", "📂", "100_100");
-                    emptyPluginsView.setText(LocaleUtils.formatWithUsernames("Install plugins via Telegram messages or .py/.zip files"));
-                    emptyPluginsView.setTag(2);
-                }
-                items.add(UItem.asFullscreenCustom(emptyPluginsView, AndroidUtilities.dp((this.searching ? 2 : 1) * 74), true));
-            } else {
-                if (!ExteraConfig.getPinnedPlugins().isEmpty()) {
-                    for (String str : ExteraConfig.getPinnedPlugins()) {
-                        if (map.containsKey(str) && (plugin = (Plugin) map.get(str)) != null) {
-                            items.add(createPluginItem(plugin));
-                            items.add(UItem.asSpace(AndroidUtilities.dp(8.0f)));
+        ActionBarMenu menu = actionBar.createMenu();
+        searchItem = menu.addItem(0, R.drawable.ic_ab_search)
+                .setIsSearchField(true)
+                .setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+                    @Override
+                    public void onSearchExpand() {
+                        searching = true;
+                        listView.adapter.update(true);
+                        listView.scrollToPosition(0);
+                        if (infoItem != null) {
+                            infoItem.setVisibility(View.GONE);
                         }
                     }
-                }
-                ArrayList<Plugin> arrayList = new ArrayList(map.values());
-                arrayList.sort(Comparator.comparing(Plugin::getName));
-                for (Plugin plugin2 : arrayList) {
-                    if (!PluginsController.INSTANCE.getInstance().isPluginPinned(plugin2.getId())) {
-                        items.add(createPluginItem(plugin2));
-                        items.add(UItem.asSpace(AndroidUtilities.dp(8.0f)));
-                    }
-                }
-            }
-            UItem uItemAsSpace2 = UItem.asSpace(AndroidUtilities.dp(4.0f));
-            uItemAsSpace2.transparent = true;
-            items.add(uItemAsSpace2);
-        }
-    }
 
-    public static boolean m1343$r8$lambda$pqUrQXSOvACq2ucF3IrTdNqGZA(PluginsActivity pluginsActivity, Plugin plugin) {
-        String name = plugin.getName();
-        Locale locale = Locale.ROOT;
-        return !name.toLowerCase(locale).contains(pluginsActivity.query.toLowerCase(locale));
-    }
-
-    /* JADX INFO: renamed from: com.exteragram.messenger.plugins.ui.PluginsActivity$createPluginItem$1, reason: invalid class name */
-    /* JADX INFO: loaded from: classes4.dex */
-    public static final class AnonymousClass1 implements PluginCellDelegate {
-        final /* synthetic */ Plugin $plugin;
-        final /* synthetic */ PluginsActivity this$0;
-
-        public AnonymousClass1(Plugin plugin, PluginsActivity pluginsActivity) {
-            this.$plugin = plugin;
-            this.this$0 = pluginsActivity;
-        }
-
-        @Override // com.exteragram.messenger.plugins.ui.components.PluginCellDelegate
-        public void sharePlugin() {
-            PluginsController.PluginsEngine pluginEngine = PluginsController.INSTANCE.getInstance().getPluginEngine(this.$plugin.getId());
-            if (pluginEngine != null) {
-                pluginEngine.sharePlugin(this.$plugin.getId());
-            }
-        }
-
-        @Override // com.exteragram.messenger.plugins.ui.components.PluginCellDelegate
-        public void openInExternalApp() {
-            PluginsController.PluginsEngine pluginEngine = PluginsController.INSTANCE.getInstance().getPluginEngine(this.$plugin.getId());
-            if (pluginEngine != null) {
-                pluginEngine.openInExternalApp(this.$plugin.getId());
-            }
-        }
-
-        @Override // com.exteragram.messenger.plugins.ui.components.PluginCellDelegate
-        public void deletePlugin() {
-            if (this.$plugin.getIsNotResponding()) {
-                PluginsWatchdog.INSTANCE.showNotRespondingAlert(this.$plugin);
-                return;
-            }
-            AlertDialog.Builder message = new AlertDialog.Builder(this.this$0.getParentActivity(), this.this$0.getResourceProvider()).setTitle("Delete Plugin").setMessage(AndroidUtilities.replaceTags("Are you sure you want to delete " + this.$plugin.getName() + "?"));
-            String string = LocaleController.getString(R.string.Delete);
-            final Plugin plugin = this.$plugin;
-            final PluginsActivity pluginsActivity = this.this$0;
-            AlertDialog alertDialogCreate = message.setPositiveButton(string, new AlertDialog.OnButtonClickListener() { // from class: com.exteragram.messenger.plugins.ui.PluginsActivity$createPluginItem$1$$ExternalSyntheticLambda4
-                @Override // org.telegram.ui.ActionBar.AlertDialog.OnButtonClickListener
-                public final void onClick(AlertDialog alertDialog, int i) {
-                    PluginsController.INSTANCE.getInstance().deletePlugin(plugin.getId(), new Utilities.Callback() { // from class: com.exteragram.messenger.plugins.ui.PluginsActivity$createPluginItem$1$$ExternalSyntheticLambda1
-                        @Override // org.telegram.messenger.Utilities.Callback
-                        public final void run(Object obj) {
-                            PluginsActivity.AnonymousClass1.deletePlugin$lambda$0$0(pluginsActivity, (String) obj);
+                    @Override
+                    public void onSearchCollapse() {
+                        searching = false;
+                        query = null;
+                        listView.adapter.update(true);
+                        listView.scrollToPosition(0);
+                        if (infoItem != null) {
+                            infoItem.setVisibility(View.VISIBLE);
                         }
-                    });
-                }
-            }).setNegativeButton(LocaleController.getString(R.string.Cancel), null).create();
-            alertDialogCreate.show();
-            View button = alertDialogCreate.getButton(-1);
-            TextView textView = button instanceof TextView ? (TextView) button : null;
-            if (textView != null) {
-                textView.setTextColor(Theme.getColor(Theme.key_text_RedBold));
-            }
-        }
+                    }
 
-        /* JADX INFO: Access modifiers changed from: private */
-        public static final void deletePlugin$lambda$0$0(final PluginsActivity pluginsActivity, final String str) {
-            AndroidUtilities.runOnUIThread(new Runnable() { // from class: com.exteragram.messenger.plugins.ui.PluginsActivity$createPluginItem$1$$ExternalSyntheticLambda3
-                @Override // java.lang.Runnable
-                public final void run() {
-                    PluginsActivity.AnonymousClass1.deletePlugin$lambda$0$0$0(pluginsActivity, str);
-                }
-            });
-        }
-
-        /* JADX INFO: Access modifiers changed from: private */
-        public static final void deletePlugin$lambda$0$0$0(PluginsActivity pluginsActivity, String str) {
-            if (pluginsActivity.fragmentView == null) {
-                return;
-            }
-            ((BasePreferencesActivity) pluginsActivity).listView.adapter.update(true);
-            if (str != null) {
-                BulletinFactory.of(pluginsActivity).createSimpleBulletin(R.raw.error, str).show();
-            }
-        }
-
-        @Override // com.exteragram.messenger.plugins.ui.components.PluginCellDelegate
-        public void togglePlugin(View view) {
-            if (this.$plugin.getIsNotResponding()) {
-                PluginsWatchdog.INSTANCE.showNotRespondingAlert(this.$plugin);
-                return;
-            }
-            final PluginCell pluginCell = (PluginCell) view;
-            final boolean newState = !this.$plugin.isEnabled();
-            pluginCell.setChecked(newState, true);
-            PluginsController companion = PluginsController.INSTANCE.getInstance();
-            String id = this.$plugin.getId();
-            final PluginsActivity pluginsActivity = this.this$0;
-            final Plugin plugin = this.$plugin;
-            companion.setPluginEnabled(id, newState, obj -> {
-                final String str = obj instanceof String ? (String) obj : null;
-                AndroidUtilities.runOnUIThread(() -> PluginsActivity.AnonymousClass1.togglePlugin$lambda$1$0(pluginsActivity, str, newState, plugin, pluginCell));
-            });
-        }
-
-        private static final void togglePlugin$lambda$1$0(final PluginsActivity pluginsActivity, final String str, boolean z, Plugin plugin, PluginCell pluginCell) {
-            if (pluginsActivity.fragmentView == null || pluginsActivity.getParentActivity() == null) {
-                return;
-            }
-            if (str != null) {
-                pluginCell.setChecked(!z, true);
-                AlertDialog.Builder builder = new AlertDialog.Builder(pluginsActivity.getParentActivity());
-                builder.setTitle((z ? "Failed to enable " : "Failed to disable ") + plugin.getName());
-                builder.setMessage(str);
-                builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
-                builder.setNegativeButton(LocaleController.getString(R.string.Copy), (dialog, which) -> {
-                    if (AndroidUtilities.addToClipboard(str)) {
-                        BulletinFactory.of(pluginsActivity).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                    @Override
+                    public void onTextChanged(EditText editText) {
+                        query = editText.getText().toString();
+                        listView.adapter.update(true);
+                        listView.scrollToPosition(0);
                     }
                 });
-                builder.show();
+        searchItem.setSearchFieldHint(LocaleController.getString(R.string.Search));
+        updateSearchVisibility(false);
+
+        installItem = menu.addItem(2, R.drawable.msg_add);
+        installItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openPluginPicker();
+            }
+        });
+
+        infoItem = menu.addItem(1, R.drawable.msg_info);
+        infoItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                presentFragment(new PluginsInfoActivity());
+            }
+        });
+        return view;
+    }
+
+    private void openPluginPicker() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        try {
+            startActivityForResult(intent, REQUEST_PICK_PLUGIN);
+        } catch (Exception e) {
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.ErrorOccurred)).show();
+        }
+    }
+
+    private String resolveDisplayName(Uri uri) {
+        if (uri == null || getParentActivity() == null) {
+            return null;
+        }
+        Cursor cursor = null;
+        try {
+            cursor = getParentActivity().getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (index >= 0) {
+                    return cursor.getString(index);
+                }
+            }
+        } catch (Exception ignore) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_PICK_PLUGIN && resultCode == Activity.RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null) {
+                try {
+                    if (getParentActivity() == null) {
+                        throw new IllegalStateException("parentActivity == null");
+                    }
+                    File cacheDir = new File(getParentActivity().getCacheDir(), "plugin_imports");
+                    if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+                        throw new IllegalStateException("Failed to create plugin import cache dir");
+                    }
+                    File file = File.createTempFile("plugin_import_", PluginsConstants.PLUGINS_EXT, cacheDir);
+                    try (InputStream inputStream = getParentActivity().getContentResolver().openInputStream(uri);
+                         OutputStream outputStream = new FileOutputStream(file)) {
+                        if (inputStream == null) {
+                            throw new IllegalStateException("inputStream == null");
+                        }
+                        byte[] buffer = new byte[4 * 1024];
+                        int read;
+                        while ((read = inputStream.read(buffer)) != -1) {
+                            outputStream.write(buffer, 0, read);
+                        }
+                        outputStream.flush();
+                    }
+                    PluginsController.getInstance().showInstallDialog(this, file.getAbsolutePath(), false);
+                } catch (Throwable e) {
+                    FileLog.e("Failed to import plugin from uri " + uri, e);
+                    BulletinFactory.of(this)
+                            .createSimpleBulletin(
+                                    R.raw.error,
+                                    LocaleController.getString(R.string.ErrorOccurred),
+                                    LocaleController.getString(R.string.Copy),
+                                    () -> {
+                                        if (AndroidUtilities.addToClipboard(Log.getStackTraceString(e))) {
+                                            BulletinFactory.of(this).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                                        }
+                                    })
+                            .show();
+                }
+            }
+        }
+        super.onActivityResultFragment(requestCode, resultCode, data);
+    }
+
+    private void updateSearchVisibility(boolean animated) {
+        AndroidUtilities.updateViewVisibilityAnimated(searchItem, ExteraConfig.pluginsEngine && !PluginsController.getInstance().plugins.isEmpty(), 0.5f, false, animated);
+    }
+
+    @Override
+    protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        if (!searching) {
+            items.add(createPluginsEngineItem());
+            UItem runtimeIssueItem = createRuntimeIssueItem();
+            if (runtimeIssueItem != null) {
+                items.add(runtimeIssueItem);
+            }
+        }
+        if (!ExteraConfig.pluginsEngine) {
+            return;
+        }
+
+        Map<String, Plugin> plugins = new HashMap<>(PluginsController.getInstance().plugins);
+        UItem topSpacer = UItem.asSpace(AndroidUtilities.dp(8));
+        topSpacer.transparent = true;
+        items.add(topSpacer);
+
+        if (searching && !TextUtils.isEmpty(query)) {
+            String lowered = query.toLowerCase();
+            ArrayList<Plugin> filtered = new ArrayList<>();
+            for (Plugin plugin : plugins.values()) {
+                if (plugin != null && plugin.getName() != null && plugin.getName().toLowerCase().contains(lowered)) {
+                    filtered.add(plugin);
+                }
+            }
+            if (!filtered.isEmpty()) {
+                for (Plugin plugin : filtered) {
+                    addPluginItem(items, plugin);
+                }
+                return;
+            }
+            plugins.clear();
+        }
+
+        if (plugins.isEmpty()) {
+            EmptyPluginsView emptyView = new EmptyPluginsView(getContext() != null ? getContext() : fragmentView.getContext(), getResourceProvider());
+            if (searching) {
+                MediaDataController.getInstance(UserConfig.selectedAccount).setPlaceholderImage(emptyView.getBackupImageView(), "AnimatedEmojies", "🔎", "100_100");
+                emptyView.setText(LocaleController.getString(R.string.PluginsNotFound));
             } else {
-                pluginCell.setChecked(z, true);
+                MediaDataController.getInstance(UserConfig.selectedAccount).setPlaceholderImage(emptyView.getBackupImageView(), "AnimatedEmojies", "📂", "100_100");
+                emptyView.setText(LocaleUtils.formatWithUsernames(LocaleController.getString(R.string.PluginsInfo)));
+            }
+            items.add(UItem.asFullscreenCustom(emptyView, AndroidUtilities.dp(72) + org.telegram.ui.ActionBar.ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight, true).setTransparent(true));
+            return;
+        }
+
+        if (!ExteraConfig.pinnedPlugins.isEmpty()) {
+            for (String pluginId : ExteraConfig.pinnedPlugins) {
+                Plugin plugin = plugins.get(pluginId);
+                if (plugin != null) {
+                    addPluginItem(items, plugin);
+                }
             }
         }
 
-        @Override // com.exteragram.messenger.plugins.ui.components.PluginCellDelegate
-        public void openPluginSettings() {
-            PluginsController.INSTANCE.openPluginSettings(this.$plugin.getId());
+        ArrayList<Plugin> sorted = new ArrayList<>(plugins.values());
+        Collections.sort(sorted, new Comparator<Plugin>() {
+            @Override
+            public int compare(Plugin o1, Plugin o2) {
+                return String.CASE_INSENSITIVE_ORDER.compare(o1.getName(), o2.getName());
+            }
+        });
+        for (Plugin plugin : sorted) {
+            if (!PluginsController.isPluginPinned(plugin.getId())) {
+                addPluginItem(items, plugin);
+            }
         }
 
-        @Override // com.exteragram.messenger.plugins.ui.components.PluginCellDelegate
-        public void pinPlugin(View view) {
-            PluginsController.Companion companion = PluginsController.INSTANCE;
-            boolean zIsPluginPinned = companion.isPluginPinned(this.$plugin.getId());
-            companion.setPluginPinned(this.$plugin.getId(), !zIsPluginPinned);
-            ((PluginCell) view).setPinned(!zIsPluginPinned);
-            ((BasePreferencesActivity) this.this$0).listView.adapter.update(true);
-            ((BasePreferencesActivity) this.this$0).listView.smoothScrollToPosition(0);
-        }
-
-        @Override // com.exteragram.messenger.plugins.ui.components.PluginCellDelegate
-        public boolean canOpenInExternalApp() {
-            PluginsController.PluginsEngine pluginEngine = PluginsController.INSTANCE.getInstance().getPluginEngine(this.$plugin.getId());
-            return pluginEngine != null && pluginEngine.canOpenInExternalApp();
-        }
+        UItem bottomSpacer = UItem.asSpace(AndroidUtilities.dp(4));
+        bottomSpacer.transparent = true;
+        items.add(bottomSpacer);
     }
 
-    private final UItem createPluginItem(Plugin plugin) {
-        return PluginCell.Factory.INSTANCE.asPlugin(plugin, new AnonymousClass1(plugin, this));
+    private void addPluginItem(ArrayList<UItem> items, Plugin plugin) {
+        items.add(createPluginItem(plugin));
+        UItem spacer = UItem.asSpace(AndroidUtilities.dp(8));
+        spacer.transparent = true;
+        items.add(spacer);
     }
 
-    @Override // com.exteragram.messenger.preferences.BasePreferencesActivity
-    public void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.viewType == 9) {
+    private UItem createPluginsEngineItem() {
+        return UItem.asRippleCheck(BUTTON_TOGGLE_ENGINE, LocaleController.getString(R.string.EnablePluginsEngine))
+                .setChecked(ExteraConfig.pluginsEngine);
+    }
+
+    private UItem createRuntimeIssueItem() {
+        String issue = PluginsController.getPluginRuntimeIssue();
+        if (TextUtils.isEmpty(issue) || "disabled".equals(issue) || "unsupported".equals(issue)) {
+            return null;
+        }
+        CharSequence text;
+        if ("safe_mode".equals(issue)) {
+            text = PluginsController.getSafeModeStatusText();
+        } else if ("native_runtime_unavailable".equals(issue)) {
+            text = LocaleController.getString(R.string.PluginsNativeRuntimeUnavailable);
+        } else if ("python_runtime_unavailable".equals(issue)) {
+            text = LocaleController.getString(R.string.PluginsPythonRuntimeUnavailable);
+        } else {
+            return null;
+        }
+        return UItem.asShadow(text);
+    }
+
+    private UItem createPluginItem(final Plugin plugin) {
+        return PluginCell.Factory.of(plugin, new PluginCellDelegate() {
+            @Override
+            public void sharePlugin() {
+                PluginsController.PluginsEngine engine = PluginsController.getInstance().getPluginEngine(plugin.getId());
+                if (engine != null) {
+                    engine.sharePlugin(plugin.getId());
+                }
+            }
+
+            @Override
+            public void openInExternalApp() {
+                PluginsController.PluginsEngine engine = PluginsController.getInstance().getPluginEngine(plugin.getId());
+                if (engine != null) {
+                    engine.openInExternalApp(plugin.getId());
+                }
+            }
+
+            @Override
+            public void deletePlugin() {
+                if (plugin.isNotResponding()) {
+                    PluginsWatchdog.showNotRespondingAlert(plugin);
+                    return;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), getResourceProvider())
+                        .setTitle(LocaleController.getString(R.string.PluginDelete))
+                        .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.PluginDeleteInfo, plugin.getName())))
+                        .setPositiveButton(LocaleController.getString(R.string.Delete), new AlertDialog.OnButtonClickListener() {
+                            @Override
+                            public void onClick(AlertDialog alertDialog, int which) {
+                                PluginsController.getInstance().deletePlugin(plugin.getId(), new Utilities.Callback<String>() {
+                                    @Override
+                                    public void run(final String error) {
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (fragmentView == null) {
+                                                    return;
+                                                }
+                                                updateSearchVisibility(true);
+                                                listView.adapter.update(true);
+                                                if (error != null) {
+                                                    BulletinFactory.of(PluginsActivity.this).createSimpleBulletin(R.raw.error, error).show();
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        })
+                        .setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                AlertDialog dialog = builder.create();
+                showDialog(dialog);
+                TextView textView = (TextView) dialog.getButton(-1);
+                if (textView != null) {
+                    textView.setTextColor(Theme.getColor(Theme.key_text_RedBold, getResourceProvider()));
+                }
+            }
+
+            @Override
+            public void togglePlugin(View view) {
+                if (plugin.isNotResponding()) {
+                    PluginsWatchdog.showNotRespondingAlert(plugin);
+                    return;
+                }
+                final PluginCell pluginCell = (PluginCell) view;
+                final boolean enabled = !plugin.isEnabled();
+                PluginsController.getInstance().setPluginEnabled(plugin.getId(), enabled, new Utilities.Callback<String>() {
+                    @Override
+                    public void run(final String error) {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (error != null) {
+                                    BulletinFactory.of(PluginsActivity.this)
+                                            .createSimpleBulletin(
+                                                    R.raw.error,
+                                                    LocaleController.formatString(enabled ? R.string.PluginEnableError : R.string.PluginDisableError, plugin.getName()),
+                                                    LocaleController.getString(R.string.Copy),
+                                                    new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            if (AndroidUtilities.addToClipboard(error)) {
+                                                                BulletinFactory.of(PluginsActivity.this).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                                                            }
+                                                        }
+                                                    })
+                                            .show();
+                                } else {
+                                    pluginCell.setChecked(enabled, true);
+                                    listView.adapter.update(false);
+                                    if (enabled && ExteraConfig.pluginsSafeMode) {
+                                        BulletinFactory.of(PluginsActivity.this)
+                                                .createSimpleBulletin(R.raw.error, PluginsController.getSafeModeStatusText())
+                                                .show();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void openPluginSettings() {
+                if (!PluginsController.getInstance().hasPluginSettings(plugin.getId())) {
+                    return;
+                }
+                PluginsController.PluginsEngine engine = PluginsController.getInstance().getPluginEngine(plugin.getId());
+                if (engine != null) {
+                    engine.openPluginSettings(plugin, PluginsActivity.this);
+                }
+            }
+
+            @Override
+            public void pinPlugin(View view) {
+                boolean pinned = PluginsController.isPluginPinned(plugin.getId());
+                PluginsController.setPluginPinned(plugin.getId(), !pinned);
+                if (view instanceof PluginCell) {
+                    ((PluginCell) view).setPinned(!pinned);
+                }
+                listView.adapter.update(true);
+                listView.smoothScrollToPosition(0);
+            }
+
+            @Override
+            public boolean canOpenInExternalApp() {
+                PluginsController.PluginsEngine engine = PluginsController.getInstance().getPluginEngine(plugin.getId());
+                return engine != null && engine.canOpenInExternalApp();
+            }
+        });
+    }
+
+    @Override
+    protected void onClick(UItem item, View view, int position, float x, float y) {
+        if (item != null && item.id == BUTTON_TOGGLE_ENGINE) {
             togglePluginsEngine(view, item);
         }
     }
 
-    private final void togglePluginsEngine(View view, UItem item) {
-        if (this.isSwitchingEngineState) {
+    private void togglePluginsEngine(View view, UItem item) {
+        if (isSwitchingEngineState) {
             return;
         }
-        this.isSwitchingEngineState = true;
-        ExteraConfig.setPluginsEngine(!ExteraConfig.getPluginsEngine());
-        TextCheckCell textCheckCell = (TextCheckCell) view;
-        boolean pluginsEngine = ExteraConfig.getPluginsEngine();
-        item.checked = pluginsEngine;
-        textCheckCell.setChecked(pluginsEngine);
-        Runnable runnable = () -> AndroidUtilities.runOnUIThread(() -> togglePluginsEngine$lambda$1$0(PluginsActivity.this));
-        if (ExteraConfig.getPluginsEngine()) {
-            PluginsController.INSTANCE.getInstance().init(runnable);
+        isSwitchingEngineState = true;
+        ExteraConfig.pluginsEngine = !ExteraConfig.pluginsEngine;
+        SharedPreferences.Editor editor = ExteraConfig.editor;
+        editor.putBoolean("pluginsEngine", ExteraConfig.pluginsEngine).apply();
+        if (item != null) {
+            item.checked = ExteraConfig.pluginsEngine;
+        }
+        if (view instanceof TextCheckCell) {
+            TextCheckCell textCheckCell = (TextCheckCell) view;
+            textCheckCell.setChecked(ExteraConfig.pluginsEngine);
+            textCheckCell.setBackgroundColorAnimated(
+                    ExteraConfig.pluginsEngine,
+                    Theme.getColor(
+                            ExteraConfig.pluginsEngine ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked,
+                            getResourceProvider()));
+        }
+
+        Runnable onComplete = new Runnable() {
+            @Override
+            public void run() {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (fragmentView == null) {
+                            return;
+                        }
+                        if (searching) {
+                            actionBar.closeSearchField();
+                        }
+                        updateSearchVisibility(true);
+                        listView.adapter.update(true);
+                        isSwitchingEngineState = false;
+                    }
+                });
+            }
+        };
+        if (ExteraConfig.pluginsEngine) {
+            PluginsController.getInstance().init(onComplete);
         } else {
-            PluginsController.INSTANCE.getInstance().shutdown(runnable);
+            PluginsController.getInstance().shutdown(onComplete);
         }
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final void togglePluginsEngine$lambda$1$0(PluginsActivity pluginsActivity) {
-        if (pluginsActivity.fragmentView == null) {
-            return;
-        }
-        if (pluginsActivity.searching) {
-            pluginsActivity.actionBar.closeSearchField();
-        }
-        AndroidUtilities.updateViewVisibilityAnimated(pluginsActivity.searchItem, ExteraConfig.getPluginsEngine() && !PluginsController.INSTANCE.getInstance().getPlugins().isEmpty(), 0.5f, true);
-        pluginsActivity.listView.adapter.update(true);
-        pluginsActivity.isSwitchingEngineState = false;
+    @Override
+    protected boolean onLongClick(UItem item, View view, int position, float x, float y) {
+        return false;
     }
 
-    @Override // org.telegram.ui.ActionBar.BaseFragment
-    public int getNavigationBarColor() {
-        return Theme.getColor(Theme.key_windowBackgroundGray);
-    }
-
-    @Override // org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public boolean onFragmentCreate() {
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pluginsUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.reloadInterface);
@@ -379,7 +523,7 @@ public final class PluginsActivity extends BasePreferencesActivity implements No
         return super.onFragmentCreate();
     }
 
-    @Override // org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public void onFragmentDestroy() {
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginsUpdated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
@@ -387,27 +531,16 @@ public final class PluginsActivity extends BasePreferencesActivity implements No
         super.onFragmentDestroy();
     }
 
-    @Override // org.telegram.messenger.NotificationCenter.NotificationCenterDelegate
+    @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.pluginsUpdated) {
-            AndroidUtilities.updateViewVisibilityAnimated(this.searchItem, ExteraConfig.getPluginsEngine() && !PluginsController.INSTANCE.getInstance().getPlugins().isEmpty(), 0.5f, true);
-            this.listView.adapter.update(true);
+            updateSearchVisibility(true);
+            listView.adapter.update(true);
         } else if (id == NotificationCenter.reloadInterface) {
-            this.listView.invalidateViews();
+            listView.invalidateViews();
         } else if (id == NotificationCenter.pluginIsNotResponding) {
-            this.listView.adapter.update(true);
+            listView.adapter.update(true);
         }
     }
 
-    @Override // org.telegram.ui.ActionBar.BaseFragment
-    public boolean onBackPressed(boolean invoked) {
-        if (!this.searching) {
-            return super.onBackPressed(invoked);
-        }
-        if (!invoked) {
-            return false;
-        }
-        this.actionBar.closeSearchField();
-        return false;
-    }
 }

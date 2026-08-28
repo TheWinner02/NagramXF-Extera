@@ -69,6 +69,10 @@ import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.SparseIntArray;
 import android.view.ActionMode;
+
+import com.exteragram.messenger.plugins.IntentsController;
+import com.exteragram.messenger.plugins.PluginsController;
+
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -1535,6 +1539,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             showTosActivity(account, UserConfig.getInstance(account).unacceptedTermsOfService);
         }
         updateCurrentConnectionState(currentAccount);
+        PluginsController.getInstance().loadPluginSettings();
 
         switchingAccount = false;
     }
@@ -1808,6 +1813,19 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @SuppressLint("Range")
     private boolean handleIntent(Intent intent, boolean isNew, boolean restore, boolean fromPassword, Browser.Progress progress, boolean rebuildFragments, boolean openedTelegram) {
+        boolean stopped = IntentsController.dispatchBeforeIntent(intent);
+        try {
+            if (stopped) {
+                return true;
+            }
+            return handleIntentInternal(intent, isNew, restore, fromPassword, progress, rebuildFragments, openedTelegram);
+        } finally {
+            IntentsController.dispatchAfterIntent(intent);
+        }
+    }
+
+    @SuppressLint("Range")
+    private boolean handleIntentInternal(Intent intent, boolean isNew, boolean restore, boolean fromPassword, Browser.Progress progress, boolean rebuildFragments, boolean openedTelegram) {
         if (GiftInfoBottomSheet.handleIntent(intent, progress)) {
             return true;
         }

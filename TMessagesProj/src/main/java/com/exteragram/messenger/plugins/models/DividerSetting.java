@@ -1,22 +1,12 @@
 package com.exteragram.messenger.plugins.models;
 
-import kotlin.Metadata;
-import okhttp3.internal.url._UrlKt;
+import com.exteragram.messenger.plugins.PluginsConstants;
 
-/* JADX INFO: loaded from: classes.dex */
-public final class DividerSetting extends SettingItem {
-    private String text;
+public class DividerSetting extends SettingItem {
+    public String text;
 
-    public DividerSetting(String str) {
-        super("divider", null, null, null, 14, null);
-        this.text = str;
-    }
-
-    public final String getText() {
-        return this.text;
-    }
-
-    public final void setText(String str) {
-        this.text = str;
+    public DividerSetting(String text) {
+        super(PluginsConstants.Settings.TYPE_DIVIDER);
+        this.text = text;
     }
 }

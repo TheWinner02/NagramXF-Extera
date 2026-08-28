@@ -1,46 +1,27 @@
 package com.exteragram.messenger.plugins.hooks;
 
-import kotlin.Metadata;
-import okhttp3.internal.url._UrlKt;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
-/* JADX INFO: loaded from: classes.dex */
 public interface PluginsHooks {
-    PostRequestResult executePostRequestHook(String requestName, int account, TLObject response, TLRPC.TL_error error);
+    TLObject executePreRequestHook(String eventName, int account, TLObject request);
 
-    TLObject executePreRequestHook(String requestName, int account, TLObject request);
+    PostRequestResult executePostRequestHook(String eventName, int account, TLObject response, TLRPC.TL_error error);
+
+    TLRPC.Update executeUpdateHook(String eventName, int account, TLRPC.Update update);
+
+    TLRPC.Updates executeUpdatesHook(String eventName, int account, TLRPC.Updates updates);
 
     SendMessagesHelper.SendMessageParams executeSendMessageHook(int account, SendMessagesHelper.SendMessageParams params);
 
-    TLRPC.Update executeUpdateHook(String updateName, int account, TLRPC.Update update);
+    class PostRequestResult {
+        public TLObject response;
+        public TLRPC.TL_error error;
 
-    TLRPC.Updates executeUpdatesHook(String containerName, int account, TLRPC.Updates updates);
-
-    public static final class PostRequestResult {
-        private TLRPC.TL_error error;
-        private TLObject response;
-
-        public PostRequestResult(TLObject tLObject, TLRPC.TL_error tL_error) {
-            this.response = tLObject;
-            this.error = tL_error;
-        }
-
-        public final TLObject getResponse() {
-            return this.response;
-        }
-
-        public final void setResponse(TLObject tLObject) {
-            this.response = tLObject;
-        }
-
-        public final TLRPC.TL_error getError() {
-            return this.error;
-        }
-
-        public final void setError(TLRPC.TL_error tL_error) {
-            this.error = tL_error;
+        public PostRequestResult(TLObject response, TLRPC.TL_error error) {
+            this.response = response;
+            this.error = error;
         }
     }
 }

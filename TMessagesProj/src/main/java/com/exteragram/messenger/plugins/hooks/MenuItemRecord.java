@@ -2,164 +2,106 @@ package com.exteragram.messenger.plugins.hooks;
 
 import android.content.Context;
 import android.text.TextUtils;
+
 import com.chaquo.python.PyObject;
+import com.exteragram.messenger.plugins.PluginsConstants;
 import com.exteragram.messenger.plugins.PluginsController;
 import com.exteragram.messenger.plugins.utils.PyObjectUtils;
-import java.io.Serializable;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import kotlin.Metadata;
-import kotlin.jvm.functions.Function1;
-import kotlin.jvm.internal.Intrinsics;
-import kotlin.jvm.internal.SourceDebugExtension;
-import okhttp3.internal.url._UrlKt;
-import org.lsposed.lsparanoid.Deobfuscator$exteraGramDev$TMessagesProj;
+
 import org.mvel2.MVEL;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 
-/* JADX INFO: loaded from: classes.dex */
-@SourceDebugExtension({"SMAP\nMenuItemRecord.kt\nKotlin\n*S Kotlin\n*F\n+ 1 MenuItemRecord.kt\ncom/exteragram/messenger/plugins/hooks/MenuItemRecord\n+ 2 fake.kt\nkotlin/jvm/internal/FakeKt\n*L\n1#1,137:1\n1#2:138\n*E\n"})
-public final class MenuItemRecord {
-    private static final ConcurrentHashMap<String, Serializable> mvelExpressionCache = new ConcurrentHashMap<>();
-    private final String conditionString;
-    private final String iconName;
-    private final int iconResId;
-    private final String itemId;
-    private final String menuType;
-    private final PyObject onClickCallback;
-    private final String pluginId;
-    private final int priority;
-    private volatile boolean removed;
-    private final String subtext;
-    private final String text;
+import java.io.Serializable;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-    public MenuItemRecord(String str, PyObject pyObject) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-69606256690735L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-69653501330991L);
-        this.pluginId = str;
-        this.menuType = PyObjectUtils.getString(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69674976167471L), null, true);
-        this.text = PyObjectUtils.getString(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69717925840431L), null, true);
-        this.onClickCallback = pyObject.callAttr(Deobfuscator$exteraGramDev$TMessagesProj.getString(-69747990611503L), Deobfuscator$exteraGramDev$TMessagesProj.getString(-69696451003951L));
-        String string = PyObjectUtils.getString(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69795235251759L), null, true);
-        string = (string == null || string.length() == 0) ? null : string;
-        if (string == null) {
-            string = UUID.randomUUID().toString();
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-69760875513391L);
-        }
-        this.itemId = string;
-        String string2 = PyObjectUtils.getString(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69271249241647L), null, true);
-        this.iconName = string2;
-        this.subtext = PyObjectUtils.getString(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69301314012719L), null, true);
-        this.conditionString = PyObjectUtils.getString(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69404393227823L), null, true);
-        int identifier = 0;
-        this.priority = PyObjectUtils.getInt(pyObject, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69447342900783L), 0, true);
-        if (!TextUtils.isEmpty(string2)) {
+public class MenuItemRecord {
+    private static final ConcurrentHashMap<String, Serializable> MVEL_EXPRESSION_CACHE = new ConcurrentHashMap<>();
+
+    public final String pluginId;
+    public final String menuType;
+    public final String text;
+    public final PyObject onClickCallback;
+    public final String itemId;
+    public final String iconName;
+    public final int iconResId;
+    public final String subtext;
+    public final String conditionString;
+    public final int priority;
+
+    private volatile boolean removed;
+
+    public MenuItemRecord(String pluginId, PyObject object) {
+        this.pluginId = pluginId;
+        this.menuType = PyObjectUtils.getString(object, PluginsConstants.MenuItemProperties.MENU_TYPE, null, true);
+        this.text = PyObjectUtils.getString(object, PluginsConstants.MenuItemProperties.TEXT, null, true);
+        this.onClickCallback = object.callAttr("get", PluginsConstants.MenuItemProperties.ON_CLICK);
+        String itemIdValue = PyObjectUtils.getString(object, PluginsConstants.MenuItemProperties.ITEM_ID, null, true);
+        this.itemId = TextUtils.isEmpty(itemIdValue) ? UUID.randomUUID().toString() : itemIdValue;
+        this.iconName = PyObjectUtils.getString(object, PluginsConstants.MenuItemProperties.ICON, null, true);
+        this.subtext = PyObjectUtils.getString(object, PluginsConstants.MenuItemProperties.SUBTEXT, null, true);
+        this.conditionString = PyObjectUtils.getString(object, PluginsConstants.MenuItemProperties.CONDITION, null, true);
+        this.priority = PyObjectUtils.getInt(object, PluginsConstants.MenuItemProperties.PRIORITY, 0, true);
+        int iconRes = 0;
+        if (!TextUtils.isEmpty(iconName)) {
             try {
                 Context context = ApplicationLoader.applicationContext;
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-69408688195119L);
-                identifier = context.getResources().getIdentifier(string2, Deobfuscator$exteraGramDev$TMessagesProj.getString(-69498882508335L), context.getPackageName());
-            } catch (Exception unused) {
+                iconRes = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
+            } catch (Exception ignored) {
             }
         }
-        this.iconResId = identifier;
-        if (TextUtils.isEmpty(this.menuType) || TextUtils.isEmpty(this.text) || this.onClickCallback == null) {
-            throw new IllegalArgumentException("Invalid MenuItemRecord parameters");
+        this.iconResId = iconRes;
+        if (TextUtils.isEmpty(menuType) || TextUtils.isEmpty(text) || onClickCallback == null) {
+            throw new IllegalArgumentException("MenuItemRecord missing essential fields: menuType, text, or onClickCallback.");
         }
     }
 
-    public final String getPluginId() {
-        return this.pluginId;
+    public void markRemoved() {
+        removed = true;
     }
 
-    public final String getItemId() {
-        return this.itemId;
-    }
-
-    public final String getMenuType() {
-        return this.menuType;
-    }
-
-    public final String getText() {
-        return this.text;
-    }
-
-    public final PyObject getOnClickCallback() {
-        return this.onClickCallback;
-    }
-
-    public final String getIconName() {
-        return this.iconName;
-    }
-
-    public final int getIconResId() {
-        return this.iconResId;
-    }
-
-    public final String getSubtext() {
-        return this.subtext;
-    }
-
-    public final String getConditionString() {
-        return this.conditionString;
-    }
-
-    public final int getPriority() {
-        return this.priority;
-    }
-
-    public final void markRemoved() {
-        this.removed = true;
-    }
-
-    public final void executeClick(Object contextData) {
-        PyObject pyObjectCall;
-        if (this.removed || !PluginsController.INSTANCE.getInstance().isPluginActive$TMessagesProj(this.pluginId)) {
+    public void executeClick(Object contextData) {
+        if (removed || !PluginsController.getInstance().isPluginActive(pluginId)) {
             return;
         }
         try {
-            PyObject pyObject = this.onClickCallback;
-            if (pyObject == null || (pyObjectCall = pyObject.call(contextData)) == null) {
-                return;
+            if (onClickCallback != null) {
+                PyObject result = onClickCallback.call(contextData);
+                if (result != null) {
+                    result.close();
+                }
             }
-            pyObjectCall.close();
         } catch (Exception e) {
             FileLog.e(e);
         }
     }
 
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other != null && Intrinsics.areEqual(MenuItemRecord.class, other.getClass())) {
-            MenuItemRecord menuItemRecord = (MenuItemRecord) other;
-            if (Intrinsics.areEqual(this.itemId, menuItemRecord.itemId) && Intrinsics.areEqual(this.pluginId, menuItemRecord.pluginId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public int hashCode() {
-        return (this.itemId.hashCode() * 31) + this.pluginId.hashCode();
-    }
-
-    public final boolean checkCondition(Map<String, ? extends Object> contextData) {
-        String str = this.conditionString;
-        if (str == null || str.length() == 0 || contextData == null) {
+    public boolean checkCondition(Map<String, Object> data) {
+        if (TextUtils.isEmpty(conditionString) || data == null) {
             return true;
         }
         try {
-            Serializable serializableComputeIfAbsent = mvelExpressionCache.computeIfAbsent(str, org.mvel2.MVEL::compileExpression);
-            Boolean bool = (Boolean) MVEL.executeExpression(serializableComputeIfAbsent, (Map) contextData, Boolean.TYPE);
-            if (bool != null) {
-                return bool.booleanValue();
-            }
-        } catch (Exception unused) {
+            Serializable expression = MVEL_EXPRESSION_CACHE.computeIfAbsent(conditionString, MVEL::compileExpression);
+            Boolean result = (Boolean) MVEL.executeExpression(expression, data, Boolean.class);
+            return Boolean.TRUE.equals(result);
+        } catch (Exception ignored) {
+            return false;
         }
-        return false;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        return obj instanceof MenuItemRecord other && itemId.equals(other.itemId) && pluginId.equals(other.pluginId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(itemId, pluginId);
     }
 }

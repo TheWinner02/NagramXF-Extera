@@ -1,263 +1,304 @@
 package com.exteragram.messenger.plugins.ui;
 
-import android.content.SharedPreferences;
-import android.text.Html;
+import android.content.Context;
+import android.content.res.AssetManager;
 import android.text.SpannableString;
 import android.view.View;
+
 import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.plugins.PluginsConstants;
 import com.exteragram.messenger.plugins.PluginsController;
 import com.exteragram.messenger.plugins.PythonPluginsEngine;
 import com.exteragram.messenger.preferences.BasePreferencesActivity;
 import com.exteragram.messenger.utils.text.LocaleUtils;
-import com.google.android.exoplayer2.util.Consumer;
-import java.util.ArrayList;
-import kotlin.Metadata;
-import kotlin.enums.EnumEntries;
-import kotlin.enums.EnumEntriesKt;
-import kotlin.jvm.internal.SourceDebugExtension;
-import okhttp3.internal.url._UrlKt;
-import org.lsposed.lsparanoid.Deobfuscator$exteraGramDev$TMessagesProj;
+
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 
-/* JADX INFO: loaded from: classes.dex */
-@SourceDebugExtension({"SMAP\nPluginsInfoActivity.kt\nKotlin\n*S Kotlin\n*F\n+ 1 PluginsInfoActivity.kt\ncom/exteragram/messenger/plugins/ui/PluginsInfoActivity\n+ 2 SharedPreferences.kt\nandroidx/core/content/SharedPreferencesKt\n*L\n1#1,294:1\n41#2,12:295\n*S KotlinDebug\n*F\n+ 1 PluginsInfoActivity.kt\ncom/exteragram/messenger/plugins/ui/PluginsInfoActivity\n*L\n253#1:295,12\n*E\n"})
-public final class PluginsInfoActivity extends BasePreferencesActivity implements NotificationCenter.NotificationCenterDelegate {
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 
-    /* JADX INFO: loaded from: classes4.dex */
-    public static final /* synthetic */ class WhenMappings {
-        public static final /* synthetic */ int[] $EnumSwitchMapping$0;
+public class PluginsInfoActivity extends BasePreferencesActivity implements NotificationCenter.NotificationCenterDelegate {
+    private static final int ITEM_DEV_MODE = 1;
+    private static final int ITEM_COMPACT_VIEW = 2;
+    private static final int ITEM_SAFE_MODE = 3;
+    private static final int ITEM_DOCUMENTATION = 4;
+    private static final int ITEM_TRUSTED = 5;
+    private static final int ITEM_INSTALL_SMOKE_TEST = 6;
+    private static final int ITEM_DISABLE_ART = 7;
+    private static final int ITEM_PYSDK_HEADER = 8;
+    private static final int ITEM_PYSDK_AUTO_UPDATE = 9;
+    private static final int ITEM_PYSDK_BETA = 10;
+    private static final int ITEM_PYSDK_CHECK = 11;
+    private static final int ITEM_PYSDK_RESTORE = 12;
 
-        static {
-            int[] iArr = new int[PreferenceItem.values().length];
-            try {
-                iArr[PreferenceItem.DEVELOPER_MODE.ordinal()] = 1;
-            } catch (NoSuchFieldError unused) {
-            }
-            try {
-                iArr[PreferenceItem.COMPACT_VIEW.ordinal()] = 2;
-            } catch (NoSuchFieldError unused2) {
-            }
-            try {
-                iArr[PreferenceItem.SAFE_MODE.ordinal()] = 3;
-            } catch (NoSuchFieldError unused3) {
-            }
-            try {
-                iArr[PreferenceItem.PLUGINS_DISABLE_ART_OPTS.ordinal()] = 4;
-            } catch (NoSuchFieldError unused4) {
-            }
-            try {
-                iArr[PreferenceItem.SDK_AUTO_UPDATE.ordinal()] = 5;
-            } catch (NoSuchFieldError unused5) {
-            }
-            try {
-                iArr[PreferenceItem.SDK_BETA_VERSIONS.ordinal()] = 6;
-            } catch (NoSuchFieldError unused6) {
-            }
-            $EnumSwitchMapping$0 = iArr;
-        }
+    private static final String SMOKE_TEST_ASSET_PATH = "plugins/smoke_test.plugin";
+    private Boolean smokeTestAssetAvailable;
+
+    @Override
+    public CharSequence getTitle() {
+        return LocaleController.getString(R.string.PluginsEngine);
     }
 
-    /* JADX INFO: loaded from: classes4.dex */
-    public enum PreferenceItem {
-        DEVELOPER_MODE,
-        COMPACT_VIEW,
-        SAFE_MODE,
-        SDK_AUTO_UPDATE,
-        SDK_BETA_VERSIONS,
-        CHECK_SDK_UPDATES,
-        RESTORE_SDK_FROM_APK,
-        DOCUMENTATION,
-        TRUSTED_PLUGINS,
-        PLUGINS_DISABLE_ART_OPTS,
-        SDK_HEADER;
-
-        private static final /* synthetic */ EnumEntries $ENTRIES = EnumEntriesKt.enumEntries(values());
-
-        public static EnumEntries<PreferenceItem> getEntries() {
-            return $ENTRIES;
-        }
-
-        public final int getId() {
-            return ordinal() + 1;
-        }
-    }
-
-    @Override // com.exteragram.messenger.preferences.BasePreferencesActivity
-    public String getTitle() {
-        return "Plugins Engine";
-    }
-
-    @Override // org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public boolean onFragmentCreate() {
-        super.onFragmentCreate();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pluginsPySdkInfoChanged);
-        PythonPluginsEngine.Updater.INSTANCE.setNotifyWhenChangeStatus(true);
-        return true;
+        return super.onFragmentCreate();
     }
 
-    @Override // org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public void onFragmentDestroy() {
-        super.onFragmentDestroy();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginsPySdkInfoChanged);
-        PythonPluginsEngine.Updater.Companion companion = PythonPluginsEngine.Updater.INSTANCE;
-        companion.setNotifyWhenChangeStatus(false);
-        if (companion.getStatus() == 2) {
-            companion.setStatus(0);
+        if (PythonPluginsEngine.Updater.status == PythonPluginsEngine.Updater.STATUS_LATEST) {
+            PythonPluginsEngine.Updater.status = PythonPluginsEngine.Updater.STATUS_IDLE;
         }
+        super.onFragmentDestroy();
     }
 
-    @Override // org.telegram.messenger.NotificationCenter.NotificationCenterDelegate
-    public void didReceivedNotification(int id, int account, Object... args) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-137797452449327L);
-        if (id == NotificationCenter.pluginsPySdkInfoChanged) {
-            this.listView.adapter.update(true);
-        }
+    @Override
+    public View createView(Context context) {
+        View view = super.createView(context);
+        listView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight + AndroidUtilities.dp(12));
+        return view;
     }
 
-    @Override // com.exteragram.messenger.preferences.BasePreferencesActivity
-    public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        CharSequence string;
+    @Override
+    protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(LocaleController.getString(R.string.Settings)));
-        UItem devItem = UItem.asCheck(PreferenceItem.DEVELOPER_MODE.getId(), "Developer Mode").setChecked(ExteraConfig.getPluginsDevMode()).setEnabled(ExteraConfig.getPluginsEngine() && !ExteraConfig.getPluginsSafeMode()); devItem.iconResId = R.drawable.msg_settings; items.add(devItem);
-        UItem compactItem = UItem.asCheck(PreferenceItem.COMPACT_VIEW.getId(), "Compact View").setChecked(ExteraConfig.getPluginsCompactView()).setEnabled(ExteraConfig.getPluginsEngine()); compactItem.iconResId = R.drawable.msg_topics; items.add(compactItem);
-        UItem artItem = UItem.asCheck(PreferenceItem.PLUGINS_DISABLE_ART_OPTS.getId(), "Disable ART Optimizations").setChecked(ExteraConfig.getPluginsDisableArtOpts()).setEnabled(ExteraConfig.getPluginsEngine()); artItem.iconResId = R.drawable.msg_link2; items.add(artItem);
-        UItem safeItem = UItem.asCheck(PreferenceItem.SAFE_MODE.getId(), "Safe Mode").setChecked(ExteraConfig.getPluginsSafeMode()); safeItem.iconResId = R.drawable.msg_secret; items.add(safeItem);
-        items.add(UItem.asShadow("Plugins safe mode info"));
-        int id = PreferenceItem.SDK_HEADER.getId();
-        items.add(UItem.asAnimatedHeader(id, "Python SDK"));
-        UItem searchable = UItem.asCheck(PreferenceItem.SDK_AUTO_UPDATE.getId(), "PySDK Auto Update").setChecked(ExteraConfig.getPluginsPySdkAutoUpdate());
-        PythonPluginsEngine.Updater.Companion companion = PythonPluginsEngine.Updater.INSTANCE;
-        items.add(searchable.setEnabled(companion.getStatus() < 3));
-        items.add(UItem.asCheck(PreferenceItem.SDK_BETA_VERSIONS.getId(), "Enable PySDK Beta Versions").setChecked(ExteraConfig.getPluginsPySdkBetaVersions()).setEnabled(companion.getStatus() < 3));
-        items.add(UItem.asButton(PreferenceItem.CHECK_SDK_UPDATES.getId(), "Check PySDK Updates").accent().setEnabled(companion.getStatus() < 3));
-        if (ExteraConfig.getPluginsDevMode() && !ExteraConfig.getPluginsEngine() && !companion.isSdkFromApk()) {
-            items.add(UItem.asButton(PreferenceItem.RESTORE_SDK_FROM_APK.getId(), "Restore PySDK from APK").red());
+        items.add(UItem.asCheck(ITEM_DEV_MODE, LocaleController.getString(R.string.PluginsDevMode), R.drawable.msg_settings).setChecked(ExteraConfig.pluginsDevMode).setEnabled(ExteraConfig.pluginsEngine));
+        items.add(UItem.asCheck(ITEM_COMPACT_VIEW, LocaleController.getString(R.string.PluginsCompactView), R.drawable.msg_topics).setChecked(ExteraConfig.pluginsCompactView).setEnabled(ExteraConfig.pluginsEngine));
+        items.add(UItem.asCheck(ITEM_DISABLE_ART, LocaleController.getString(R.string.PluginsDisableArt), LocaleController.getString(R.string.PluginsDisableArtInfo))
+                .setIcon(R.drawable.msg_link2)
+                .setChecked(ExteraConfig.pluginsDisableArtOpts)
+                .setEnabled(ExteraConfig.pluginsEngine));
+        items.add(UItem.asCheck(ITEM_SAFE_MODE, LocaleController.getString(R.string.PluginsSafeMode), R.drawable.msg_secret).setChecked(ExteraConfig.pluginsSafeMode));
+        items.add(UItem.asShadow(LocaleController.getString(R.string.PluginsSafeModeInfo2)));
+
+        items.add(UItem.asAnimatedHeader(ITEM_PYSDK_HEADER, "Python SDK"));
+        boolean sdkControlsEnabled = PythonPluginsEngine.Updater.status < PythonPluginsEngine.Updater.STATUS_DOWNLOADING;
+        UItem sdkAutoUpdateItem = UItem.asCheck(
+                        ITEM_PYSDK_AUTO_UPDATE,
+                        LocaleController.getString(R.string.PluginsPySdkAutoUpdate),
+                        PythonPluginsEngine.Updater.getStateString())
+                .setChecked(ExteraConfig.pluginsPySdkAutoUpdate)
+                .setEnabled(sdkControlsEnabled);
+        items.add(sdkAutoUpdateItem);
+        UItem sdkBetaItem = UItem.asCheck(ITEM_PYSDK_BETA, LocaleController.getString(R.string.PluginsPySdkEnableBetaVersion))
+                .setChecked(ExteraConfig.pluginsPySdkBetaVersions)
+                .setEnabled(sdkControlsEnabled);
+        items.add(sdkBetaItem);
+        items.add(UItem.asButton(ITEM_PYSDK_CHECK, R.drawable.msg_retry, LocaleController.getString(R.string.PluginsPySdkCheckUpdates))
+                .accent()
+                .setEnabled(sdkControlsEnabled));
+        if (ExteraConfig.pluginsDevMode && !ExteraConfig.pluginsEngine && !PythonPluginsEngine.Updater.isSdkFromApk()) {
+            items.add(UItem.asButton(ITEM_PYSDK_RESTORE, R.drawable.msg_reset, LocaleController.getString(R.string.RestoreSdkFromApk)).red());
         }
-        items.add(UItem.asShadow(null));
-        items.add(UItem.asHeader("Links"));
-        items.add(UItem.asButton(PreferenceItem.DOCUMENTATION.getId(), "Plugins Documentation"));
-        items.add(UItem.asButton(PreferenceItem.TRUSTED_PLUGINS.getId(), "Trusted Plugins").accent());
-        items.add(UItem.asShadow(LocaleUtils.formatWithHtmlURLs(new SpannableString(Html.fromHtml("Plugins powered by Chaquopy Python Engine", 0)))));
+        items.add(UItem.asShadow(""));
+
+        if (ExteraConfig.pluginsDevMode && hasSmokeTestAsset()) {
+            items.add(UItem.asHeader(LocaleController.getString(R.string.PluginsDevTools)));
+            items.add(UItem.asButton(ITEM_INSTALL_SMOKE_TEST, R.drawable.msg_addbot, LocaleController.getString(R.string.PluginsInstallSmokeTest)));
+            items.add(UItem.asShadow(LocaleController.getString(R.string.PluginsInstallSmokeTestInfo)));
+        }
+        items.add(UItem.asHeader(LocaleController.getString(R.string.Links)));
+        items.add(UItem.asButton(ITEM_DOCUMENTATION, R.drawable.menu_intro, LocaleController.getString(R.string.PluginsDocumentation)));
+        items.add(UItem.asButton(ITEM_TRUSTED, R.drawable.msg2_policy, LocaleController.getString(R.string.PluginsTrusted)).accent());
+        items.add(UItem.asShadow(LocaleUtils.formatWithHtmlURLs(new SpannableString(LocaleUtils.fromHtml(LocaleController.getString(R.string.PluginsPoweredBy))))));
     }
 
-    @Override // com.exteragram.messenger.preferences.BasePreferencesActivity
-    public void onClick(UItem item, View view, int position, float x, float y) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-136719415658031L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-136749480429103L);
-        int i = item.id;
-        if (i <= 0 || i > PreferenceItem.getEntries().size()) {
+    @Override
+    protected void onClick(UItem item, View view, int position, float x, float y) {
+        if (item == null) {
             return;
         }
-        PreferenceItem preferenceItem = PreferenceItem.getEntries().get(item.id - 1);
-        if ((view instanceof TextCheckCell) && (ExteraConfig.getPluginsEngine() || preferenceItem == PreferenceItem.SAFE_MODE || preferenceItem == PreferenceItem.SDK_AUTO_UPDATE || preferenceItem == PreferenceItem.SDK_BETA_VERSIONS)) {
-            switch (WhenMappings.$EnumSwitchMapping$0[preferenceItem.ordinal()]) {
-                case 1:
-                    toggleBooleanSettingAndRefresh(item, new Consumer() { // from class: com.exteragram.messenger.plugins.ui.PluginsInfoActivity$$ExternalSyntheticLambda0
-                        @Override // com.google.android.exoplayer2.util.Consumer
-                        public final void accept(Object obj) {
-                            PluginsInfoActivity.m1349$r8$lambda$8QlKkw5kfayJfhO899himkCzI(PluginsInfoActivity.this, (Boolean) obj);
-                        }
-                    });
-                    break;
-                case 2:
-                    toggleBooleanSettingAndRefresh(item, new Consumer() { // from class: com.exteragram.messenger.plugins.ui.PluginsInfoActivity$$ExternalSyntheticLambda1
-                        @Override // com.google.android.exoplayer2.util.Consumer
-                        public final void accept(Object obj) {
-                            PluginsInfoActivity.$r8$lambda$wqIs6z_14DjJRgtbGrlNat2R__w((Boolean) obj);
-                        }
-                    });
-                    break;
-                case 3:
-                    final SharedPreferences preferences = PluginsController.INSTANCE.getInstance().getPreferences();
-                    toggleBooleanSettingAndRefresh(item, new Consumer() { // from class: com.exteragram.messenger.plugins.ui.PluginsInfoActivity$$ExternalSyntheticLambda2
-                        @Override // com.google.android.exoplayer2.util.Consumer
-                        public final void accept(Object obj) {
-                            PluginsInfoActivity.$r8$lambda$uvPKm0MyDJVKV9ru_YI_2UEFTNQ(preferences, (Boolean) obj);
-                        }
-                    });
-                    break;
-                case 4:
-                    toggleBooleanSettingAndRefresh(item, new Consumer() { // from class: com.exteragram.messenger.plugins.ui.PluginsInfoActivity$$ExternalSyntheticLambda3
-                        @Override // com.google.android.exoplayer2.util.Consumer
-                        public final void accept(Object obj) {
-                            PluginsInfoActivity.m1350$r8$lambda$fA84ngNcg3E8iytEUb70vzqJw(PluginsInfoActivity.this, (Boolean) obj);
-                        }
-                    });
-                    break;
-                case 5:
-                    toggleBooleanSettingAndRefresh(item, new Consumer() { // from class: com.exteragram.messenger.plugins.ui.PluginsInfoActivity$$ExternalSyntheticLambda4
-                        @Override // com.google.android.exoplayer2.util.Consumer
-                        public final void accept(Object obj) {
-                            ExteraConfig.setPluginsPySdkAutoUpdate(((Boolean) obj).booleanValue());
-                        }
-                    });
-                    break;
-                case 6:
-                    toggleBooleanSettingAndRefresh(item, new Consumer() { // from class: com.exteragram.messenger.plugins.ui.PluginsInfoActivity$$ExternalSyntheticLambda5
-                        @Override // com.google.android.exoplayer2.util.Consumer
-                        public final void accept(Object obj) {
-                            PluginsInfoActivity.m1351$r8$lambda$lIyiDc9HTWaRKBjgUIkTIimadU((Boolean) obj);
-                        }
-                    });
-                    break;
+        switch (item.id) {
+            case ITEM_DEV_MODE:
+                if (!ExteraConfig.pluginsEngine) {
+                    return;
+                }
+                ExteraConfig.pluginsDevMode = !ExteraConfig.pluginsDevMode;
+                ExteraConfig.editor.putBoolean("pluginsDevMode", ExteraConfig.pluginsDevMode).apply();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(ExteraConfig.pluginsDevMode);
+                }
+                item.setChecked(ExteraConfig.pluginsDevMode);
+                PluginsController.getInstance().checkDevServers();
+                BulletinFactory.of(this)
+                        .createSimpleBulletin(
+                                ExteraConfig.pluginsDevMode ? R.raw.contact_check : R.raw.error,
+                                LocaleController.getString(ExteraConfig.pluginsDevMode ? R.string.PluginsDevServerLaunched : R.string.PluginsDevServerStopped))
+                        .show();
+                if (listView != null) {
+                    listView.adapter.update(true);
+                }
+                break;
+            case ITEM_COMPACT_VIEW:
+                if (!ExteraConfig.pluginsEngine) {
+                    return;
+                }
+                ExteraConfig.pluginsCompactView = !ExteraConfig.pluginsCompactView;
+                ExteraConfig.editor.putBoolean("pluginsCompactView", ExteraConfig.pluginsCompactView).apply();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(ExteraConfig.pluginsCompactView);
+                }
+                item.setChecked(ExteraConfig.pluginsCompactView);
+                NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.reloadInterface);
+                break;
+            case ITEM_SAFE_MODE:
+                ExteraConfig.pluginsSafeMode = !ExteraConfig.pluginsSafeMode;
+                if (ExteraConfig.pluginsSafeMode) {
+                    PluginsController.enableManualSafeMode();
+                } else {
+                    PluginsController.disableSafeMode();
+                }
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(ExteraConfig.pluginsSafeMode);
+                }
+                item.setChecked(ExteraConfig.pluginsSafeMode);
+                PluginsController.getInstance().restart();
+                break;
+            case ITEM_DISABLE_ART:
+                if (!ExteraConfig.pluginsEngine) {
+                    return;
+                }
+                ExteraConfig.pluginsDisableArtOpts = !ExteraConfig.pluginsDisableArtOpts;
+                ExteraConfig.editor.putBoolean("pluginsDisableArtOpts", ExteraConfig.pluginsDisableArtOpts).apply();
+                updateCheckItem(view, item, ExteraConfig.pluginsDisableArtOpts);
+                PluginsController.applyArtOpts();
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, LocaleController.getString(R.string.RestartApp)).show();
+                break;
+            case ITEM_PYSDK_AUTO_UPDATE:
+                if (PythonPluginsEngine.Updater.status >= PythonPluginsEngine.Updater.STATUS_DOWNLOADING) {
+                    return;
+                }
+                ExteraConfig.pluginsPySdkAutoUpdate = !ExteraConfig.pluginsPySdkAutoUpdate;
+                ExteraConfig.editor.putBoolean("pluginsPySdkAutoUpdate", ExteraConfig.pluginsPySdkAutoUpdate).apply();
+                updateCheckItem(view, item, ExteraConfig.pluginsPySdkAutoUpdate);
+                if (ExteraConfig.pluginsPySdkAutoUpdate) {
+                    PythonPluginsEngine.Updater.checkUpdates(true);
+                } else if (listView != null) {
+                    listView.adapter.update(true);
+                }
+                break;
+            case ITEM_PYSDK_BETA:
+                if (PythonPluginsEngine.Updater.status >= PythonPluginsEngine.Updater.STATUS_DOWNLOADING) {
+                    return;
+                }
+                ExteraConfig.pluginsPySdkBetaVersions = !ExteraConfig.pluginsPySdkBetaVersions;
+                ExteraConfig.editor.putBoolean("pluginsPySdkBetaVersions", ExteraConfig.pluginsPySdkBetaVersions).apply();
+                ExteraConfig.sdkUpdateScheduleTimestamp = 0L;
+                ExteraConfig.editor.putLong("sdkUpdateScheduleTimestamp", 0L).apply();
+                updateCheckItem(view, item, ExteraConfig.pluginsPySdkBetaVersions);
+                PythonPluginsEngine.Updater.checkUpdates(true);
+                break;
+            case ITEM_PYSDK_CHECK:
+                if (PythonPluginsEngine.Updater.status >= PythonPluginsEngine.Updater.STATUS_DOWNLOADING) {
+                    return;
+                }
+                PythonPluginsEngine.Updater.checkUpdates(true);
+                if (listView != null) {
+                    listView.adapter.update(true);
+                }
+                break;
+            case ITEM_PYSDK_RESTORE:
+                PythonPluginsEngine.Updater.restoreSdkFromApk();
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, LocaleController.getString(R.string.RestartPluginSystemToApplyUpdate)).show();
+                break;
+            case ITEM_DOCUMENTATION:
+                Browser.openUrl(getParentActivity(), "https://plugins.exteragram.app/");
+                break;
+            case ITEM_TRUSTED:
+                Browser.openUrl(getParentActivity(), "https://t.me/addlist/pPhOtEq00KhjYTc6");
+                break;
+            case ITEM_INSTALL_SMOKE_TEST:
+                installSmokeTestPlugin();
+                break;
+        }
+    }
+
+    private boolean hasSmokeTestAsset() {
+        if (smokeTestAssetAvailable != null) {
+            return smokeTestAssetAvailable;
+        }
+        Context context = getParentActivity();
+        if (context == null) {
+            smokeTestAssetAvailable = false;
+            return false;
+        }
+        try (InputStream ignored = context.getAssets().open(SMOKE_TEST_ASSET_PATH)) {
+            smokeTestAssetAvailable = true;
+        } catch (IOException e) {
+            smokeTestAssetAvailable = false;
+        }
+        return smokeTestAssetAvailable;
+    }
+
+    private void installSmokeTestPlugin() {
+        Context context = getParentActivity();
+        if (context == null) {
+            return;
+        }
+        File cacheDir = new File(context.getCacheDir(), "plugins-dev");
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            BulletinFactory.of(this)
+                    .createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.PluginsInstallSmokeTestPrepareError))
+                    .show();
+            return;
+        }
+        File targetFile = new File(cacheDir, "smoke_test" + PluginsConstants.PLUGINS_EXT);
+        try {
+            copyAssetToFile(context.getAssets(), SMOKE_TEST_ASSET_PATH, targetFile);
+            PluginsController.getInstance().showInstallDialog(this, targetFile.getAbsolutePath(), false);
+        } catch (IOException e) {
+            BulletinFactory.of(this)
+                    .createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.PluginsInstallSmokeTestPrepareError))
+                    .show();
+        }
+    }
+
+    private static void copyAssetToFile(AssetManager assetManager, String assetPath, File targetFile) throws IOException {
+        try (InputStream inputStream = assetManager.open(assetPath);
+             FileOutputStream outputStream = new FileOutputStream(targetFile, false)) {
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
             }
-            return;
-        }
-        PreferenceItem preferenceItem2 = PreferenceItem.DOCUMENTATION;
-        if (preferenceItem == preferenceItem2 || preferenceItem == PreferenceItem.TRUSTED_PLUGINS) {
-            Browser.openUrl(getParentActivity(), Deobfuscator$exteraGramDev$TMessagesProj.getString(preferenceItem == preferenceItem2 ? -136693645854255L : -136831084807727L));
-            return;
-        }
-        if (preferenceItem == PreferenceItem.CHECK_SDK_UPDATES) {
-            PythonPluginsEngine.Updater.INSTANCE.checkUpdates(true);
-        } else if (preferenceItem == PreferenceItem.RESTORE_SDK_FROM_APK) {
-            PythonPluginsEngine.Updater.INSTANCE.restoreSdkFromApk();
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, "App restart required").show();
-            this.listView.adapter.update(true);
+            outputStream.flush();
         }
     }
 
-    /* JADX INFO: renamed from: $r8$lambda$8Ql-Kkw5kfayJfhO89-9himkCzI, reason: not valid java name */
-    public static void m1349$r8$lambda$8QlKkw5kfayJfhO899himkCzI(PluginsInfoActivity pluginsInfoActivity, Boolean bool) {
-        ExteraConfig.setPluginsDevMode(bool.booleanValue());
-        PluginsController.INSTANCE.getInstance().checkDevServers();
-        BulletinFactory.of(pluginsInfoActivity).createSimpleBulletin(ExteraConfig.getPluginsDevMode() ? R.raw.contact_check : R.raw.error, ExteraConfig.getPluginsDevMode() ? "Developer server launched" : "Developer server stopped").show();
-    }
-
-    public static void $r8$lambda$wqIs6z_14DjJRgtbGrlNat2R__w(Boolean bool) {
-        ExteraConfig.setPluginsCompactView(bool.booleanValue());
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
-    }
-
-    public static void $r8$lambda$uvPKm0MyDJVKV9ru_YI_2UEFTNQ(SharedPreferences sharedPreferences, Boolean bool) {
-        ExteraConfig.setPluginsSafeMode(bool.booleanValue());
-        SharedPreferences.Editor editorEdit = sharedPreferences.edit();
-        if (bool.booleanValue()) {
-            editorEdit.putString(Deobfuscator$exteraGramDev$TMessagesProj.getString(-136513257227823L), Deobfuscator$exteraGramDev$TMessagesProj.getString(-136590566639151L));
-        } else {
-            editorEdit.remove(Deobfuscator$exteraGramDev$TMessagesProj.getString(-136556206900783L));
+    private void updateCheckItem(View view, UItem item, boolean checked) {
+        if (view instanceof TextCheckCell) {
+            ((TextCheckCell) view).setChecked(checked);
+        } else if (view instanceof NotificationsCheckCell) {
+            ((NotificationsCheckCell) view).setChecked(checked);
         }
-        editorEdit.apply();
-        PluginsController.INSTANCE.getInstance().restart(bool.booleanValue());
+        if (item != null) {
+            item.setChecked(checked);
+        }
     }
 
-    /* JADX INFO: renamed from: $r8$lambda$fA84ngN-cg3E8iytE-Ub70vzqJw, reason: not valid java name */
-    public static void m1350$r8$lambda$fA84ngNcg3E8iytEUb70vzqJw(PluginsInfoActivity pluginsInfoActivity, Boolean bool) {
-        ExteraConfig.setPluginsDisableArtOpts(bool.booleanValue());
-        PluginsController.INSTANCE.applyArtOpts();
-        pluginsInfoActivity.showRestartBulletin();
+    @Override
+    protected boolean onLongClick(UItem item, View view, int position, float x, float y) {
+        return false;
     }
 
-    /* JADX INFO: renamed from: $r8$lambda$lIyiDc9HTWaRKBjgUIkTIi-madU, reason: not valid java name */
-    public static void m1351$r8$lambda$lIyiDc9HTWaRKBjgUIkTIimadU(Boolean bool) {
-        ExteraConfig.setPluginsPySdkBetaVersions(bool.booleanValue());
-        PythonPluginsEngine.Updater.INSTANCE.checkUpdates(true);
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.pluginsPySdkInfoChanged && listView != null && listView.adapter != null) {
+            listView.adapter.update(true);
+        }
     }
 }

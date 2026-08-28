@@ -2,95 +2,80 @@ package com.exteragram.messenger.plugins.xposed;
 
 import com.chaquo.python.PyException;
 import com.chaquo.python.PyObject;
+import com.exteragram.messenger.plugins.PluginsConstants;
 import com.exteragram.messenger.plugins.PluginsController;
+
+import org.telegram.messenger.FileLog;
+
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
-import java.lang.reflect.InvocationTargetException;
-import org.telegram.messenger.FileLog;
 
-public final class PyMethodReplacement extends XC_MethodReplacement implements AutoCloseable {
-    private volatile boolean closed;
-    private volatile boolean disabled;
+public class PyMethodReplacement extends XC_MethodReplacement implements AutoCloseable {
     private final String pluginId;
     private final PyObject pythonCallback;
     private final PyObject replaceHook;
 
-    public PyMethodReplacement(String str, PyObject pyObject) {
-        if (pyObject == null) {
-            throw new IllegalArgumentException("pyObject cannot be null");
-        }
-        this.pluginId = str;
-        this.pythonCallback = pyObject;
-        Object obj = pyObject.get("replace_hook");
-        if (obj instanceof PyObject) {
-            this.replaceHook = (PyObject) obj;
-        } else {
-            this.replaceHook = pyObject;
-        }
+    private volatile boolean disabled;
+    private volatile boolean closed;
+
+    public PyMethodReplacement(String pluginId, PyObject pythonCallback) {
+        this(pluginId, pythonCallback, PRIORITY_DEFAULT);
     }
 
-    public PyMethodReplacement(String str, PyObject pyObject, int i) {
-        super(i);
-        if (pyObject == null) {
-            throw new IllegalArgumentException("pyObject cannot be null");
+    public PyMethodReplacement(String pluginId, PyObject pythonCallback, int priority) {
+        super(priority);
+        if (pythonCallback == null) {
+            throw new IllegalArgumentException("Python callback object cannot be null");
         }
-        this.pluginId = str;
-        this.pythonCallback = pyObject;
-        Object obj = pyObject.get("replace_hook");
-        if (obj instanceof PyObject) {
-            this.replaceHook = (PyObject) obj;
-        } else {
-            this.replaceHook = pyObject;
+        if (!pythonCallback.containsKey(PluginsConstants.Xposed.REPLACE_HOOKED_METHOD)) {
+            throw new IllegalArgumentException("Python callback object must contain a method named 'replaceHookedMethod'");
+        }
+        this.pluginId = pluginId;
+        this.pythonCallback = pythonCallback;
+        this.replaceHook = pythonCallback.get(PluginsConstants.Xposed.REPLACE_HOOKED_METHOD);
+        if (this.replaceHook == null) {
+            throw new IllegalArgumentException("Python callback object must contain a method named 'replaceHookedMethod'");
         }
     }
 
     @Override
-    public Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) {
-        if (this.disabled || !PluginsController.INSTANCE.getInstance().isPluginActive$TMessagesProj(this.pluginId)) {
-            try {
-                return XposedBridge.invokeOriginalMethod(param.method, param.thisObject, param.args);
-            } catch (InvocationTargetException e) {
-                Throwable targetException = e.getTargetException();
-                if (targetException instanceof RuntimeException) {
-                    throw (RuntimeException) targetException;
-                }
-                throw new RuntimeException(targetException);
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
+    protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) {
+        if (disabled || !PluginsController.getInstance().isPluginActive(pluginId)) {
+            // Fall back to the original implementation, otherwise a primitive return type would be
+            // unboxed from null and blow up inside the host method instead of here.
+            return XposedBridge.invokeOriginalMethod(param.method, param.thisObject, param.args);
         }
-        Object java = null;
-        PyObject pyObjectCall = null;
+        PyObject result = null;
         try {
-            pyObjectCall = this.replaceHook.call(param);
-            if (pyObjectCall != null) {
-                java = pyObjectCall.toJava(Object.class);
-            }
-            return java;
-        } catch (Throwable th) {
-            handleHookError(th);
+            result = replaceHook.call(param);
+            return result == null ? null : result.toJava(Object.class);
+        } catch (Throwable t) {
+            handleHookError(t);
             return null;
         } finally {
-            if (pyObjectCall != null) {
-                try { pyObjectCall.close(); } catch (Throwable ignored) {}
+            if (result != null) {
+                result.close();
             }
         }
-    }
-
-    private void handleHookError(Throwable th) {
-        FileLog.e("PyMethodReplacement error in " + pluginId, th);
     }
 
     @Override
     public void close() {
-        if (this.closed) {
+        if (closed) {
             return;
         }
-        this.closed = true;
-        this.disabled = true;
-        if (this.replaceHook != null) {
-            this.replaceHook.close();
+        closed = true;
+        disabled = true;
+        replaceHook.close();
+    }
+
+    private void handleHookError(Throwable t) {
+        if (t instanceof PyException && t.getMessage() != null && t.getMessage().contains("closed")) {
+            disabled = true;
+            FileLog.e("Attempted to call a closed PyObject callback in " + pluginId);
+            return;
         }
+        FileLog.e("Plugin '" + pluginId + "' crashed in replaceHookedMethod: " + t.getMessage(), t);
     }
 }

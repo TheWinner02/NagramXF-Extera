@@ -27,6 +27,12 @@ public class EntitiesHelper {
             Pattern.compile("[|]{2}([^|\\n]+)[|]{2}"), // spoiler
             Pattern.compile("\\[([^]]+?)]\\(" + LinkifyPort.WEB_URL_REGEX + "\\)")}; // link
 
+    public static CharSequence parseMarkdown(CharSequence text) {
+        var message = new CharSequence[]{text};
+        parseMarkdown(message, true);
+        return message[0];
+    }
+
     public static void parseMarkdown(CharSequence[] message, boolean allowStrike) {
         var spannable = message[0] instanceof Spannable ? (Spannable) message[0] : Spannable.Factory.getInstance().newSpannable(message[0]);
         for (int i = 0; i < PATTERNS.length; i++) {

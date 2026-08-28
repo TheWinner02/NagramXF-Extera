@@ -59,6 +59,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
     public static int nkbtnBookmarks = 1008;
     public static int nkbtnRecentChats = 1009;
     public static int nkbtnSessions = 1010;
+    public static final int PLUGIN_ITEM_ID_BASE = 20000;
     private final DrawerLayoutContainer mDrawerLayoutContainer;
     public View.OnClickListener onPremiumDrawableClick;
 
@@ -417,6 +418,36 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         if (showRestartApp) {
             items.add(null);
             items.add(new Item(nkbtnRestartApp, LocaleController.getString(R.string.RestartApp), R.drawable.msg_retry));
+        }
+
+        if (com.exteragram.messenger.plugins.PluginsController.isPluginEngineAvailable()) {
+            int account = UserConfig.selectedAccount;
+            TLRPC.User currentUser = UserConfig.getInstance(account).getCurrentUser();
+            com.exteragram.messenger.plugins.utils.MenuContextBuilder builder = com.exteragram.messenger.plugins.utils.MenuContextBuilder.create().withAccount(account);
+            if (currentUser != null) {
+                builder.withUser(currentUser);
+            }
+            java.util.Map<String, Object> pluginContext = builder.build();
+            java.util.List<com.exteragram.messenger.plugins.hooks.MenuItemRecord> pluginMenuItems = com.exteragram.messenger.plugins.PluginsController.getInstance().getMenuItemsForLocation(
+                    com.exteragram.messenger.plugins.PluginsConstants.MenuItemTypes.MAIN_MENU, pluginContext);
+            boolean addedPluginDivider = false;
+            for (com.exteragram.messenger.plugins.hooks.MenuItemRecord record : pluginMenuItems) {
+                if (record == null || android.text.TextUtils.isEmpty(record.text)) {
+                    continue;
+                }
+                if (!addedPluginDivider) {
+                    items.add(null);
+                    addedPluginDivider = true;
+                }
+                int iconRes = record.iconResId != 0 ? record.iconResId : R.drawable.msg_plugins;
+                items.add(new Item(PLUGIN_ITEM_ID_BASE + items.size(), record.text, iconRes).onClick(v -> {
+                    try {
+                        record.executeClick(pluginContext);
+                    } catch (Throwable t) {
+                        org.telegram.messenger.FileLog.e(t);
+                    }
+                }));
+            }
         }
     }
 

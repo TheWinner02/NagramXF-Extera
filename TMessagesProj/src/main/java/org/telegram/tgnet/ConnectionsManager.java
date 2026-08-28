@@ -16,6 +16,8 @@ import androidx.annotation.Keep;
 
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.hooks.PluginsHooks;
 import com.google.android.gms.tasks.Task;
 import com.google.android.play.core.integrity.IntegrityManager;
 import com.google.android.play.core.integrity.IntegrityManagerFactory;
@@ -416,10 +418,20 @@ public class ConnectionsManager extends BaseController {
         final var onComplete = interceptResult.effectiveOnComplete();
         // --- Ghost Mode ---
 
+        final String requestName = object.getClass().getSimpleName();
+        TLObject requestObject = object;
+        TLObject hookedRequest = PluginsController.getInstance().executePreRequestHook(requestName, currentAccount, requestObject);
+        if (hookedRequest == null) {
+            FileLog.d("Plugin system cancelled request " + requestName);
+            return;
+        }
+        requestObject = hookedRequest;
+        final TLObject finalRequestObject = requestObject;
+
         try {
-            NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
-            object.serializeToStream(buffer);
-            object.freeResources();
+            NativeByteBuffer buffer = new NativeByteBuffer(finalRequestObject.getObjectSize());
+            finalRequestObject.serializeToStream(buffer);
+            finalRequestObject.freeResources();
 
             long startRequestTime = 0;
             if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED || (connectionType & ConnectionTypeDownload) != 0) {
@@ -438,7 +450,7 @@ public class ConnectionsManager extends BaseController {
                         responseSize = buff.limit();
                         int magic = buff.readInt32(true);
                         try {
-                            resp = object.deserializeResponse(buff, magic, true);
+                            resp = finalRequestObject.deserializeResponse(buff, magic, true);
                         } catch (Exception e2) {
                             if (BuildVars.DEBUG_PRIVATE_VERSION) {
                                 throw e2;
@@ -451,10 +463,10 @@ public class ConnectionsManager extends BaseController {
                         error.code = errorCode;
                         error.text = errorText;
                         if (BuildVars.LOGS_ENABLED && error.code != -2000) {
-                            FileLog.e(object + " got error " + error.code + " " + error.text);
+                            FileLog.e(finalRequestObject + " got error " + error.code + " " + error.text);
                         }
                         if (NaConfig.INSTANCE.getShowRPCError().Bool()) {
-                            ErrorDatabase.showErrorToast(object, errorText);
+                            ErrorDatabase.showErrorToast(finalRequestObject, errorText);
                         }
                     }
                     if ((connectionType & ConnectionTypeDownload) != 0 && VideoPlayer.activePlayers.isEmpty()) {
@@ -474,7 +486,7 @@ public class ConnectionsManager extends BaseController {
                             FileLog.d("Cleanup keys for " + currentAccount + " because of CONNECTION_NOT_INITED");
                         }
                         cleanup(true);
-                        sendRequest(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate);
+                        sendRequest(finalRequestObject, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate);
                         return;
                     }
                     if (resp != null) {
@@ -482,10 +494,17 @@ public class ConnectionsManager extends BaseController {
                     }
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("java received " + resp + (error != null ? " error = " + error : "") + " messageId = 0x" + Long.toHexString(requestMsgId));
-                        FileLog.dumpResponseAndRequest(currentAccount, object, resp, error, requestMsgId, finalStartRequestTime, requestToken);
+                        FileLog.dumpResponseAndRequest(currentAccount, finalRequestObject, resp, error, requestMsgId, finalStartRequestTime, requestToken);
                     }
-                    final TLObject finalResponse = resp;
-                    final TLRPC.TL_error finalError = error;
+                    PluginsHooks.PostRequestResult hookResult = PluginsController.getInstance().executePostRequestHook(requestName, currentAccount, resp, error);
+                    if (hookResult == null) {
+                        if (resp != null) {
+                            resp.freeResources();
+                        }
+                        return;
+                    }
+                    final TLObject finalResponse = hookResult.response;
+                    final TLRPC.TL_error finalError = hookResult.error;
                     Utilities.stageQueue.postRunnable(() -> {
                         if (onComplete != null) {
                             onComplete.run(finalResponse, finalError);

@@ -1,102 +1,60 @@
 package com.exteragram.messenger.plugins.models;
 
 import android.view.View;
+
 import com.chaquo.python.PyObject;
 import com.exteragram.messenger.plugins.Plugin;
-import kotlin.Metadata;
-import okhttp3.internal.url._UrlKt;
+
 import org.telegram.ui.Components.UItem;
 
-/* JADX INFO: loaded from: classes.dex */
-public final class CustomSetting extends SettingItem {
-    private PyObject createSubFragmentCallback;
-    private Factory<?> factory;
-    private PyObject factoryArgs;
-    private UItem item;
-    private PyObject onClickCallback;
+public class CustomSetting extends SettingItem {
+    public UItem item;
+    public Factory<?> factory;
+    public PyObject factoryArgs;
+    public PyObject onClickCallback;
+    public PyObject createSubFragmentCallback;
 
-    public final PyObject getOnClickCallback() {
-        return this.onClickCallback;
+    private CustomSetting(PyObject onClickCallback, PyObject createSubFragmentCallback, PyObject onLongClickCallback, String linkAlias) {
+        super("custom", null, onLongClickCallback, linkAlias);
+        this.onClickCallback = onClickCallback;
+        this.createSubFragmentCallback = createSubFragmentCallback;
     }
 
-    public final void setOnClickCallback(PyObject pyObject) {
-        this.onClickCallback = pyObject;
+    public CustomSetting(UItem item, PyObject onClickCallback, PyObject createSubFragmentCallback, PyObject onLongClickCallback, String linkAlias) {
+        this(onClickCallback, createSubFragmentCallback, onLongClickCallback, linkAlias);
+        this.item = item;
     }
 
-    public final PyObject getCreateSubFragmentCallback() {
-        return this.createSubFragmentCallback;
-    }
-
-    public final void setCreateSubFragmentCallback(PyObject pyObject) {
-        this.createSubFragmentCallback = pyObject;
-    }
-
-    private CustomSetting(PyObject pyObject, PyObject pyObject2, PyObject pyObject3, String str) {
-        super("custom", null, pyObject3, str);
-        this.onClickCallback = pyObject;
-        this.createSubFragmentCallback = pyObject2;
-    }
-
-    public final UItem getItem() {
-        return this.item;
-    }
-
-    public final void setItem(UItem uItem) {
-        this.item = uItem;
-    }
-
-    public final Factory<?> getFactory() {
-        return this.factory;
-    }
-
-    public final void setFactory(Factory<?> factory) {
+    public CustomSetting(Factory<?> factory, PyObject onClickCallback, PyObject createSubFragmentCallback, PyObject onLongClickCallback, String linkAlias) {
+        this(onClickCallback, createSubFragmentCallback, onLongClickCallback, linkAlias);
         this.factory = factory;
     }
 
-    public final PyObject getFactoryArgs() {
-        return this.factoryArgs;
+    public CustomSetting(Factory<?> factory, PyObject factoryArgs, PyObject onClickCallback, PyObject createSubFragmentCallback, PyObject onLongClickCallback, String linkAlias) {
+        this(factory, onClickCallback, createSubFragmentCallback, onLongClickCallback, linkAlias);
+        this.factoryArgs = factoryArgs;
     }
 
-    public final void setFactoryArgs(PyObject pyObject) {
-        this.factoryArgs = pyObject;
+    public CustomSetting(View view, PyObject onClickCallback, PyObject createSubFragmentCallback, PyObject onLongClickCallback, String linkAlias) {
+        this(UItem.asCustom(view), onClickCallback, createSubFragmentCallback, onLongClickCallback, linkAlias);
     }
 
-    public CustomSetting(UItem uItem, PyObject pyObject, PyObject pyObject2, PyObject pyObject3, String str) {
-        this(pyObject, pyObject2, pyObject3, str);
-        this.item = uItem;
-        uItem.object = this;
-    }
-
-    public CustomSetting(Factory<?> factory, PyObject pyObject, PyObject pyObject2, PyObject pyObject3, String str) {
-        this(pyObject, pyObject2, pyObject3, str);
-        this.factory = factory;
-    }
-
-    public CustomSetting(Factory<?> factory, PyObject pyObject, PyObject pyObject2, PyObject pyObject3, PyObject pyObject4, String str) {
-        this(factory, pyObject2, pyObject3, pyObject4, str);
-        this.factoryArgs = pyObject;
-    }
-
-    public CustomSetting(View view, PyObject pyObject, PyObject pyObject2, PyObject pyObject3, String str) {
-        this(UItem.asCustom(view), pyObject, pyObject2, pyObject3, str);
-    }
-
-    @Override // com.exteragram.messenger.plugins.models.SettingItem
+    @Override
     public void cleanup() {
         super.cleanup();
-        closeCallback(this.onClickCallback);
-        closeCallback(this.createSubFragmentCallback);
-        closeCallback(this.factoryArgs);
-        this.onClickCallback = null;
-        this.createSubFragmentCallback = null;
-        this.factoryArgs = null;
+        closeCallback(onClickCallback);
+        closeCallback(createSubFragmentCallback);
+        closeCallback(factoryArgs);
+        onClickCallback = null;
+        createSubFragmentCallback = null;
+        factoryArgs = null;
     }
 
     public static abstract class Factory<V extends View> extends UItem.UItemFactory<V> {
-        private boolean isClickableValue = true;
-        private boolean isShadowValue;
+        public boolean isShadowValue;
+        public boolean isClickableValue = true;
 
-        public UItem create(Plugin plugin, CustomSetting setting, PyObject args) {
+        public UItem create(Plugin plugin, CustomSetting customSetting, PyObject factoryArgs) {
             return null;
         }
 
@@ -106,28 +64,14 @@ public final class CustomSetting extends SettingItem {
         public void onLongClick(Plugin plugin, UItem item, View view) {
         }
 
-        public final boolean isShadowValue() {
-            return this.isShadowValue;
+        @Override
+        public boolean isShadow() {
+            return isShadowValue;
         }
 
-        public final void setShadowValue(boolean z) {
-            this.isShadowValue = z;
-        }
-
-        public final boolean isClickableValue() {
-            return this.isClickableValue;
-        }
-
-        public final void setClickableValue(boolean z) {
-            this.isClickableValue = z;
-        }
-
-        public boolean getIsShadowValue() {
-            return this.isShadowValue;
-        }
-
-        public boolean getIsClickableValue() {
-            return this.isClickableValue;
+        @Override
+        public boolean isClickable() {
+            return isClickableValue;
         }
     }
 }

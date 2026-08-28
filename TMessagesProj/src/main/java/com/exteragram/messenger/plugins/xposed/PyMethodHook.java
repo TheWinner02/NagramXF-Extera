@@ -2,146 +2,131 @@ package com.exteragram.messenger.plugins.xposed;
 
 import com.chaquo.python.PyException;
 import com.chaquo.python.PyObject;
+import com.exteragram.messenger.plugins.PluginsConstants;
 import com.exteragram.messenger.plugins.PluginsController;
 import com.exteragram.messenger.plugins.hooks.HookFilter;
-import de.robv.android.xposed.XC_MethodHook;
-import java.util.ArrayList;
+
 import org.telegram.messenger.FileLog;
 
-public final class PyMethodHook extends XC_MethodHook implements AutoCloseable {
-    private final PyObject afterHook;
-    private ArrayList<HookFilter> afterHookedFilters;
-    private final PyObject beforeHook;
-    private ArrayList<HookFilter> beforeHookedFilters;
-    private volatile boolean closed;
-    private volatile boolean disabled;
+import java.util.ArrayList;
+
+import de.robv.android.xposed.XC_MethodHook;
+
+public class PyMethodHook extends XC_MethodHook implements AutoCloseable {
+    private ArrayList<HookFilter> beforeHookedFilters = new ArrayList<>();
+    private ArrayList<HookFilter> afterHookedFilters = new ArrayList<>();
     private final String pluginId;
     private final PyObject pythonCallback;
+    private final PyObject beforeHook;
+    private final PyObject afterHook;
 
-    public PyMethodHook(String str, PyObject pyObject) {
-        this(str, pyObject, true, true);
+    private volatile boolean disabled;
+    private volatile boolean closed;
+
+    public PyMethodHook(String pluginId, PyObject pythonCallback) {
+        this(pluginId, pythonCallback, PRIORITY_DEFAULT, true, true);
     }
 
-    public PyMethodHook(String str, PyObject pyObject, int i) {
-        this(str, pyObject, i, true, true);
+    public PyMethodHook(String pluginId, PyObject pythonCallback, int priority) {
+        this(pluginId, pythonCallback, priority, true, true);
     }
 
-    public PyMethodHook(String str, PyObject pyObject, boolean z, boolean z2) {
-        this.beforeHookedFilters = new ArrayList<>();
-        this.afterHookedFilters = new ArrayList<>();
-        if (pyObject == null) {
-            throw new IllegalArgumentException("pyObject cannot be null");
+    public PyMethodHook(String pluginId, PyObject pythonCallback, boolean hasBeforeHook, boolean hasAfterHook) {
+        this(pluginId, pythonCallback, PRIORITY_DEFAULT, hasBeforeHook, hasAfterHook);
+    }
+
+    public PyMethodHook(String pluginId, PyObject pythonCallback, int priority, boolean hasBeforeHook, boolean hasAfterHook) {
+        super(priority);
+        if (pythonCallback == null) {
+            throw new IllegalArgumentException("Python callback object cannot be null");
         }
-        this.pluginId = str;
-        this.pythonCallback = pyObject;
-        this.beforeHook = getCallbackIfPresent(pyObject, "before_hook", z);
-        this.afterHook = getCallbackIfPresent(pyObject, "after_hook", z2);
+        this.pluginId = pluginId;
+        this.pythonCallback = pythonCallback;
+        this.beforeHook = getCallbackIfPresent(pythonCallback, PluginsConstants.Xposed.BEFORE_HOOKED_METHOD, hasBeforeHook);
+        this.afterHook = getCallbackIfPresent(pythonCallback, PluginsConstants.Xposed.AFTER_HOOKED_METHOD, hasAfterHook);
     }
 
-    public PyMethodHook(String str, PyObject pyObject, int i, boolean z, boolean z2) {
-        super(i);
-        this.beforeHookedFilters = new ArrayList<>();
-        this.afterHookedFilters = new ArrayList<>();
-        if (pyObject == null) {
-            throw new IllegalArgumentException("pyObject cannot be null");
-        }
-        this.pluginId = str;
-        this.pythonCallback = pyObject;
-        this.beforeHook = getCallbackIfPresent(pyObject, "before_hook", z);
-        this.afterHook = getCallbackIfPresent(pyObject, "after_hook", z2);
+    public void setBeforeHookedFilters(ArrayList<HookFilter> filters) {
+        this.beforeHookedFilters = filters;
     }
 
-    public final void setBeforeHookedFilters(ArrayList<HookFilter> beforeHookedFilters) {
-        this.beforeHookedFilters = beforeHookedFilters;
+    public void setAfterHookedFilters(ArrayList<HookFilter> filters) {
+        this.afterHookedFilters = filters;
     }
 
-    public final void setAfterHookedFilters(ArrayList<HookFilter> afterHookedFilters) {
-        this.afterHookedFilters = afterHookedFilters;
+    public ArrayList<HookFilter> getBeforeHookedFilters() {
+        return beforeHookedFilters;
     }
 
-    public final ArrayList<HookFilter> getBeforeHookedFilters() {
-        return this.beforeHookedFilters;
-    }
-
-    public final ArrayList<HookFilter> getAfterHookedFilters() {
-        return this.afterHookedFilters;
+    public ArrayList<HookFilter> getAfterHookedFilters() {
+        return afterHookedFilters;
     }
 
     @Override
-    public void beforeHookedMethod(XC_MethodHook.MethodHookParam param) {
-        PyObject pyObject;
-        PyObject pyObjectCall;
-        if (this.disabled || (pyObject = this.beforeHook) == null || !PluginsController.INSTANCE.getInstance().isPluginActive$TMessagesProj(this.pluginId)) {
+    protected void beforeHookedMethod(MethodHookParam param) {
+        if (disabled || beforeHook == null || !PluginsController.getInstance().isPluginActive(pluginId)) {
             return;
         }
         try {
-            if (executeFilters(this.beforeHookedFilters, param, true) && (pyObjectCall = pyObject.call(param)) != null) {
-                pyObjectCall.close();
+            for (HookFilter filter : beforeHookedFilters) {
+                if (!filter.execute(param, true)) {
+                    return;
+                }
             }
-        } catch (Throwable th) {
-            handleHookError("beforeHookedMethod", th);
+            PyObject result = beforeHook.call(param);
+            if (result != null) {
+                result.close();
+            }
+        } catch (Throwable t) {
+            handleHookError("beforeHookedMethod", t);
         }
     }
 
     @Override
-    public void afterHookedMethod(XC_MethodHook.MethodHookParam param) {
-        PyObject pyObject;
-        PyObject pyObjectCall;
-        if (this.disabled || (pyObject = this.afterHook) == null || !PluginsController.INSTANCE.getInstance().isPluginActive$TMessagesProj(this.pluginId)) {
+    protected void afterHookedMethod(MethodHookParam param) {
+        if (disabled || afterHook == null || !PluginsController.getInstance().isPluginActive(pluginId)) {
             return;
         }
         try {
-            if (executeFilters(this.afterHookedFilters, param, false) && (pyObjectCall = pyObject.call(param)) != null) {
-                pyObjectCall.close();
+            for (HookFilter filter : afterHookedFilters) {
+                if (!filter.execute(param, false)) {
+                    return;
+                }
             }
-        } catch (Throwable th) {
-            handleHookError("afterHookedMethod", th);
+            PyObject result = afterHook.call(param);
+            if (result != null) {
+                result.close();
+            }
+        } catch (Throwable t) {
+            handleHookError("afterHookedMethod", t);
         }
     }
 
     @Override
     public void close() {
-        if (this.closed) {
+        if (closed) {
             return;
         }
-        this.closed = true;
-        this.disabled = true;
-        PyObject pyObject = this.beforeHook;
-        if (pyObject != null) {
-            pyObject.close();
+        closed = true;
+        disabled = true;
+        if (beforeHook != null) {
+            beforeHook.close();
         }
-        PyObject pyObject2 = this.afterHook;
-        if (pyObject2 != null) {
-            pyObject2.close();
+        if (afterHook != null) {
+            afterHook.close();
         }
     }
 
-    private final boolean executeFilters(ArrayList<HookFilter> filters, XC_MethodHook.MethodHookParam param, boolean isBefore) {
-        if (filters == null) return true;
-        for (HookFilter hookFilter : filters) {
-            if (!hookFilter.execute(param, isBefore)) {
-                return false;
-            }
-        }
-        return true;
+    private static PyObject getCallbackIfPresent(PyObject callbackObject, String name, boolean enabled) {
+        return enabled && callbackObject.containsKey(name) ? callbackObject.get(name) : null;
     }
 
-    private final PyObject getCallbackIfPresent(PyObject callbackObject, String name, boolean enabled) {
-        if (enabled && callbackObject != null && callbackObject.containsKey(name)) {
-            Object obj = callbackObject.get((Object) name);
-            if (obj instanceof PyObject) {
-                return (PyObject) obj;
-            }
-        }
-        return null;
-    }
-
-    private final void handleHookError(String hookMethodName, Throwable t) {
-        if ((t instanceof PyException) && t.getMessage() != null && t.getMessage().contains("disabled")) {
-            this.disabled = true;
-            FileLog.e("Disabling hook for plugin " + this.pluginId);
+    private void handleHookError(String where, Throwable t) {
+        if (t instanceof PyException && t.getMessage() != null && t.getMessage().contains("closed")) {
+            disabled = true;
+            FileLog.e("Attempted to call a closed PyObject callback in " + pluginId);
             return;
         }
-        FileLog.e("Error in plugin " + this.pluginId + " during " + hookMethodName + ": " + (t != null ? t.getMessage() : ""), t);
+        FileLog.e("Plugin '" + pluginId + "' crashed in " + where + ": " + t.getMessage(), t);
     }
 }

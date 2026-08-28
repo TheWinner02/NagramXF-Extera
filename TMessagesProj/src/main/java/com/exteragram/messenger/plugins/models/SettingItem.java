@@ -1,90 +1,45 @@
 package com.exteragram.messenger.plugins.models;
 
+import android.text.TextUtils;
+
 import com.chaquo.python.PyObject;
-import com.sun.jna.Callback;
-import kotlin.Metadata;
-import kotlin.jvm.internal.DefaultConstructorMarker;
-import okhttp3.internal.url._UrlKt;
-import org.lsposed.lsparanoid.Deobfuscator$exteraGramDev$TMessagesProj;
-import org.scilab.forge.jlatexmath.TeXSymbolParser;
 
-/* JADX INFO: loaded from: classes.dex */
 public abstract class SettingItem {
-    private String icon;
-    private String linkAlias;
-    private PyObject onLongClickCallback;
-    private String type;
+    public String type;
+    public String icon;
+    public PyObject onLongClickCallback;
+    public String linkAlias;
 
-    public SettingItem(String str, String str2, PyObject pyObject, String str3) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-100783424292399L);
-        this.type = str;
-        this.icon = str2;
-        this.onLongClickCallback = pyObject;
-        this.linkAlias = str3;
+    protected SettingItem(String type) {
+        this(type, null, null, null);
     }
 
-    public /* synthetic */ SettingItem(String str, String str2, PyObject pyObject, String str3, int i, DefaultConstructorMarker defaultConstructorMarker) {
-        this(str, (i & 2) != 0 ? null : str2, (i & 4) != 0 ? null : pyObject, (i & 8) != 0 ? null : str3);
+    protected SettingItem(String type, String icon, PyObject onLongClickCallback, String linkAlias) {
+        this.type = type;
+        this.icon = icon;
+        this.onLongClickCallback = onLongClickCallback;
+        this.linkAlias = linkAlias;
     }
 
-    public final String getType() {
-        return this.type;
-    }
-
-    public final void setType(String str) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-100796309194287L);
-        this.type = str;
-    }
-
-    public final String getIcon() {
-        return this.icon;
-    }
-
-    public final void setIcon(String str) {
-        this.icon = str;
-    }
-
-    public final PyObject getOnLongClickCallback() {
-        return this.onLongClickCallback;
-    }
-
-    public final void setOnLongClickCallback(PyObject pyObject) {
-        this.onLongClickCallback = pyObject;
-    }
-
-    public final String getLinkAlias() {
-        return this.linkAlias;
-    }
-
-    public final void setLinkAlias(String str) {
-        this.linkAlias = str;
-    }
-
-    public final void closeCallback(PyObject callback) {
+    protected void closeCallback(PyObject callback) {
         if (callback != null) {
             try {
                 callback.close();
-            } catch (Exception unused) {
+            } catch (Exception ignored) {
             }
         }
     }
 
     public void cleanup() {
-        closeCallback(this.onLongClickCallback);
-        this.onLongClickCallback = null;
+        closeCallback(onLongClickCallback);
+        onLongClickCallback = null;
     }
 
-    public final String getLink(String pluginId, String prefix) {
-        String str;
-        String str2 = this.linkAlias;
-        if (str2 == null || str2.length() == 0 || pluginId == null || pluginId.length() == 0) {
+    public String getLink(String pluginId, String prefix) {
+        if (TextUtils.isEmpty(linkAlias) || TextUtils.isEmpty(pluginId)) {
             return null;
         }
-        if (prefix == null) {
-            str = this.linkAlias;
-        } else {
-            str = prefix + ':' + this.linkAlias;
-        }
-        return Deobfuscator$exteraGramDev$TMessagesProj.getString(-100761949455919L) + pluginId + Deobfuscator$exteraGramDev$TMessagesProj.getString(-99254415935023L) + str;
+        String settingPath = prefix == null ? linkAlias : prefix + ':' + linkAlias;
+        return String.format("https://t.me/%s?%s=%s&%s=%s", "exteraSettings", "p", pluginId, "s", settingPath);
     }
 }

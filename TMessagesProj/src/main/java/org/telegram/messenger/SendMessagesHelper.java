@@ -53,6 +53,8 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 
+import com.exteragram.messenger.plugins.PluginsController;
+import com.radolyn.ayugram.utils.AyuMessageUtils;
 import com.radolyn.ayugram.AyuGhostPreferences;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
 import com.radolyn.ayugram.AyuState;
@@ -4302,7 +4304,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         sendMessage(SendMessageParams.of(message, null, null, null, null, null, null, null, null, null, peer, null, replyToMsg, replyToTopMsg, webPage, searchLinks, null, entities, replyMarkup, params, notify, scheduleDate, scheduleRepeatPeriod, 0, null, sendAnimationData, updateStickersOrder, false));
     }
 
-    public void sendMessage(SendMessageParams sendMessageParams) {
+    public void sendMessage(SendMessageParams rawParams) {
+        final SendMessageParams sendMessageParams = PluginsController.getInstance().executeSendMessageHook(currentAccount, rawParams);
+        if (sendMessageParams == null) {
+            return;
+        }
         final SendMessageChatArguments sendMessageChatArguments = sendMessageParams.sendMessageChatArguments != null ?
                 sendMessageParams.sendMessageChatArguments : SendMessageChatArguments.EMPTY;
         String message = sendMessageParams.message;

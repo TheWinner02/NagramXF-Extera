@@ -52,6 +52,8 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
+import com.exteragram.messenger.plugins.PluginsController;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
@@ -18127,6 +18129,13 @@ public class MessagesController extends BaseController implements NotificationCe
 
     // must be run from Utilities.stageQueue
     public void processUpdates(final TLRPC.Updates updates, boolean fromQueue) {
+        if (updates == null) {
+            return;
+        }
+        final TLRPC.Updates hookedUpdates = PluginsController.getInstance().executeUpdatesHook(updates.getClass().getSimpleName(), currentAccount, updates);
+        if (hookedUpdates == null) {
+            return;
+        }
         ArrayList<Long> needGetChannelsDiff = null;
         boolean needGetDiff = false;
         boolean needReceivedQueue = false;
@@ -18666,7 +18675,20 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean processUpdateArray(ArrayList<TLRPC.Update> updates, ArrayList<TLRPC.User> usersArr, ArrayList<TLRPC.Chat> chatsArr, boolean fromGetDifference, int date) {
-        if (updates.isEmpty()) {
+        if (updates != null && !updates.isEmpty()) {
+            ArrayList<TLRPC.Update> hookedUpdates = new ArrayList<>(updates.size());
+            for (TLRPC.Update update : updates) {
+                if (update == null) {
+                    continue;
+                }
+                TLRPC.Update hookedUpdate = PluginsController.getInstance().executeUpdateHook(update.getClass().getSimpleName(), currentAccount, update);
+                if (hookedUpdate != null) {
+                    hookedUpdates.add(hookedUpdate);
+                }
+            }
+            updates = hookedUpdates;
+        }
+        if (updates == null || updates.isEmpty()) {
             if (usersArr != null || chatsArr != null) {
                 AndroidUtilities.runOnUIThread(() -> {
                     putUsers(usersArr, false);

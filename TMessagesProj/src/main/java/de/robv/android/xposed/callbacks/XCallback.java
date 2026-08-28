@@ -1,34 +1,32 @@
 package de.robv.android.xposed.callbacks;
 
-/* JADX INFO: loaded from: classes.dex */
 public abstract class XCallback implements Comparable<XCallback> {
     public static final int PRIORITY_DEFAULT = 50;
     public static final int PRIORITY_HIGHEST = 10000;
     public static final int PRIORITY_LOWEST = -10000;
+
     public final int priority;
+
+    @Deprecated
+    public XCallback() {
+        this(PRIORITY_DEFAULT);
+    }
+
+    public XCallback(int priority) {
+        this.priority = priority;
+    }
 
     public static abstract class Param {
     }
 
-    @Deprecated
-    public XCallback() {
-        this.priority = 50;
-    }
-
-    @Override // java.lang.Comparable
-    public int compareTo(XCallback xCallback) {
-        if (this == xCallback) {
+    @Override
+    public int compareTo(XCallback other) {
+        if (this == other) {
             return 0;
         }
-        int i = xCallback.priority;
-        int i2 = this.priority;
-        if (i != i2) {
-            return Integer.compare(i, i2);
+        if (other.priority != priority) {
+            return other.priority - priority;
         }
-        return System.identityHashCode(this) < System.identityHashCode(xCallback) ? -1 : 1;
-    }
-
-    public XCallback(int i) {
-        this.priority = i;
+        return System.identityHashCode(this) < System.identityHashCode(other) ? -1 : 1;
     }
 }

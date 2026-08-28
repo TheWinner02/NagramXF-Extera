@@ -1,16 +1,15 @@
 package com.exteragram.messenger.plugins.ui.components;
 
 import android.app.Activity;
-import android.content.SharedPreferences;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import com.exteragram.messenger.ExteraConfig;
+
 import com.exteragram.messenger.plugins.PluginsController;
-import kotlin.Metadata;
-import kotlin.Unit;
-import kotlin.jvm.internal.SourceDebugExtension;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -18,64 +17,55 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.StickerImageView;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
-/* JADX INFO: loaded from: classes4.dex */
-@SourceDebugExtension({"SMAP\nSafeModeBottomSheet.kt\nKotlin\n*S Kotlin\n*F\n+ 1 SafeModeBottomSheet.kt\ncom/exteragram/messenger/plugins/ui/components/SafeModeBottomSheet\n+ 2 fake.kt\nkotlin/jvm/internal/FakeKt\n*L\n1#1,115:1\n1#2:116\n*E\n"})
-public final class SafeModeBottomSheet extends BottomSheet {
-    @Override // org.telegram.ui.ActionBar.BaseFragment.AttachedSheet
-    public /* bridge */ /* synthetic */ void setLastVisible(boolean z) {
-        super.setLastVisible(z);
-    }
-
-    public SafeModeBottomSheet(BaseFragment baseFragment) {
-        super(baseFragment.getParentActivity(), false, baseFragment.getResourceProvider());
-        Activity parentActivity = baseFragment.getParentActivity();
+public class SafeModeBottomSheet extends BottomSheet {
+    public SafeModeBottomSheet(BaseFragment fragment) {
+        super(fragment.getParentActivity(), false, fragment.getResourceProvider());
+        Activity activity = fragment.getParentActivity();
         fixNavigationBar();
-        FrameLayout frameLayout = new FrameLayout(parentActivity);
-        LinearLayout linearLayout = new LinearLayout(parentActivity);
-        linearLayout.setOrientation(1);
-        frameLayout.addView(linearLayout);
-        StickerImageView stickerImageView = new StickerImageView(parentActivity, this.currentAccount);
-        stickerImageView.setStickerPackName("exteraGramPlaceholders");
-        stickerImageView.setStickerNum(10);
-        stickerImageView.getImageReceiver().setAutoRepeat(1);
-        linearLayout.addView(stickerImageView, LayoutHelper.createLinear(144, 144, 1, 0.0f, 16.0f, 0.0f, 0.0f));
-        TextView textView = new TextView(parentActivity);
-        textView.setGravity(1);
-        textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        textView.setTextSize(1, 20.0f);
-        textView.setTypeface(AndroidUtilities.bold());
-        textView.setText("Safe Mode");
-        linearLayout.addView(textView, LayoutHelper.createFrame(-1, -2.0f, 0, 40.0f, 20.0f, 40.0f, 0.0f));
-        TextView textView2 = new TextView(parentActivity);
-        textView2.setGravity(1);
-        textView2.setTypeface(AndroidUtilities.bold());
-        textView2.setTextSize(1, 14.0f);
-        textView2.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
-        textView2.setText("Plugins engine safe mode enabled");
-        linearLayout.addView(textView2, LayoutHelper.createFrame(-1, -2.0f, 0, 21.0f, 8.0f, 21.0f, 0.0f));
-        ButtonWithCounterView buttonWithCounterView = new ButtonWithCounterView(parentActivity, true, this.resourcesProvider);
-        buttonWithCounterView.setRound();
-        buttonWithCounterView.setText(LocaleController.getString(R.string.Disable), false);
-        buttonWithCounterView.setOnClickListener(new View.OnClickListener() { // from class: com.exteragram.messenger.plugins.ui.components.SafeModeBottomSheet$$ExternalSyntheticLambda0
-            @Override // android.view.View.OnClickListener
-            public final void onClick(View view) {
-                SafeModeBottomSheet.m1362$r8$lambda$akwXYwH2g7Yc4GuPo7nIqbaSJU(SafeModeBottomSheet.this, view);
+
+        FrameLayout root = new FrameLayout(activity);
+        LinearLayout content = new LinearLayout(activity);
+        content.setOrientation(LinearLayout.VERTICAL);
+        root.addView(content, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        FrameLayout iconWrap = new FrameLayout(activity);
+        iconWrap.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(96), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        ImageView icon = new ImageView(activity);
+        icon.setScaleType(ImageView.ScaleType.CENTER);
+        icon.setImageResource(R.drawable.msg2_secret);
+        icon.setColorFilter(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        iconWrap.addView(icon, LayoutHelper.createFrame(42, 42, Gravity.CENTER));
+        content.addView(iconWrap, LayoutHelper.createLinear(96, 96, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 0));
+
+        TextView titleView = new TextView(activity);
+        titleView.setGravity(Gravity.CENTER_HORIZONTAL);
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        titleView.setTextSize(1, 20);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setText(LocaleController.getString(R.string.PluginsSafeMode));
+        content.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 40, 20, 40, 0));
+
+        TextView subtitleView = new TextView(activity);
+        subtitleView.setGravity(Gravity.CENTER_HORIZONTAL);
+        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        subtitleView.setTextSize(1, 14);
+        subtitleView.setText(PluginsController.getSafeModeStatusText());
+        content.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 21, 8, 21, 0));
+
+        ButtonWithCounterView disableButton = new ButtonWithCounterView(activity, true, resourcesProvider);
+        disableButton.setText(LocaleController.getString(R.string.Disable), false);
+        disableButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dismiss();
+                PluginsController.disableSafeMode();
+                PluginsController.getInstance().restart();
             }
         });
-        linearLayout.addView(buttonWithCounterView, LayoutHelper.createFrame(-1, 48.0f, 0, 16.0f, 28.0f, 16.0f, 16.0f));
-        setCustomView(frameLayout);
-    }
+        content.addView(disableButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, 16, 28, 16, 16));
 
-    /* JADX INFO: renamed from: $r8$lambda$akwXYwH2g7Yc4GuPo7-nIqbaSJU, reason: not valid java name */
-    public static void m1362$r8$lambda$akwXYwH2g7Yc4GuPo7nIqbaSJU(SafeModeBottomSheet safeModeBottomSheet, View view) {
-        safeModeBottomSheet.dismiss();
-        SharedPreferences.Editor editor = ExteraConfig.getEditor();
-        ExteraConfig.setPluginsSafeMode(false);
-        Unit unit = Unit.INSTANCE;
-        editor.putBoolean("pluginsSafeMode", false).apply();
-        PluginsController.INSTANCE.getInstance().restart(false);
+        setCustomView(root);
     }
 }

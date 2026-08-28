@@ -1,90 +1,32 @@
 package com.exteragram.messenger.plugins.models;
 
 import com.chaquo.python.PyObject;
-import kotlin.Metadata;
-import okhttp3.internal.url._UrlKt;
+import com.exteragram.messenger.plugins.PluginsConstants;
 
-/* JADX INFO: loaded from: classes.dex */
-public final class EditTextSetting extends SettingItem {
-    private String defaultValue;
-    private String hint;
-    private String key;
-    private String mask;
-    private int maxLength;
-    private boolean multiline;
-    private PyObject onChangeCallback;
+public class EditTextSetting extends SettingItem {
+    public String key;
+    public String hint;
+    public String defaultValue;
+    public boolean multiline;
+    public int maxLength;
+    public String mask;
+    public PyObject onChangeCallback;
 
-    public EditTextSetting(String str, String str2, String str3, boolean z, int i, String str4, PyObject pyObject) {
-        super("edit_text", null, null, null, 14, null);
-        this.key = str;
-        this.hint = str2;
-        this.defaultValue = str3;
-        this.multiline = z;
-        this.maxLength = i;
-        this.mask = str4;
-        this.onChangeCallback = pyObject;
+    public EditTextSetting(String key, String hint, String defaultValue, boolean multiline, int maxLength, String mask, PyObject onChangeCallback) {
+        super(PluginsConstants.Settings.TYPE_EDIT_TEXT);
+        this.key = key;
+        this.hint = hint;
+        this.defaultValue = defaultValue;
+        this.multiline = multiline;
+        this.maxLength = maxLength;
+        this.mask = mask;
+        this.onChangeCallback = onChangeCallback;
     }
 
-    public final String getKey() {
-        return this.key;
-    }
-
-    public final void setKey(String str) {
-        this.key = str;
-    }
-
-    public final String getHint() {
-        return this.hint;
-    }
-
-    public final void setHint(String str) {
-        this.hint = str;
-    }
-
-    public final String getDefaultValue() {
-        return this.defaultValue;
-    }
-
-    public final void setDefaultValue(String str) {
-        this.defaultValue = str;
-    }
-
-    public final boolean getMultiline() {
-        return this.multiline;
-    }
-
-    public final void setMultiline(boolean z) {
-        this.multiline = z;
-    }
-
-    public final int getMaxLength() {
-        return this.maxLength;
-    }
-
-    public final void setMaxLength(int i) {
-        this.maxLength = i;
-    }
-
-    public final String getMask() {
-        return this.mask;
-    }
-
-    public final void setMask(String str) {
-        this.mask = str;
-    }
-
-    public final PyObject getOnChangeCallback() {
-        return this.onChangeCallback;
-    }
-
-    public final void setOnChangeCallback(PyObject pyObject) {
-        this.onChangeCallback = pyObject;
-    }
-
-    @Override // com.exteragram.messenger.plugins.models.SettingItem
+    @Override
     public void cleanup() {
         super.cleanup();
-        closeCallback(this.onChangeCallback);
-        this.onChangeCallback = null;
+        closeCallback(onChangeCallback);
+        onChangeCallback = null;
     }
 }

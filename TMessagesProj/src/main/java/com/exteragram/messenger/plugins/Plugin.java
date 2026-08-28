@@ -1,207 +1,179 @@
 package com.exteragram.messenger.plugins;
 
-import com.chaquo.python.internal.Common;
-import com.google.android.gms.cast.MediaTrack;
-import java.util.ArrayList;
-import java.util.List;
-import kotlin.Metadata;
-import kotlin.jvm.internal.DefaultConstructorMarker;
-import kotlin.jvm.internal.Intrinsics;
-import kotlin.text.Regex;
-import kotlin.text.StringsKt;
-import okhttp3.internal.url._UrlKt;
-import org.lsposed.lsparanoid.Deobfuscator$exteraGramDev$TMessagesProj;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
-/* JADX INFO: loaded from: classes.dex */
-public final class Plugin {
+import java.util.ArrayList;
+import java.util.List;
 
-    /* JADX INFO: renamed from: Companion, reason: from kotlin metadata */
-    public static final Companion INSTANCE = new Companion(null);
-    private String appVersion;
-    private String author;
-    private transient PluginsController.PluginsEngine cachedEngine;
-    private String description;
+public class Plugin {
+    public transient PluginsController.PluginsEngine cachedEngine;
+
     private String engine;
-    private volatile Throwable error;
     private final String id;
-    private int index;
-    private volatile boolean isEnabled;
-    private volatile boolean isNotResponding;
     private final String name;
     private String pack;
-    private List<String> requirements;
-    private String sdkVersion;
-    private String version;
+    private int index = -1;
+    private volatile Throwable error;
+    private volatile boolean notResponding;
+    private List<String> requirements = new ArrayList<>();
+    private String version = "1.0";
+    private String minVersion = "12.2.10";
+    private String appVersion;
+    private String sdkVersion = "v" + PythonPluginsEngine.SDK_VERSION;
+    private String description = LocaleController.getString(R.string.PluginNoDescription);
+    private String author = LocaleController.getString(R.string.PluginNoAuthor);
+    private volatile boolean enabled;
 
-    public Plugin(String str, String str2) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-64469475804719L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-64490950641199L);
-        this.id = str;
-        this.name = str2;
-        this.appVersion = Deobfuscator$exteraGramDev$TMessagesProj.getString(-64572555019823L);
-        this.sdkVersion = Deobfuscator$exteraGramDev$TMessagesProj.getString(-64551080183343L) + PythonPluginsEngine.INSTANCE.getSDK_VERSION();
-        this.version = Deobfuscator$exteraGramDev$TMessagesProj.getString(-64555375150639L);
-        this.description = "No description provided.";
-        this.author = "Unknown author";
-        this.index = -1;
-        this.requirements = new ArrayList();
+    public Plugin(String id, String name) {
+        this.id = id;
+        this.name = name;
     }
 
-    public final PluginsController.PluginsEngine getCachedEngine() {
-        return this.cachedEngine;
+    private static boolean isIconValid(String icon) {
+        return icon != null && icon.matches("^[a-zA-Z][a-zA-Z0-9_]*/\\d+$");
     }
 
-    public final void setCachedEngine(PluginsController.PluginsEngine pluginsEngine) {
-        this.cachedEngine = pluginsEngine;
+    public String getId() {
+        return id;
     }
 
-    public final String getId() {
-        return this.id;
+    public String getDescription() {
+        return description;
     }
 
-    public final String getDescription() {
-        return this.description;
-    }
-
-    public final void setDescription(String description) {
+    public void setDescription(String description) {
         this.description = description;
     }
 
-    public final String getEngine() {
-        return this.engine;
+    public String getEngine() {
+        return engine;
     }
 
-    public final void setEngine(String engine) {
+    public void setEngine(String engine) {
         this.engine = engine;
     }
 
-    public final String getAuthor() {
-        return this.author;
+    public String getAuthor() {
+        return author;
     }
 
-    public final void setAuthor(String author) {
+    public void setAuthor(String author) {
         this.author = author;
     }
 
-    public final String getName() {
-        return this.name;
+    public String getName() {
+        return name;
     }
 
-    public final boolean isEnabled() {
-        return !hasError() && this.isEnabled;
+    public boolean isEnabled() {
+        return !hasError() && enabled;
     }
 
-    public final void setEnabled(boolean enabled) {
-        this.isEnabled = enabled && !hasError();
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled && !hasError();
     }
 
-    public final Throwable getError() {
-        return this.error;
+    public Throwable getError() {
+        return error;
     }
 
-    public final void setError(Throwable error) {
+    public void setError(Throwable error) {
         this.error = error;
         if (hasError()) {
-            this.isEnabled = false;
+            enabled = false;
         }
     }
 
-    public final boolean hasError() {
-        return this.error != null;
+    public boolean hasError() {
+        return error != null;
     }
 
-    public final String getPack() {
-        return this.pack;
+    public boolean isNotResponding() {
+        return notResponding;
     }
 
-    public final int getIndex() {
-        return this.index;
+    public void setNotResponding(boolean notResponding) {
+        this.notResponding = notResponding;
     }
 
-    public final String getVersion() {
-        return this.version;
+    public String getPack() {
+        return pack;
     }
 
-    public final void setVersion(String version) {
+    public int getIndex() {
+        return index;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
         this.version = version;
     }
 
-    public final List<String> getRequirements() {
-        return this.requirements;
+    public String getMinVersion() {
+        return minVersion;
     }
 
-    public final String getAppVersion() {
-        return this.appVersion;
+    public void setMinVersion(String minVersion) {
+        this.minVersion = minVersion;
     }
 
-    public final void setAppVersion(String appVersion) {
+    public String getAppVersion() {
+        return appVersion;
+    }
+
+    public void setAppVersion(String appVersion) {
         this.appVersion = appVersion;
     }
 
-    public final String getSdkVersion() {
-        return this.sdkVersion;
+    public String getSdkVersion() {
+        return sdkVersion;
     }
 
-    public final void setSdkVersion(String sdkVersion) {
+    public void setSdkVersion(String sdkVersion) {
         this.sdkVersion = sdkVersion;
     }
 
-    public final void setRequirements(List<String> requirements) {
-        this.requirements = requirements;
+    public List<String> getRequirements() {
+        return requirements;
     }
 
-    /* JADX INFO: renamed from: isNotResponding, reason: from getter */
-    public final boolean getIsNotResponding() {
-        return this.isNotResponding;
+    public void setRequirements(List<String> requirements) {
+        this.requirements = requirements != null ? new ArrayList<>(requirements) : new ArrayList<>();
     }
 
-    public final void setNotResponding(boolean notResponding) {
-        this.isNotResponding = notResponding;
-    }
-
-    public final String getIcon() {
-        if (this.pack == null || this.index < 0) {
+    public String getIcon() {
+        if (pack == null || index < 0) {
             return null;
         }
-        return this.pack + '/' + this.index;
+        return pack + "/" + index;
     }
 
-    public final void setIcon(String link) {
-        int iLastIndexOf$default;
-        if (INSTANCE.isIconValid(link) && (iLastIndexOf$default = link.lastIndexOf('/')) != -1) {
-            String strSubstring = link.substring(0, iLastIndexOf$default);
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-62992007054895L);
-            this.pack = strSubstring;
-            String strSubstring2 = link.substring(iLastIndexOf$default + 1);
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-63065021498927L);
-            this.index = Integer.parseInt(strSubstring2);
+    public void setIcon(String icon) {
+        if (!isIconValid(icon)) {
+            return;
         }
-    }
-
-    public boolean equals(Object other) {
-        if (other instanceof Plugin) {
-            return Intrinsics.areEqual(((Plugin) other).id, this.id);
+        int slash = icon.lastIndexOf('/');
+        if (slash == -1) {
+            return;
         }
-        return this == other;
+        pack = icon.substring(0, slash);
+        index = Integer.parseInt(icon.substring(slash + 1));
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Plugin other) {
+            return other.id.equals(id);
+        }
+        return super.equals(obj);
+    }
+
+    @Override
     public int hashCode() {
-        return this.id.hashCode();
-    }
-
-    public static final class Companion {
-        public /* synthetic */ Companion(DefaultConstructorMarker defaultConstructorMarker) {
-            this();
-        }
-
-        private Companion() {
-        }
-
-        /* JADX INFO: Access modifiers changed from: private */
-        public final boolean isIconValid(String input) {
-            return input != null && new Regex(Deobfuscator$exteraGramDev$TMessagesProj.getString(-100663165208111L)).matches(input);
-        }
+        return id.hashCode();
     }
 }

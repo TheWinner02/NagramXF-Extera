@@ -1,91 +1,90 @@
 package com.exteragram.messenger.plugins.hooks;
 
 import de.robv.android.xposed.XC_MethodHook;
+
+import org.telegram.messenger.FileLog;
+
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.telegram.messenger.FileLog;
 
-public final class XposedHookRecord implements HookRecord {
-    public static final Companion INSTANCE = new Companion();
+public class XposedHookRecord implements HookRecord {
+    // One callback instance can back several unhooks (addXposedHooks registers N of them), so it
+    // must only be closed once the last record referencing it has been cleaned up.
     private static final Map<AutoCloseable, Integer> callbackReferences = Collections.synchronizedMap(new IdentityHashMap<>());
-    private final AtomicBoolean cleanedUp = new AtomicBoolean();
-    private final XC_MethodHook.Unhook unhookObject;
 
-    public XposedHookRecord(XC_MethodHook.Unhook unhook) {
-        this.unhookObject = unhook;
-        XC_MethodHook callback = unhook != null ? unhook.getCallback() : null;
-        INSTANCE.retainCallback(callback instanceof AutoCloseable ? (AutoCloseable) callback : null);
+    final XC_MethodHook.Unhook unhookObject;
+    private final AtomicBoolean cleanedUp = new AtomicBoolean();
+
+    public XposedHookRecord(XC_MethodHook.Unhook unhookObject) {
+        this.unhookObject = unhookObject;
+        XC_MethodHook callback = unhookObject != null ? unhookObject.getCallback() : null;
+        retainCallback(callback instanceof AutoCloseable closeable ? closeable : null);
     }
 
     @Override
     public void cleanup() {
-        if (this.cleanedUp.compareAndSet(false, true) && this.unhookObject != null) {
+        if (!cleanedUp.compareAndSet(false, true) || unhookObject == null) {
+            return;
+        }
+        try {
+            unhookObject.unhook();
+        } catch (Throwable t) {
+            FileLog.e("Error during Xposed unhook cleanup", t);
+        } finally {
             try {
-                this.unhookObject.unhook();
-            } catch (Throwable th) {
-                FileLog.e(th);
-            } finally {
-                XC_MethodHook callback = this.unhookObject.getCallback();
-                try {
-                    INSTANCE.releaseCallback(callback instanceof AutoCloseable ? (AutoCloseable) callback : null);
-                } catch (Throwable th) {
-                    FileLog.e(th);
-                }
+                XC_MethodHook callback = unhookObject.getCallback();
+                releaseCallback(callback instanceof AutoCloseable closeable ? closeable : null);
+            } catch (Throwable t) {
+                FileLog.e("Error during Xposed unhook cleanup", t);
             }
+        }
+    }
+
+    private static void retainCallback(AutoCloseable callback) {
+        if (callback == null) {
+            return;
+        }
+        synchronized (callbackReferences) {
+            Integer count = callbackReferences.get(callback);
+            callbackReferences.put(callback, (count != null ? count : 0) + 1);
+        }
+    }
+
+    private static void releaseCallback(AutoCloseable callback) throws Exception {
+        if (callback == null) {
+            return;
+        }
+        boolean shouldClose;
+        synchronized (callbackReferences) {
+            Integer count = callbackReferences.get(callback);
+            int value = count != null ? count : 0;
+            if (value <= 1) {
+                callbackReferences.remove(callback);
+                shouldClose = true;
+            } else {
+                callbackReferences.put(callback, value - 1);
+                shouldClose = false;
+            }
+        }
+        if (shouldClose) {
+            callback.close();
         }
     }
 
     @Override
-    public boolean matches(Object criteria) {
-        return (criteria instanceof XC_MethodHook.Unhook) && this.unhookObject == criteria;
+    public boolean matches(Object obj) {
+        return obj instanceof XC_MethodHook.Unhook && unhookObject == obj;
     }
 
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        return other != null && getClass() == other.getClass() && this.unhookObject == ((XposedHookRecord) other).unhookObject;
+    @Override
+    public boolean equals(Object obj) {
+        return this == obj || (obj instanceof XposedHookRecord other && unhookObject == other.unhookObject);
     }
 
+    @Override
     public int hashCode() {
-        return this.unhookObject != null ? this.unhookObject.hashCode() : 0;
-    }
-
-    public static final class Companion {
-        private Companion() {}
-
-        /* JADX INFO: Access modifiers changed from: private */
-        public final void retainCallback(AutoCloseable callback) {
-            if (callback == null) {
-                return;
-            }
-            synchronized (XposedHookRecord.callbackReferences) {
-                Integer num = XposedHookRecord.callbackReferences.get(callback);
-                XposedHookRecord.callbackReferences.put(callback, (num != null ? num : 0) + 1);
-            }
-        }
-
-        /* JADX INFO: Access modifiers changed from: private */
-        public final void releaseCallback(AutoCloseable callback) throws Exception {
-            boolean close = false;
-            if (callback == null) {
-                return;
-            }
-            synchronized (XposedHookRecord.callbackReferences) {
-                Integer num = XposedHookRecord.callbackReferences.get(callback);
-                int count = num != null ? num : 0;
-                if (count <= 1) {
-                    XposedHookRecord.callbackReferences.remove(callback);
-                    close = true;
-                } else {
-                    XposedHookRecord.callbackReferences.put(callback, count - 1);
-                }
-            }
-            if (close) {
-                callback.close();
-            }
-        }
+        return unhookObject != null ? unhookObject.hashCode() : 0;
     }
 }

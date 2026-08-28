@@ -2,7 +2,10 @@ package com.exteragram.messenger.plugins;
 
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
+
 import com.chaquo.python.PyObject;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.plugins.hooks.EventHookRecord;
@@ -17,49 +20,11 @@ import com.exteragram.messenger.plugins.ui.components.SafeModeBottomSheet;
 import com.exteragram.messenger.plugins.utils.MenuContextBuilder;
 import com.exteragram.messenger.plugins.utils.NativeCrashHandler;
 import com.exteragram.messenger.plugins.utils.PluginsWatchdog;
-import com.exteragram.messenger.utils.chats.ChatUtils;
-import com.sun.jna.Callback;
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.ToIntFunction;
-import kotlin.Metadata;
-import kotlin.TuplesKt;
-import kotlin.Unit;
-import kotlin.collections.CollectionsKt;
-import kotlin.collections.MapsKt;
-import kotlin.jvm.JvmOverloads;
-import kotlin.jvm.JvmStatic;
-import kotlin.jvm.functions.Function1;
-import kotlin.jvm.functions.Function2;
-import kotlin.jvm.internal.DefaultConstructorMarker;
-import kotlin.jvm.internal.Intrinsics;
-import kotlin.jvm.internal.SourceDebugExtension;
-import kotlin.text.StringsKt;
-import okhttp3.internal.url._UrlKt;
-import org.lsposed.lsparanoid.Deobfuscator$exteraGramDev$TMessagesProj;
-import org.simplifiles.SimpliFiles;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueue;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -73,49 +38,71 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.LaunchActivity;
 
-/* JADX INFO: loaded from: classes.dex */
-@SourceDebugExtension({"SMAP\nPluginsController.kt\nKotlin\n*S Kotlin\n*F\n+ 1 PluginsController.kt\ncom/exteragram/messenger/plugins/PluginsController\n+ 2 fake.kt\nkotlin/jvm/internal/FakeKt\n+ 3 SharedPreferences.kt\nandroidx/core/content/SharedPreferencesKt\n+ 4 _Collections.kt\nkotlin/collections/CollectionsKt___CollectionsKt\n*L\n1#1,1323:1\n1#2:1324\n41#3,12:1325\n41#3,12:1337\n1915#4,2:1349\n1915#4,2:1351\n*S KotlinDebug\n*F\n+ 1 PluginsController.kt\ncom/exteragram/messenger/plugins/PluginsController\n*L\n166#1:1325,12\n478#1:1337,12\n598#1:1349,2\n813#1:1351,2\n*E\n"})
-public final class PluginsController implements PluginsHooks {
-    public static final int PLUGIN_FILE_ICON_ID_START = 101;
-    public static final int PLUGIN_FILE_ICON_NONE = -1;
-    private volatile Map<String, ? extends List<EventHookRecord>> exactMatchEventHooksCache;
-    private final ConcurrentHashMap<Integer, Drawable> fileIconDrawablesById;
-    private final ConcurrentHashMap<String, Integer> fileIconIdsByExtension;
-    private final ConcurrentHashMap<String, Set<HookRecord>> hooks;
-    private volatile boolean hooksCacheDirty;
-    private final Object hooksCacheLock;
-    private volatile boolean initialized;
-    private final ConcurrentHashMap<String, List<String>> interestedPluginsCache;
-    private final ConcurrentHashMap<String, MenuItemRecord> menuItemsById;
-    private final ConcurrentHashMap<String, CopyOnWriteArrayList<MenuItemRecord>> menuItemsByMenuType;
-    private final AtomicInteger nextFileIconId;
-    private final ConcurrentHashMap<String, Plugin> plugins;
-    private File pluginsDir;
-    private SharedPreferences preferences;
-    private final ConcurrentHashMap<String, List<SettingItem>> settings;
-    private volatile List<EventHookRecord> substringMatchEventHooksCache;
-    private final Runnable updateNotificationRunnable;
-    private final PluginsWatchdog watchdog;
-    public static final String PREF_PLUGIN_ENABLED_KEY_PREFIX = Deobfuscator$exteraGramDev$TMessagesProj.getString(-76546923841071L);
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 
-    /* JADX INFO: renamed from: Companion, reason: from kotlin metadata */
-    public static final Companion INSTANCE = new Companion(null);
-    private static final ConcurrentHashMap<String, PluginsEngine> enginesMap;
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
+import tw.nekomimi.nekogram.helpers.MessageHelper;
+
+public class PluginsController implements PluginsHooks {
+    public static final String PREF_PLUGIN_ENABLED_KEY_PREFIX = "plugin_enabled_";
+    public static final String PREF_PENDING_CRASH = "had_crash";
+    public static final String PREF_CRASHED_PLUGIN_ID = "crashed_plugin_id";
+    public static final String PREF_SAFE_MODE_REASON = "safe_mode_reason";
+
+    public static final class SafeModeReason {
+        public static final String MANUAL = "manual";
+        public static final String NATIVE_CRASH = "native_crash";
+        public static final String PLUGIN_CRASH = "plugin_crash";
+        public static final String CRASH = "crash";
+
+        private SafeModeReason() {
+        }
+    }
+
+    public static final int PLUGIN_FILE_ICON_NONE = -1;
+    public static final int PLUGIN_FILE_ICON_START = 101;
+
+    public static final ConcurrentHashMap<String, PluginsEngine> engines = new ConcurrentHashMap<>();
 
     static {
-        ConcurrentHashMap<String, PluginsEngine> map = new ConcurrentHashMap<>();
-        PythonPluginsEngine engine = new PythonPluginsEngine();
-        map.put("python", engine);
-        map.put(PluginsConstants.PYTHON, engine);
-        try {
-            map.put(Deobfuscator$exteraGramDev$TMessagesProj.getString(-76615643317807L), engine);
-        } catch (Throwable ignored) {}
-        enginesMap = map;
+        engines.put(PluginsConstants.PYTHON, PythonPluginsEngine.INSTANCE);
     }
 
-    public interface EngineHookCaller<T> {
-        HookResult<T> call(PluginsEngine engine, T obj, String pluginId);
-    }
+    private volatile Map<String, List<EventHookRecord>> exactMatchEventHooksCache = Collections.emptyMap();
+    private volatile List<EventHookRecord> substringMatchEventHooksCache = Collections.emptyList();
+
+    public File pluginsDir;
+    public final ConcurrentHashMap<String, Plugin> plugins = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<String, List<SettingItem>> settings = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, MenuItemRecord> menuItemsById = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CopyOnWriteArrayList<MenuItemRecord>> menuItemsByMenuType = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Set<HookRecord>> hooks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<String>> interestedPluginsCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Integer> fileIconIdsByExtension = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Drawable> fileIconDrawablesById = new ConcurrentHashMap<>();
+    private final AtomicInteger nextFileIconId = new AtomicInteger(PLUGIN_FILE_ICON_START);
+    private final Object hooksCacheLock = new Object();
+    private volatile boolean hooksCacheDirty = true;
+
+    public SharedPreferences preferences = ApplicationLoader.applicationContext != null
+            ? ApplicationLoader.applicationContext.getSharedPreferences("plugin_settings", 0)
+            : null;
+    public final PluginsWatchdog watchdog = new PluginsWatchdog(this);
+
+    private final Runnable updateNotificationRunnable = () -> {
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginsUpdated);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginMenuItemsUpdated);
+    };
 
     public interface PluginsEngine {
         boolean canOpenInExternalApp();
@@ -126,1683 +113,1284 @@ public final class PluginsController implements PluginsHooks {
 
         void deletePlugin(String pluginId, Utilities.Callback<String> callback);
 
-        void executeOnAppEvent(String eventType);
+        void executeOnAppEvent(String eventName);
 
-        HookResult<PluginsHooks.PostRequestResult> executePostRequestHook(String requestName, int account, TLObject response, TLRPC.TL_error error, String pluginId);
+        HookResult<PostRequestResult> executePostRequestHook(String hookName, int account, TLObject response, TLRPC.TL_error error, String pluginId);
 
-        HookResult<TLObject> executePreRequestHook(String requestName, int account, TLObject request, String pluginId);
+        HookResult<TLObject> executePreRequestHook(String hookName, int account, TLObject request, String pluginId);
 
         HookResult<SendMessagesHelper.SendMessageParams> executeSendMessageHook(int account, SendMessagesHelper.SendMessageParams params, String pluginId);
 
-        HookResult<TLRPC.Update> executeUpdateHook(String updateName, int account, TLRPC.Update update, String pluginId);
+        HookResult<TLRPC.Update> executeUpdateHook(String hookName, int account, TLRPC.Update update, String pluginId);
 
-        HookResult<TLRPC.Updates> executeUpdatesHook(String containerName, int account, TLRPC.Updates updates, String pluginId);
+        HookResult<TLRPC.Updates> executeUpdatesHook(String hookName, int account, TLRPC.Updates updates, String pluginId);
 
         Map<String, ?> getAllPluginSettings(String pluginId);
 
-        String getPluginPath(String id);
+        String getPluginPath(String pluginId);
 
         Object getPluginSetting(String pluginId, String key, Object defaultValue);
 
-        void init(Runnable callback);
+        void init(Runnable runnable);
 
         boolean isEngineAvailable();
 
-        boolean isPlugin(File file, MessageObject messageObject);
+        boolean isPlugin(File file);
 
-        List<SettingItem> loadPluginSettings(String id);
+        List<SettingItem> loadPluginSettings(String pluginId);
 
-        void openInExternalApp(String id);
+        void openInExternalApp(String pluginId);
 
-        void openPluginSetting(Plugin plugin, String linkAlias, BaseFragment fragment);
+        void openPluginSetting(Plugin plugin, String settingId, BaseFragment baseFragment);
 
-        void openPluginSetting(String pluginId, String linkAlias, BaseFragment fragment);
+        void openPluginSetting(String pluginId, String settingId, BaseFragment baseFragment);
 
-        void openPluginSettings(Plugin plugin, BaseFragment fragment);
+        void openPluginSettings(Plugin plugin, BaseFragment baseFragment);
 
-        void openPluginSettings(String id, BaseFragment fragment);
+        void openPluginSettings(String pluginId, BaseFragment baseFragment);
 
         void setPluginEnabled(String pluginId, boolean enabled, Utilities.Callback<String> callback);
 
         void setPluginSetting(String pluginId, String key, Object value);
 
-        void sharePlugin(String id);
+        void sharePlugin(String pluginId);
 
-        void showInstallDialog(BaseFragment fragment, InstallPluginBottomSheet.PluginInstallParams params);
+        void showInstallDialog(BaseFragment baseFragment, InstallPluginBottomSheet.PluginInstallParams pluginInstallParams);
 
-        void shutdown(Runnable callback);
+        void shutdown(Runnable runnable);
     }
 
-    public static void $r8$lambda$ToGKbtqH63z4zUzeWzrnKViKrbk() {
+    private static SharedPreferences getPluginSettingsPreferences() {
+        if (ApplicationLoader.applicationContext == null) {
+            return null;
+        }
+        return ApplicationLoader.applicationContext.getSharedPreferences("plugin_settings", 0);
     }
 
-    public /* synthetic */ PluginsController(DefaultConstructorMarker defaultConstructorMarker) {
-        this();
+    private static void setSafeModeFlag(boolean enabled) {
+        ExteraConfig.pluginsSafeMode = enabled;
+        if (ExteraConfig.editor != null) {
+            ExteraConfig.editor.putBoolean("pluginsSafeMode", enabled).apply();
+        } else if (ApplicationLoader.applicationContext != null) {
+            ApplicationLoader.applicationContext.getSharedPreferences("exteraconfig", 0)
+                    .edit()
+                    .putBoolean("pluginsSafeMode", enabled)
+                    .apply();
+        }
     }
 
-    @JvmStatic
-    public static final void applyArtOpts() {
-        INSTANCE.applyArtOpts();
-    }
-
-    @JvmStatic
-    public static final void clearFileIcons() {
-        INSTANCE.clearFileIcons();
-    }
-
-    @JvmStatic
-    public static final ConcurrentHashMap<String, PluginsEngine> getEngines() {
-        return INSTANCE.getEngines();
-    }
-
-    @JvmStatic
-    public static final int getFileIconId(String str) {
-        return INSTANCE.getFileIconId(str);
-    }
-
-    @JvmStatic
-    public static final PluginsController getInstance() {
-        return INSTANCE.getInstance();
-    }
-
-    @JvmStatic
-    public static final PluginsEngine getPluginEngine(File file) {
-        return INSTANCE.getPluginEngine(file);
-    }
-
-    @JvmStatic
-    public static final Drawable getPluginFileIconDrawable(int i) {
-        return INSTANCE.getPluginFileIconDrawable(i);
-    }
-
-    @JvmStatic
-    public static final boolean isPlugin(File file, MessageObject messageObject) {
-        return INSTANCE.isPlugin(file, messageObject);
-    }
-
-    @JvmStatic
-    public static final boolean isPlugin(MessageObject messageObject) {
-        return INSTANCE.isPlugin(messageObject);
-    }
-
-    @JvmStatic
-    public static final boolean isPluginEngineAvailable() {
-        return INSTANCE.isPluginEngineAvailable();
-    }
-
-    @JvmStatic
-    public static final boolean isPluginEngineSupported() {
-        return INSTANCE.isPluginEngineSupported();
-    }
-
-    @JvmStatic
-    public static final boolean isPluginFileIcon(int i) {
-        return INSTANCE.isPluginFileIcon(i);
-    }
-
-    @JvmStatic
-    public static final boolean isPluginPinned(String str) {
-        return INSTANCE.isPluginPinned(str);
-    }
-
-    @JvmStatic
-    public static final void openPluginSettings(String str) {
-        INSTANCE.openPluginSettings(str);
-    }
-
-    @JvmStatic
-    public static final void openPluginSettings(String str, String str2) {
-        INSTANCE.openPluginSettings(str, str2);
-    }
-
-    @JvmStatic
-    public static final int registerFileIcon(String str, Drawable drawable) {
-        return INSTANCE.registerFileIcon(str, drawable);
-    }
-
-    @JvmStatic
-    public static final void runOnPluginsQueue(Runnable runnable) {
-        INSTANCE.runOnPluginsQueue(runnable);
-    }
-
-    @JvmStatic
-    public static final void setPluginPinned(String str, boolean z) {
-        INSTANCE.setPluginPinned(str, z);
-    }
-
-    @JvmStatic
-    public static final void unregisterFileIcon(String str) {
-        INSTANCE.unregisterFileIcon(str);
-    }
-
-    @JvmOverloads
-    public final void clearPluginSettingsPreferences(String str) {
-        clearPluginSettingsPreferences$default(this, str, false, 2, null);
-    }
-
-    private PluginsController() {
-        this.plugins = new ConcurrentHashMap<>();
-        this.settings = new ConcurrentHashMap<>();
-        this.menuItemsById = new ConcurrentHashMap<>();
-        this.menuItemsByMenuType = new ConcurrentHashMap<>();
-        this.hooks = new ConcurrentHashMap<>();
-        this.interestedPluginsCache = new ConcurrentHashMap<>();
-        this.fileIconIdsByExtension = new ConcurrentHashMap<>();
-        this.fileIconDrawablesById = new ConcurrentHashMap<>();
-        this.nextFileIconId = new AtomicInteger(101);
-        this.substringMatchEventHooksCache = CollectionsKt.emptyList();
-        this.exactMatchEventHooksCache = MapsKt.emptyMap();
-        this.hooksCacheLock = new Object();
-        this.hooksCacheDirty = true;
-        this.pluginsDir = new File(ApplicationLoader.getFilesDirFixed(), Deobfuscator$exteraGramDev$TMessagesProj.getString(-99340315280943L));
-        SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99305955542575L), 0);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-99374675019311L);
-        this.preferences = sharedPreferences;
-        this.watchdog = new PluginsWatchdog(this);
-        this.updateNotificationRunnable = new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda18
-            @Override // java.lang.Runnable
-            public final void run() {
-                PluginsController.$r8$lambda$TRI271OAbh24WtM0hRmdWUfkDcA();
+    private static void persistSafeModeState(boolean enabled, String reason, String crashedPluginId, boolean hadCrash) {
+        SharedPreferences preferences = getPluginSettingsPreferences();
+        if (preferences != null) {
+            SharedPreferences.Editor editor = preferences.edit();
+            if (hadCrash) {
+                editor.putBoolean(PREF_PENDING_CRASH, true);
+            } else {
+                editor.remove(PREF_PENDING_CRASH);
             }
-        };
+            if (TextUtils.isEmpty(reason)) {
+                editor.remove(PREF_SAFE_MODE_REASON);
+            } else {
+                editor.putString(PREF_SAFE_MODE_REASON, reason);
+            }
+            if (TextUtils.isEmpty(crashedPluginId)) {
+                editor.remove(PREF_CRASHED_PLUGIN_ID);
+            } else {
+                editor.putString(PREF_CRASHED_PLUGIN_ID, crashedPluginId);
+            }
+            editor.apply();
+        }
+        setSafeModeFlag(enabled);
     }
 
-    public final ConcurrentHashMap<String, Plugin> getPlugins() {
-        return this.plugins;
+    public static void enableManualSafeMode() {
+        persistSafeModeState(true, SafeModeReason.MANUAL, null, false);
     }
 
-    public final ConcurrentHashMap<String, List<SettingItem>> getSettings() {
-        return this.settings;
+    public static void disableSafeMode() {
+        persistSafeModeState(false, null, null, false);
     }
 
-    public final File getPluginsDir() {
-        return this.pluginsDir;
+    public static void markPendingSafeModeCrash(String reason, String crashedPluginId) {
+        persistSafeModeState(true, reason, crashedPluginId, true);
     }
 
-    public final void setPluginsDir(File file) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-99005307831855L);
-        this.pluginsDir = file;
+    public static String getSafeModeReason() {
+        SharedPreferences preferences = getPluginSettingsPreferences();
+        String reason = preferences != null ? preferences.getString(PREF_SAFE_MODE_REASON, null) : null;
+        if (TextUtils.isEmpty(reason) && ExteraConfig.pluginsSafeMode) {
+            return SafeModeReason.MANUAL;
+        }
+        return reason;
     }
 
-    public final SharedPreferences getPreferences() {
-        return this.preferences;
+    public static String getSafeModeCrashedPluginId() {
+        SharedPreferences preferences = getPluginSettingsPreferences();
+        return preferences != null ? preferences.getString(PREF_CRASHED_PLUGIN_ID, null) : null;
     }
 
-    public final void setPreferences(SharedPreferences sharedPreferences) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-98970948093487L);
-        this.preferences = sharedPreferences;
+    public static CharSequence getSafeModeStatusText() {
+        String reason = getSafeModeReason();
+        if (SafeModeReason.MANUAL.equals(reason)) {
+            return LocaleController.getString(R.string.PluginsSafeModeInfoManual);
+        }
+        if (SafeModeReason.NATIVE_CRASH.equals(reason)) {
+            return LocaleController.getString(R.string.PluginsSafeModeInfoNativeCrash);
+        }
+        if (SafeModeReason.PLUGIN_CRASH.equals(reason)) {
+            String pluginId = getSafeModeCrashedPluginId();
+            if (!TextUtils.isEmpty(pluginId)) {
+                Plugin plugin = getInstance().plugins.get(pluginId);
+                String pluginName = plugin != null ? plugin.getName() : pluginId;
+                return LocaleController.formatString(R.string.PluginsSafeModeInfoPluginCrash, pluginName);
+            }
+        }
+        return LocaleController.getString(R.string.PluginsSafeModeInfoCrashGeneric);
     }
 
-    public final PluginsWatchdog getWatchdog() {
-        return this.watchdog;
+    public static PluginsController getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
-    public static void $r8$lambda$TRI271OAbh24WtM0hRmdWUfkDcA() {
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pluginsUpdated);
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pluginMenuItemsUpdated);
+    public static boolean isPluginEngineSupported() {
+        return Build.VERSION.SDK_INT >= 24;
     }
 
-    public final PluginsEngine getPluginEngine(String pluginId) {
-        Plugin plugin;
-        if (pluginId == null || pluginId.length() == 0 || (plugin = this.plugins.get(pluginId)) == null) {
+    private static boolean hasAvailablePluginsEngine() {
+        for (PluginsEngine engine : engines.values()) {
+            if (engine == null) {
+                continue;
+            }
+            try {
+                if (engine.isEngineAvailable()) {
+                    return true;
+                }
+            } catch (Throwable t) {
+                FileLog.e("Error checking engine availability.", t);
+            }
+        }
+        return false;
+    }
+
+    public static boolean isPluginEngineAvailable() {
+        if (!isPluginEngineSupported() || !ExteraConfig.pluginsEngine || ExteraConfig.pluginsSafeMode) {
+            return false;
+        }
+        return hasAvailablePluginsEngine();
+    }
+
+    public static void applyArtOpts() {
+        if (ExteraConfig.pluginsDisableArtOpts && isPluginEngineSupported()) {
+            try {
+                XposedBridge.disableProfileSaver();
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+        }
+    }
+
+    public static boolean isPluginNativeRuntimeAvailable() {
+        return de.robv.android.xposed.XposedBridge.isNativeAvailable();
+    }
+
+    public static boolean isPluginRuntimeOperational() {
+        return isPluginEngineAvailable() && isPluginNativeRuntimeAvailable();
+    }
+
+    public static String getPluginRuntimeIssue() {
+        if (!isPluginEngineSupported()) {
+            return "unsupported";
+        }
+        if (!ExteraConfig.pluginsEngine) {
+            return "disabled";
+        }
+        if (ExteraConfig.pluginsSafeMode) {
+            return "safe_mode";
+        }
+        if (!hasAvailablePluginsEngine()) {
+            return "python_runtime_unavailable";
+        }
+        if (!isPluginNativeRuntimeAvailable()) {
+            return "native_runtime_unavailable";
+        }
+        return null;
+    }
+
+    public static boolean isPlugin(MessageObject messageObject) {
+        if (messageObject == null || messageObject.getDocumentName() == null || !isPluginEngineSupported()) {
+            return false;
+        }
+        String path = MessageHelper.getPathToMessage(messageObject);
+        return !TextUtils.isEmpty(path) && isPlugin(new File(path));
+    }
+
+    public static boolean isPlugin(File file) {
+        if (file == null) {
+            return false;
+        }
+        for (PluginsEngine engine : engines.values()) {
+            if (engine != null && engine.isPlugin(file)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static PluginsEngine getPluginEngine(File file) {
+        if (file == null) {
             return null;
         }
-        PluginsEngine cachedEngine = plugin.getCachedEngine();
-        if (cachedEngine != null) {
-            return cachedEngine;
+        for (PluginsEngine engine : engines.values()) {
+            if (engine != null && engine.isPlugin(file)) {
+                return engine;
+            }
         }
-        String engine = plugin.getEngine();
-        if (engine == null) {
+        return null;
+    }
+
+    public static int registerFileIcon(String extension, Drawable drawable) {
+        return getInstance().registerFileIconInternal(extension, drawable);
+    }
+
+    public static void unregisterFileIcon(String extension) {
+        getInstance().unregisterFileIconInternal(extension);
+    }
+
+    public static void clearFileIcons() {
+        getInstance().clearFileIconsInternal();
+    }
+
+    public static int getFileIconId(String fileName) {
+        return getInstance().getFileIconIdInternal(fileName);
+    }
+
+    public static boolean isPluginFileIcon(int icon) {
+        return getInstance().fileIconDrawablesById.containsKey(icon);
+    }
+
+    public static Drawable getPluginFileIconDrawable(int icon) {
+        return getInstance().fileIconDrawablesById.get(icon);
+    }
+
+    private int registerFileIconInternal(String extension, Drawable drawable) {
+        String normalized = normalizeFileExtension(extension);
+        if (normalized == null || drawable == null) {
+            return PLUGIN_FILE_ICON_NONE;
+        }
+        Integer existing = fileIconIdsByExtension.get(normalized);
+        if (existing != null) {
+            fileIconDrawablesById.put(existing, drawable);
+            return existing;
+        }
+        int id = nextFileIconId.getAndIncrement();
+        Integer raceWinner = fileIconIdsByExtension.putIfAbsent(normalized, id);
+        if (raceWinner != null) {
+            id = raceWinner;
+        }
+        fileIconDrawablesById.put(id, drawable);
+        return id;
+    }
+
+    private void unregisterFileIconInternal(String extension) {
+        String normalized = normalizeFileExtension(extension);
+        if (normalized == null) {
+            return;
+        }
+        Integer id = fileIconIdsByExtension.remove(normalized);
+        if (id != null) {
+            fileIconDrawablesById.remove(id);
+        }
+    }
+
+    private void clearFileIconsInternal() {
+        fileIconIdsByExtension.clear();
+        fileIconDrawablesById.clear();
+    }
+
+    private int getFileIconIdInternal(String fileName) {
+        if (TextUtils.isEmpty(fileName) || fileIconIdsByExtension.isEmpty()) {
+            return PLUGIN_FILE_ICON_NONE;
+        }
+        int lastDot = fileName.lastIndexOf('.');
+        String extension = lastDot >= 0 ? fileName.substring(lastDot + 1) : fileName;
+        String normalized = normalizeFileExtension(extension);
+        if (normalized == null) {
+            return PLUGIN_FILE_ICON_NONE;
+        }
+        Integer id = fileIconIdsByExtension.get(normalized);
+        return id != null ? id : PLUGIN_FILE_ICON_NONE;
+    }
+
+    private static String normalizeFileExtension(String extension) {
+        if (TextUtils.isEmpty(extension)) {
             return null;
         }
-        PluginsEngine pluginsEngine = INSTANCE.getEngines().get(engine);
-        if (pluginsEngine != null) {
-            plugin.setCachedEngine(pluginsEngine);
+        return extension.toLowerCase(java.util.Locale.ROOT);
+    }
+
+    public static void openPluginSetting(String pluginId, String settingId) {
+        BaseFragment lastFragment = LaunchActivity.getLastFragment();
+        if (TextUtils.isEmpty(pluginId) || lastFragment == null) {
+            return;
         }
-        return pluginsEngine;
+        if (!ExteraConfig.pluginsEngine) {
+            BulletinFactory.of(lastFragment)
+                    .createSimpleBulletin(
+                            R.raw.error,
+                            LocaleController.formatString(R.string.PluginEngineNotEnabled, pluginId),
+                            LocaleController.getString(R.string.Enable),
+                            2750,
+                            () -> lastFragment.presentFragment(new PluginsActivity()))
+                    .show();
+            return;
+        }
+        Plugin plugin = getInstance().plugins.get(pluginId);
+        if (plugin == null) {
+            BulletinFactory.of(lastFragment)
+                    .createSimpleBulletin(R.raw.error, LocaleController.formatString(R.string.PluginNotFound, pluginId))
+                    .show();
+            return;
+        }
+        if (!getInstance().hasPluginSettings(pluginId)) {
+            BulletinFactory.of(lastFragment)
+                    .createSimpleBulletin(R.raw.error, LocaleController.formatString(R.string.PluginHasNoSettings, plugin.getName()))
+                    .show();
+            return;
+        }
+        PluginsEngine engine = getInstance().getPluginEngine(pluginId);
+        if (engine != null) {
+            engine.openPluginSetting(pluginId, settingId, lastFragment);
+        }
     }
 
-    public final void init() {
-        init(false, null);
+    public PluginsEngine getPluginEngine(String pluginId) {
+        if (TextUtils.isEmpty(pluginId)) {
+            return null;
+        }
+        Plugin plugin = plugins.get(pluginId);
+        if (plugin == null) {
+            return null;
+        }
+        if (plugin.cachedEngine != null) {
+            return plugin.cachedEngine;
+        }
+        PluginsEngine engine = engines.get(plugin.getEngine());
+        if (engine != null) {
+            plugin.cachedEngine = engine;
+        }
+        return engine;
     }
 
-    public final void init(Runnable onDone) {
-        init(false, onDone);
+    public static boolean isPluginPinned(String pluginId) {
+        return !TextUtils.isEmpty(pluginId) && ExteraConfig.pinnedPlugins.contains(pluginId);
     }
 
-    public final void init(boolean startWithSafeMode) {
-        init(startWithSafeMode, null);
+    public static void setPluginPinned(String pluginId, boolean pinned) {
+        if (TextUtils.isEmpty(pluginId)) {
+            return;
+        }
+        java.util.HashSet<String> set = new java.util.HashSet<>(ExteraConfig.pinnedPlugins);
+        if (pinned) {
+            set.add(pluginId);
+        } else {
+            set.remove(pluginId);
+        }
+        ExteraConfig.pinnedPlugins = set;
+        ExteraConfig.editor.putStringSet("pinnedPlugins", set).apply();
+        getInstance().notifyPluginsChanged();
     }
 
-    public final void init(boolean startWithSafeMode, final Runnable onDone) {
-        Companion companion = INSTANCE;
-        if (!companion.isPluginEngineSupported() || !ExteraConfig.getPluginsEngine()) {
-            this.initialized = false;
-            if (onDone != null) {
-                onDone.run();
-                return;
+    public void init() {
+        init(null);
+    }
+
+    public static void runOnPluginsQueue(Runnable runnable) {
+        if (Utilities.pluginsQueue == null || !Utilities.pluginsQueue.isAlive()) {
+            synchronized (PluginsController.class) {
+                if (Utilities.pluginsQueue == null || !Utilities.pluginsQueue.isAlive()) {
+                    Utilities.pluginsQueue = new DispatchQueue("pluginsQueue");
+                }
+            }
+        }
+        Utilities.pluginsQueue.postRunnable(runnable);
+    }
+
+    public void init(Runnable runnable) {
+        if (!isPluginEngineSupported() || !ExteraConfig.pluginsEngine) {
+            if (runnable != null) {
+                runnable.run();
             }
             return;
         }
+
         NativeCrashHandler.checkAndHandleNativeCrash();
-        this.watchdog.start();
-        companion.runOnPluginsQueue(new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda0
-            @Override // java.lang.Runnable
-            public final void run() {
-                PluginsController.$r8$lambda$ToGKbtqH63z4zUzeWzrnKViKrbk();
-            }
-        });
-        ensurePreferences();
+        applyArtOpts();
+        watchdog.start();
+        if (Utilities.pluginsQueue == null || !Utilities.pluginsQueue.isAlive()) {
+            Utilities.pluginsQueue = new DispatchQueue("pluginsQueue");
+        }
+        if (preferences == null && ApplicationLoader.applicationContext != null) {
+            preferences = ApplicationLoader.applicationContext.getSharedPreferences("plugin_settings", 0);
+        }
+
         try {
-            boolean z = this.preferences.getBoolean(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99074027308591L), false);
-            String string = this.preferences.getString(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99048257504815L), null);
-            boolean z2 = (string != null && Intrinsics.areEqual(string, Deobfuscator$exteraGramDev$TMessagesProj.getString(-99125566916143L))) || startWithSafeMode;
-            this.preferences.edit().remove(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99228646131247L)).remove(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99821351618095L)).apply();
-            if (z) {
-                if (string != null && !z2) {
-                    SharedPreferences.Editor editorEdit = this.preferences.edit();
-                    editorEdit.putBoolean(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99898661029423L) + string, false);
-                    editorEdit.apply();
-                } else {
-                    SharedPreferences.Editor editor = ExteraConfig.getEditor();
-                    String string2 = Deobfuscator$exteraGramDev$TMessagesProj.getString(-99967380506159L);
-                    ExteraConfig.setPluginsSafeMode(true);
-                    Unit unit = Unit.INSTANCE;
-                    editor.putBoolean(string2, true).apply();
+            boolean hadCrash = preferences != null && preferences.getBoolean(PREF_PENDING_CRASH, false);
+            String crashedPluginId = preferences != null ? preferences.getString(PREF_CRASHED_PLUGIN_ID, null) : null;
+            String safeModeReason = preferences != null ? preferences.getString(PREF_SAFE_MODE_REASON, null) : null;
+            boolean manualSafeMode = SafeModeReason.MANUAL.equals(safeModeReason);
+            if (TextUtils.isEmpty(safeModeReason) && ExteraConfig.pluginsSafeMode) {
+                safeModeReason = SafeModeReason.MANUAL;
+                manualSafeMode = true;
+                if (preferences != null) {
+                    preferences.edit().putString(PREF_SAFE_MODE_REASON, safeModeReason).apply();
                 }
-                if (!z2) {
-                    AndroidUtilities.runOnUIThread(new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda1
-                        @Override // java.lang.Runnable
-                        public final void run() {
-                            PluginsController.$r8$lambda$CIw6dHotoGkENlaplpdVEVp8v_U();
-                        }
-                    }, 800L);
-                }
-            } else {
-                SharedPreferences.Editor editor2 = ExteraConfig.getEditor();
-                String string3 = Deobfuscator$exteraGramDev$TMessagesProj.getString(-100036099982895L);
-                ExteraConfig.setPluginsSafeMode(startWithSafeMode);
-                Unit unit2 = Unit.INSTANCE;
-                editor2.putBoolean(string3, startWithSafeMode).apply();
             }
-        } catch (Exception unused) {
+            if (preferences != null) {
+                preferences.edit().remove(PREF_PENDING_CRASH).apply();
+            }
+            if (hadCrash) {
+                if (!TextUtils.isEmpty(crashedPluginId) && SafeModeReason.PLUGIN_CRASH.equals(safeModeReason) && preferences != null) {
+                    preferences.edit().putBoolean(PREF_PLUGIN_ENABLED_KEY_PREFIX + crashedPluginId, false).apply();
+                }
+                setSafeModeFlag(true);
+                if (!manualSafeMode) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                        if (lastFragment != null) {
+                            new SafeModeBottomSheet(lastFragment).show();
+                        }
+                    }, 800);
+                }
+            }
+        } catch (Exception ignored) {
         }
-        File file = new File(ApplicationLoader.getFilesDirFixed(), Deobfuscator$exteraGramDev$TMessagesProj.getString(-99555063645743L));
-        this.pluginsDir = file;
-        if (!file.exists()) {
-            SimpliFiles.directory(this.pluginsDir).create();
+
+        pluginsDir = new File(ApplicationLoader.getFilesDirFixed(), PluginsConstants.PLUGINS);
+        if (!pluginsDir.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            pluginsDir.mkdirs();
         }
-        final AtomicInteger atomicInteger = new AtomicInteger(0);
-        Runnable runnable = new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda2
-            @Override // java.lang.Runnable
-            public final void run() {
-                PluginsController.$r8$lambda$6Rk2iqGONVXohJ42e6LwpSycLiM(atomicInteger, PluginsController.this, onDone);
+
+        if (engines.isEmpty()) {
+            if (runnable != null) {
+                runnable.run();
+            }
+            return;
+        }
+
+        AtomicInteger completed = new AtomicInteger();
+        Runnable onEngineReady = () -> {
+            if (completed.incrementAndGet() >= engines.size() && runnable != null) {
+                runnable.run();
             }
         };
-        companion.runOnPluginsQueue(new Runnable() {
-            @Override
-            public final void run() {
-                for (PluginsEngine pluginsEngine : INSTANCE.getEngines().values()) {
-                    Deobfuscator$exteraGramDev$TMessagesProj.getString(-99520703907375L);
-                    try {
-                        pluginsEngine.init(runnable);
-                    } catch (Throwable th) {
-                        FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-99632373057071L), th);
+        for (PluginsEngine engine : engines.values()) {
+            if (engine != null) {
+                try {
+                    engine.init(onEngineReady);
+                } catch (Throwable t) {
+                    FileLog.e("Failed to initialize plugins engine.", t);
+                    onEngineReady.run();
+                }
+            } else {
+                onEngineReady.run();
+            }
+        }
+    }
+
+    public void checkDevServers() {
+        for (PluginsEngine engine : engines.values()) {
+            if (engine != null) {
+                engine.checkDevServer();
+            }
+        }
+    }
+
+    public void shutdown(Runnable runnable) {
+        runOnPluginsQueue(() -> {
+            if (engines.isEmpty()) {
+                watchdog.stop();
+                plugins.clear();
+                settings.clear();
+                FileLog.d("Plugin system shut down.");
+                if (runnable != null) {
+                    runnable.run();
+                }
+                return;
+            }
+            AtomicInteger completed = new AtomicInteger();
+            Runnable done = () -> {
+                if (completed.incrementAndGet() >= engines.size()) {
+                    watchdog.stop();
+                    plugins.clear();
+                    settings.clear();
+                    FileLog.d("Plugin system shut down.");
+                    if (runnable != null) {
                         runnable.run();
                     }
                 }
+            };
+            for (PluginsEngine engine : engines.values()) {
+                if (engine != null) {
+                    engine.shutdown(done);
+                } else {
+                    done.run();
+                }
             }
         });
     }
 
-    public static void $r8$lambda$CIw6dHotoGkENlaplpdVEVp8v_U() {
-        BaseFragment lastFragment = LaunchActivity.getLastFragment();
-        if (lastFragment != null) {
-            new SafeModeBottomSheet(lastFragment).show();
-        }
-    }
-
-    public static void $r8$lambda$6Rk2iqGONVXohJ42e6LwpSycLiM(AtomicInteger atomicInteger, PluginsController pluginsController, Runnable runnable) {
-        if (atomicInteger.incrementAndGet() >= INSTANCE.getEngines().size()) {
-            pluginsController.initialized = true;
-            if (runnable != null) {
-                runnable.run();
+    public void restart() {
+        FileLog.d("Restarting plugins engine...");
+        shutdown(() -> {
+            if (ExteraConfig.pluginsEngine) {
+                init(() -> FileLog.d("Plugins engine restarted."));
             }
-        }
-    }
-
-    public final void checkDevServers() {
-        for (PluginsEngine pluginsEngine : INSTANCE.getEngines().values()) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-99774106977839L);
-            pluginsEngine.checkDevServer();
-        }
-    }
-
-    public final void shutdown(final Runnable onDone) {
-        if (this.initialized) {
-            INSTANCE.runOnPluginsQueue(new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda27
-                @Override // java.lang.Runnable
-                public final void run() {
-                    if (onDone != null) onDone.run();
-                }
-            });
-        } else if (onDone != null) {
-            onDone.run();
-        }
-    }
-
-    public static void $r8$lambda$icNspkMlrUGholajStQgzMU2ll4(final PluginsController pluginsController, final Runnable runnable) {
-        final AtomicInteger atomicInteger = new AtomicInteger(0);
-        Runnable runnable2 = new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda13
-            @Override // java.lang.Runnable
-            public final void run() {
-                PluginsController.shutdown$lambda$0$0(atomicInteger, pluginsController, runnable);
-            }
-        };
-        for (PluginsEngine pluginsEngine : INSTANCE.getEngines().values()) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-77551946188335L);
-            pluginsEngine.shutdown(runnable2);
-        }
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final void shutdown$lambda$0$0(AtomicInteger atomicInteger, PluginsController pluginsController, Runnable runnable) {
-        if (atomicInteger.incrementAndGet() >= INSTANCE.getEngines().size()) {
-            pluginsController.watchdog.stop();
-            pluginsController.plugins.clear();
-            pluginsController.settings.clear();
-            pluginsController.initialized = false;
-            FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-77526176384559L));
-            if (runnable != null) {
-                runnable.run();
-            }
-        }
-    }
-
-    public final void restart() {
-        restart(ExteraConfig.getPluginsSafeMode());
-    }
-
-    public final void restart(final boolean startWithSafeMode) {
-        shutdown(new Runnable() {
-                @Override
-                public final void run() {
-                    PluginsController.this.init(startWithSafeMode, null);
-                }
         });
     }
 
-    public static void $r8$lambda$cBNgrqfMkZ1EABZ_fGA8dXDZl_c(PluginsController pluginsController, boolean z) {
-        if (ExteraConfig.getPluginsEngine()) {
-            pluginsController.init(z, new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda19
-                @Override // java.lang.Runnable
-                public final void run() {
-                    PluginsController.restart$lambda$0$0();
-                }
-            });
+    public boolean isPluginActive(String pluginId) {
+        if (TextUtils.isEmpty(pluginId)) {
+            return false;
         }
+        Plugin plugin = plugins.get(pluginId);
+        return plugin != null && plugin.isEnabled();
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final void restart$lambda$0$0() {
-        FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-77710859978287L));
+    public boolean isPluginActive(Plugin plugin) {
+        return plugin != null && plugins.get(plugin.getId()) == plugin && plugin.isEnabled();
     }
 
-    /* JADX INFO: renamed from: isInitialized, reason: from getter */
-    public final boolean getInitialized() {
-        return this.initialized;
-    }
-
-    public final boolean isPluginActive$TMessagesProj(String pluginId) {
-        Plugin plugin;
-        return (pluginId == null || pluginId.length() == 0 || (plugin = this.plugins.get(pluginId)) == null || !plugin.isEnabled()) ? false : true;
-    }
-
-    public final boolean isPluginActive$TMessagesProj(Plugin plugin) {
-        return plugin != null && this.plugins.get(plugin.getId()) == plugin && plugin.isEnabled();
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public final int registerFileIconInternal(String extension, Drawable drawable) {
-        String strNormalizeFileExtension = normalizeFileExtension(extension);
-        if (strNormalizeFileExtension == null || drawable == null) {
-            return -1;
-        }
-        Integer num = this.fileIconIdsByExtension.get(strNormalizeFileExtension);
-        if (num != null) {
-            this.fileIconDrawablesById.put(num, drawable);
-            return num.intValue();
-        }
-        int andIncrement = this.nextFileIconId.getAndIncrement();
-        Integer numPutIfAbsent = this.fileIconIdsByExtension.putIfAbsent(strNormalizeFileExtension, Integer.valueOf(andIncrement));
-        if (numPutIfAbsent != null) {
-            andIncrement = numPutIfAbsent.intValue();
-        }
-        this.fileIconDrawablesById.put(Integer.valueOf(andIncrement), drawable);
-        return andIncrement;
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public final void unregisterFileIconInternal(String extension) {
-        Integer numRemove;
-        String strNormalizeFileExtension = normalizeFileExtension(extension);
-        if (strNormalizeFileExtension == null || (numRemove = this.fileIconIdsByExtension.remove(strNormalizeFileExtension)) == null) {
-            return;
-        }
-        this.fileIconDrawablesById.remove(numRemove);
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public final int getFileIconIdInternal(String fileName) {
-        String strSubstring;
-        Integer num;
-        if (fileName != null && fileName.length() != 0 && !this.fileIconIdsByExtension.isEmpty()) {
-            int iLastIndexOf$default = fileName.lastIndexOf('.');
-            if (iLastIndexOf$default >= 0) {
-                strSubstring = fileName.substring(iLastIndexOf$default + 1);
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-98232213718575L);
-            } else {
-                strSubstring = fileName;
-            }
-            String strNormalizeFileExtension = normalizeFileExtension(strSubstring);
-            if (strNormalizeFileExtension != null && (num = this.fileIconIdsByExtension.get(strNormalizeFileExtension)) != null) {
-                return num.intValue();
-            }
-        }
-        return -1;
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public final void clearFileIconsInternal() {
-        this.fileIconIdsByExtension.clear();
-        this.fileIconDrawablesById.clear();
-    }
-
-    private final String normalizeFileExtension(String extension) {
-        if (extension == null || extension.length() == 0) {
+    public List<SettingItem> getPluginSettingsList(String pluginId) {
+        if (TextUtils.isEmpty(pluginId)) {
             return null;
         }
-        Locale locale = Locale.ROOT;
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-98288048293423L);
-        String lowerCase = extension.toLowerCase(locale);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-98386832541231L);
-        return lowerCase;
+        return settings.get(pluginId);
     }
 
-    public final List<SettingItem> getPluginSettingsList(String pluginId) {
-        if (pluginId == null || pluginId.length() == 0) {
-            return null;
-        }
-        return this.settings.get(pluginId);
-    }
-
-    public final void setPluginEnabled(final String pluginId, final boolean enabled, final Utilities.Callback<String> callback) {
-        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "PluginsController.setPluginEnabled: pluginId=" + pluginId + ", enabled=" + enabled);
-        new Thread(new Runnable() {
-            @Override
-            public final void run() {
-                PluginsController.$r8$lambda$hS703SyhRNV9SkJH3iBjUMIVIvE(PluginsController.this, pluginId, enabled, callback);
+    public void setPluginEnabled(String pluginId, boolean enabled, Utilities.Callback<String> callback) {
+        runOnPluginsQueue(() -> {
+            PluginsEngine engine = getPluginEngine(pluginId);
+            if (engine == null) {
+                notifyEngineMissing(pluginId, callback);
+                return;
             }
-        }, "PluginEnableThread-" + System.currentTimeMillis()).start();
-    }
-
-    public static void $r8$lambda$hS703SyhRNV9SkJH3iBjUMIVIvE(PluginsController pluginsController, String str, boolean z, Utilities.Callback callback) {
-        android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "$r8$lambda$hS703SyhRNV9SkJH3iBjUMIVIvE: pluginId=" + str + ", enabled=" + z);
-        PluginsEngine pluginEngine = pluginsController.getPluginEngine(str);
-        if (pluginEngine == null) {
-            android.util.Log.d("NAGRAM_PLUGIN_DEBUG", "PluginsController: pluginEngine was null for " + str + ", falling back to PythonPluginsEngine...");
-            pluginEngine = INSTANCE.getEngines().get("python");
-        }
-        if (pluginEngine == null || str == null) {
-            android.util.Log.e("NAGRAM_PLUGIN_DEBUG", "PluginsController: pluginEngine is STILL null!");
-            if (callback != null) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public final void run() {
-                        callback.run("Engine is null");
-                    }
-                });
-            }
-            return;
-        }
-        pluginEngine.setPluginEnabled(str, z, callback);
-        pluginsController.interestedPluginsCache.clear();
-    }
-
-    public final void deletePlugin(final String pluginId, final Utilities.Callback<String> callback) {
-        INSTANCE.runOnPluginsQueue(new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda36
-            @Override // java.lang.Runnable
-            public final void run() {
-                PluginsController.$r8$lambda$bH2Xuh4PqqRQxmZWhj67yYxRafE(PluginsController.this, pluginId, callback);
-            }
+            engine.setPluginEnabled(pluginId, enabled, callback);
+            interestedPluginsCache.clear();
         });
     }
 
-    public static void $r8$lambda$bH2Xuh4PqqRQxmZWhj67yYxRafE(PluginsController pluginsController, String str, Utilities.Callback callback) {
-        PluginsEngine pluginEngine = pluginsController.getPluginEngine(str);
-        if (pluginEngine == null || str == null) {
-            return;
-        }
-        pluginEngine.deletePlugin(str, callback);
+    public void deletePlugin(String pluginId, Utilities.Callback<String> callback) {
+        runOnPluginsQueue(() -> {
+            PluginsEngine engine = getPluginEngine(pluginId);
+            if (engine == null) {
+                notifyEngineMissing(pluginId, callback);
+                return;
+            }
+            engine.deletePlugin(pluginId, callback);
+        });
     }
 
-    public final void cleanupPlugin(String pluginId) {
+    private void notifyEngineMissing(String pluginId, Utilities.Callback<String> callback) {
+        final String error = "No plugins engine found for plugin: " + pluginId;
+        FileLog.e(error);
+        if (callback != null) {
+            AndroidUtilities.runOnUIThread(() -> callback.run(error));
+        }
+    }
+
+    void cleanupPlugin(String pluginId) {
         removeHooksByPluginId(pluginId);
         invalidatePluginSettings(pluginId);
         removeMenuItemsByPluginId(pluginId);
     }
 
-    public final String getPluginPath(String id) {
-        PluginsEngine pluginEngine;
-        if (id == null || id.length() == 0 || (pluginEngine = getPluginEngine(id)) == null) {
-            return null;
-        }
-        return pluginEngine.getPluginPath(id);
+    public String getPluginPath(String pluginId) {
+        PluginsEngine engine = getPluginEngine(pluginId);
+        return engine != null ? engine.getPluginPath(pluginId) : null;
     }
 
-    public final void showInstallDialog(BaseFragment fragment, MessageObject messageObject) {
-        android.util.Log.d("PLUGIN_DEBUG", "PluginsController.showInstallDialog(MessageObject): docName=" + (messageObject != null ? messageObject.getDocumentName() : "null"));
-        if (messageObject == null) {
-            return;
-        }
-        showInstallDialog(fragment, InstallPluginBottomSheet.PluginInstallParams.INSTANCE.of(messageObject));
-    }
-
-    public final void showInstallDialog(BaseFragment fragment, String filePath, boolean trusted) {
-        android.util.Log.d("PLUGIN_DEBUG", "PluginsController.showInstallDialog(filePath=" + filePath + ", trusted=" + trusted + ")");
-        if (filePath == null || filePath.length() == 0) {
-            return;
-        }
-        showInstallDialog(fragment, new InstallPluginBottomSheet.PluginInstallParams(filePath, trusted));
-    }
-
-    private final void showInstallDialog(final BaseFragment fragment, InstallPluginBottomSheet.PluginInstallParams params) {
-        String filePath = params != null ? params.getFilePath() : null;
-        android.util.Log.d("PLUGIN_DEBUG", "PluginsController.showInstallDialog(params): fragment=" + fragment + ", filePath=" + filePath + ", getPluginsEngine()=" + ExteraConfig.getPluginsEngine());
-        if (fragment == null || !AndroidUtilities.isActivityRunning(fragment.getParentActivity())) {
-            android.util.Log.d("PLUGIN_DEBUG", "PluginsController: fragment is null or parentActivity not running!");
-            return;
-        }
-        if (filePath == null || filePath.length() == 0) {
-            android.util.Log.d("PLUGIN_DEBUG", "PluginsController: filePath is empty/null!");
-            return;
-        }
-        File file = new File(params.getFilePath());
-        if (!ExteraConfig.getPluginsEngine()) {
-            android.util.Log.d("PLUGIN_DEBUG", "PluginsController: ExteraConfig.getPluginsEngine() is false!");
-            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.error, file.getName() + " is not enabled", LocaleController.getString(R.string.Enable), 2750, () -> fragment.presentFragment(new PluginsActivity())).show();
-            return;
-        }
-        PluginsEngine pluginEngine = INSTANCE.getPluginEngine(file);
-        if (pluginEngine == null) {
-            pluginEngine = INSTANCE.getEngines().get("python");
-        }
-        android.util.Log.d("PLUGIN_DEBUG", "PluginsController: resolved pluginEngine=" + pluginEngine + ". Calling engine.showInstallDialog...");
-        if (pluginEngine != null) {
-            pluginEngine.showInstallDialog(fragment, params);
+    public void showInstallDialog(BaseFragment baseFragment, MessageObject messageObject) {
+        try {
+            showInstallDialog(baseFragment, InstallPluginBottomSheet.PluginInstallParams.of(messageObject));
+        } catch (Throwable t) {
+            showInstallDialogError(baseFragment, messageObject != null ? messageObject.getDocumentName() : null, t);
         }
     }
 
-    public final void loadPluginSettings() {
+    public void showInstallDialog(BaseFragment baseFragment, String filePath, boolean external) {
+        try {
+            showInstallDialog(baseFragment, new InstallPluginBottomSheet.PluginInstallParams(filePath, external));
+        } catch (Throwable t) {
+            showInstallDialogError(baseFragment, filePath != null ? new File(filePath).getName() : null, t);
+        }
+    }
+
+    private void showInstallDialog(BaseFragment baseFragment, InstallPluginBottomSheet.PluginInstallParams params) {
+        if (baseFragment == null || params == null || TextUtils.isEmpty(params.filePath) || !AndroidUtilities.isActivityRunning(baseFragment.getParentActivity())) {
+            return;
+        }
+        File file = new File(params.filePath);
+        if (!ExteraConfig.pluginsEngine) {
+            BulletinFactory.of(baseFragment)
+                    .createSimpleBulletin(
+                            R.raw.error,
+                            LocaleController.formatString(R.string.PluginNotEnabled, file.getName()),
+                            LocaleController.getString(R.string.Enable),
+                            2750,
+                            () -> baseFragment.presentFragment(new PluginsActivity()))
+                    .show();
+            return;
+        }
+        PluginsEngine engine = getPluginEngine(file);
+        if (engine != null) {
+            try {
+                engine.showInstallDialog(baseFragment, params);
+            } catch (Throwable t) {
+                showInstallDialogError(baseFragment, file.getName(), t);
+            }
+        }
+    }
+
+    private void showInstallDialogError(BaseFragment baseFragment, String pluginName, Throwable t) {
+        FileLog.e("Failed to show install dialog for plugin: " + pluginName, t);
+        if (baseFragment == null || !AndroidUtilities.isActivityRunning(baseFragment.getParentActivity())) {
+            return;
+        }
+        final String finalPluginName = TextUtils.isEmpty(pluginName) ? "plugin" : pluginName;
+        final String stackTrace = Log.getStackTraceString(t);
+        AndroidUtilities.runOnUIThread(() ->
+                BulletinFactory.of(baseFragment)
+                        .createSimpleBulletin(
+                                R.raw.error,
+                                LocaleController.formatString(R.string.PluginInstallError, finalPluginName),
+                                LocaleController.getString(R.string.Copy),
+                                () -> {
+                                    if (AndroidUtilities.addToClipboard(stackTrace)) {
+                                        BulletinFactory.of(baseFragment).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+                                    }
+                                })
+                        .show());
+    }
+
+    public void loadPluginSettings() {
         loadPluginSettings(null);
     }
 
-    public final void loadPluginSettings(final String pluginId) {
-        if (pluginId == null || pluginId.length() == 0) {
-            for (String str : this.plugins.keySet()) {
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-97901501236783L);
-                String str2 = str;
-                Plugin plugin = this.plugins.get(str2);
-                if (isPluginActive$TMessagesProj(plugin)) {
-                    loadPluginSettings(str2);
-                } else if (plugin != null) {
-                    invalidatePluginSettings(str2);
+    public void loadPluginSettings(String pluginId) {
+        if (TextUtils.isEmpty(pluginId)) {
+            for (Plugin plugin : new ArrayList<>(plugins.values())) {
+                if (plugin != null && plugin.isEnabled() && !plugin.hasError()) {
+                    loadPluginSettings(plugin.getId());
                 }
             }
             return;
         }
-        Runnable runnable = new Runnable() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda16
-            @Override // java.lang.Runnable
-            public final void run() {
-                PluginsController.this.invalidatePluginSettings(pluginId);
-            }
-        };
-        if (isOnPluginsQueueThread()) {
-            runnable.run();
-        } else {
-            INSTANCE.runOnPluginsQueue(runnable);
-        }
-    }
-
-    public static void $r8$lambda$9zgaAPWG05B5QpqSmC1f6oCyG8s(PluginsController pluginsController, String str) {
-        try {
-            PluginsEngine pluginEngine = pluginsController.getPluginEngine(str);
-            if (pluginEngine == null) {
-                return;
-            }
-            List<SettingItem> listLoadPluginSettings = pluginEngine.loadPluginSettings(str);
-            if (listLoadPluginSettings == null) {
-                pluginsController.invalidatePluginSettings(str);
-                return;
-            }
-            pluginsController.settings.put(str, listLoadPluginSettings);
-            FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-77753809651247L) + str);
-            pluginsController.notifyPluginSettingsRegistered(str);
-        } catch (Throwable th) {
-            FileLog.e(th);
-            pluginsController.invalidatePluginSettings(str);
-        }
-    }
-
-    public final boolean hasPluginSettings(String pluginId) {
-        return (pluginId == null || pluginId.length() == 0 || !this.settings.containsKey(pluginId)) ? false : true;
-    }
-
-    public final void invalidatePluginSettings(String pluginId) {
-        List<SettingItem> listRemove;
-        if (pluginId == null || pluginId.length() == 0 || (listRemove = this.settings.remove(pluginId)) == null) {
-            return;
-        }
-        Iterator<SettingItem> it = listRemove.iterator();
-        while (it.hasNext()) {
-            it.next().cleanup();
-        }
-        notifyPluginSettingsUnregistered(pluginId);
-    }
-
-    public static /* synthetic */ void clearPluginSettingsPreferences$default(PluginsController pluginsController, String str, boolean z, int i, Object obj) {
-        if ((i & 2) != 0) {
-            z = false;
-        }
-        pluginsController.clearPluginSettingsPreferences(str, z);
-    }
-
-    @JvmOverloads
-    public final void clearPluginSettingsPreferences(String pluginId, boolean clearEnabledState) {
-        if (pluginId == null || pluginId.length() == 0) {
-            return;
-        }
-        PluginsEngine pluginEngine = getPluginEngine(pluginId);
-        if (pluginEngine != null) {
-            pluginEngine.clearPluginSettings(pluginId);
-        } else {
-            for (PluginsEngine pluginsEngine : INSTANCE.getEngines().values()) {
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-97875731433007L);
-                pluginsEngine.clearPluginSettings(pluginId);
-            }
-        }
-        ensurePreferences();
-        if (clearEnabledState) {
-            String str = Deobfuscator$exteraGramDev$TMessagesProj.getString(-97987400582703L) + pluginId;
-            if (this.preferences.contains(str)) {
-                SharedPreferences.Editor editorEdit = this.preferences.edit();
-                editorEdit.remove(str);
-                editorEdit.apply();
-            }
-        }
-    }
-
-    public final Map<String, ?> getPluginSettingsPreferences(String pluginId) {
-        PluginsEngine pluginEngine = getPluginEngine(pluginId);
-        if (pluginEngine != null) {
-            return pluginEngine.getAllPluginSettings(pluginId);
-        }
-        return null;
-    }
-
-    public final boolean hasPluginSettingsPreferences(String pluginId) {
-        Map<String, ?> pluginSettingsPreferences = getPluginSettingsPreferences(pluginId);
-        return !(pluginSettingsPreferences == null || pluginSettingsPreferences.isEmpty());
-    }
-
-    public final boolean getPluginSettingBoolean(String pluginId, String key, boolean defaultValue) {
-        PluginsEngine pluginEngine;
-        if (pluginId != null && pluginId.length() != 0 && key != null && key.length() != 0 && (pluginEngine = getPluginEngine(pluginId)) != null) {
-            Object pluginSetting = pluginEngine.getPluginSetting(pluginId, key, Boolean.valueOf(defaultValue));
-            if (pluginSetting instanceof Boolean) {
-                return ((Boolean) pluginSetting).booleanValue();
-            }
-        }
-        return defaultValue;
-    }
-
-    public final String getPluginSettingString(String pluginId, String key, String defaultValue) {
-        PluginsEngine pluginEngine;
-        Object pluginSetting;
-        return (pluginId == null || pluginId.length() == 0 || key == null || key.length() == 0 || (pluginEngine = getPluginEngine(pluginId)) == null || (pluginSetting = pluginEngine.getPluginSetting(pluginId, key, defaultValue)) == null) ? defaultValue : pluginSetting.toString();
-    }
-
-    public final int getPluginSettingInt(String pluginId, String key, int defaultValue) {
-        PluginsEngine pluginEngine;
-        if (pluginId != null && pluginId.length() != 0 && key != null && key.length() != 0 && (pluginEngine = getPluginEngine(pluginId)) != null) {
-            Object pluginSetting = pluginEngine.getPluginSetting(pluginId, key, Integer.valueOf(defaultValue));
-            if (pluginSetting instanceof Number) {
-                return ((Number) pluginSetting).intValue();
-            }
-        }
-        return defaultValue;
-    }
-
-    public final void setPluginSetting(String pluginId, String key, Object value) {
-        setPluginSettingAndTriggerOnChange(pluginId, key, value, null);
-    }
-
-    public final void setPluginSettingAndTriggerOnChange(String pluginId, String key, Object value, PyObject onChangeCallback) {
-        PluginsEngine pluginEngine;
-        if (pluginId == null || pluginId.length() == 0 || key == null || key.length() == 0 || !isPluginActive$TMessagesProj(pluginId) || (pluginEngine = getPluginEngine(pluginId)) == null) {
-            return;
-        }
-        pluginEngine.setPluginSetting(pluginId, key, value);
-        if (onChangeCallback != null) {
+        Utilities.pluginsQueue.postRunnable(() -> {
             try {
-                onChangeCallback.call(value);
-            } catch (Exception e) {
-                FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-98056120059439L) + pluginId + '/' + key, e);
-            }
-        }
-        loadPluginSettings(pluginId);
-    }
-
-    private final void addHook(String pluginId, HookRecord newHook, String logMessage) {
-        if (pluginId == null || pluginId.length() == 0 || newHook == null) {
-            return;
-        }
-        ConcurrentHashMap<String, Set<HookRecord>> concurrentHashMap = this.hooks;
-        final Function1 function1 = new Function1() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda22
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return PluginsController.$r8$lambda$1waTlSZq4_YECP84Ln2JBSIJadc((String) obj);
-            }
-        };
-        Set<HookRecord> setComputeIfAbsent = concurrentHashMap.computeIfAbsent(pluginId, new Function() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda23
-            @Override // java.util.function.Function
-            public final Object apply(Object obj) {
-                return PluginsController.$r8$lambda$Y2S2tGZb5s_dlwEiuNwPZF2NaoU(function1, obj);
+                PluginsEngine engine = getPluginEngine(pluginId);
+                if (engine == null) {
+                    return;
+                }
+                List<SettingItem> pluginSettings = engine.loadPluginSettings(pluginId);
+                if (pluginSettings == null) {
+                    invalidatePluginSettings(pluginId);
+                    return;
+                }
+                settings.put(pluginId, pluginSettings);
+                FileLog.d("Registered settings for plugin " + pluginId);
+                NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginSettingsRegistered, pluginId);
+            } catch (Throwable t) {
+                FileLog.e(t);
+                invalidatePluginSettings(pluginId);
             }
         });
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-98708955088431L);
-        if (setComputeIfAbsent.add(newHook)) {
-            FileLog.d(logMessage);
-            this.interestedPluginsCache.clear();
-            this.hooksCacheDirty = true;
-        }
     }
 
-    public static Set $r8$lambda$1waTlSZq4_YECP84Ln2JBSIJadc(String str) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76241981163055L);
-        return new CopyOnWriteArraySet();
-    }
-
-    public static Set $r8$lambda$Y2S2tGZb5s_dlwEiuNwPZF2NaoU(Function1 function1, Object obj) {
-        return (Set) function1.invoke(obj);
-    }
-
-    public final void addEventHook(String pluginId, String hookName, boolean matchSubstring, int priority) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-98876458812975L);
-        addHook(pluginId, new EventHookRecord(pluginId, hookName, matchSubstring, priority), Deobfuscator$exteraGramDev$TMessagesProj.getString(-98837804107311L) + hookName + Deobfuscator$exteraGramDev$TMessagesProj.getString(-98446962083375L) + pluginId);
-    }
-
-    private final void removeHook(String pluginId, Function1<? super HookRecord, Boolean> filter, String logMessage) {
-        Set<HookRecord> set;
-        if (pluginId == null || pluginId.length() == 0 || (set = this.hooks.get(pluginId)) == null || set.isEmpty()) {
+    public void invalidatePluginSettings(String pluginId) {
+        if (TextUtils.isEmpty(pluginId)) {
             return;
         }
-        ArrayList arrayList = new ArrayList();
-        ArrayList arrayList2 = new ArrayList();
-        for (HookRecord hookRecord : set) {
-            if (filter.invoke(hookRecord).booleanValue()) {
-                arrayList2.add(hookRecord);
-            } else {
-                arrayList.add(hookRecord);
+        List<SettingItem> removed = settings.remove(pluginId);
+        if (removed == null) {
+            return;
+        }
+        for (SettingItem item : removed) {
+            item.cleanup();
+        }
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginSettingsUnregistered, pluginId);
+    }
+
+    public void clearPluginSettingsPreferences(String pluginId) {
+        clearPluginSettingsPreferences(pluginId, false);
+    }
+
+    public void clearPluginSettingsPreferences(String pluginId, boolean clearEnabledState) {
+        if (TextUtils.isEmpty(pluginId)) {
+            return;
+        }
+        PluginsEngine engine = getPluginEngine(pluginId);
+        if (engine != null) {
+            engine.clearPluginSettings(pluginId);
+        } else {
+            for (PluginsEngine other : engines.values()) {
+                if (other != null) {
+                    other.clearPluginSettings(pluginId);
+                }
             }
         }
-        if (arrayList2.isEmpty()) {
+        if (!clearEnabledState || preferences == null) {
             return;
         }
-        int size = arrayList2.size();
-        int i = 0;
-        while (i < size) {
-            Object obj = arrayList2.get(i);
-            i++;
-            ((HookRecord) obj).cleanup();
+        String enabledKey = PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId;
+        if (preferences.contains(enabledKey)) {
+            preferences.edit().remove(enabledKey).apply();
         }
-        boolean zIsEmpty = arrayList.isEmpty();
-        ConcurrentHashMap<String, Set<HookRecord>> concurrentHashMap = this.hooks;
-        if (zIsEmpty) {
-            concurrentHashMap.remove(pluginId);
-        } else {
-            concurrentHashMap.put(pluginId, new CopyOnWriteArraySet(arrayList));
+    }
+
+    public Map<String, ?> getPluginSettingsPreferences(String pluginId) {
+        PluginsEngine engine = getPluginEngine(pluginId);
+        return engine != null ? engine.getAllPluginSettings(pluginId) : null;
+    }
+
+    public boolean hasPluginSettings(String pluginId) {
+        return !TextUtils.isEmpty(pluginId) && settings.containsKey(pluginId);
+    }
+
+    public boolean hasPluginSettingsPreferences(String pluginId) {
+        Map<String, ?> values = getPluginSettingsPreferences(pluginId);
+        return values != null && !values.isEmpty();
+    }
+
+    public boolean getPluginSettingBoolean(String pluginId, String key, boolean defaultValue) {
+        PluginsEngine engine = getPluginEngine(pluginId);
+        if (engine != null) {
+            Object value = engine.getPluginSetting(pluginId, key, defaultValue);
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            }
+        }
+        return defaultValue;
+    }
+
+    public int getPluginSettingInt(String pluginId, String key, int defaultValue) {
+        PluginsEngine engine = getPluginEngine(pluginId);
+        if (engine != null) {
+            Object value = engine.getPluginSetting(pluginId, key, defaultValue);
+            if (value instanceof Number) {
+                return ((Number) value).intValue();
+            }
+        }
+        return defaultValue;
+    }
+
+    public String getPluginSettingString(String pluginId, String key, String defaultValue) {
+        PluginsEngine engine = getPluginEngine(pluginId);
+        Object value = engine != null ? engine.getPluginSetting(pluginId, key, defaultValue) : null;
+        return value != null ? value.toString() : defaultValue;
+    }
+
+    public void setPluginSetting(String pluginId, String key, Object value) {
+        PluginsEngine engine = getPluginEngine(pluginId);
+        if (engine != null) {
+            engine.setPluginSetting(pluginId, key, value);
+            loadPluginSettings(pluginId);
+        }
+    }
+
+    private void addHook(String pluginId, HookRecord hookRecord, String logMessage) {
+        if (TextUtils.isEmpty(pluginId) || hookRecord == null) {
+            return;
+        }
+        Set<HookRecord> set = hooks.computeIfAbsent(pluginId, ignored -> new CopyOnWriteArraySet<>());
+        if (!set.add(hookRecord)) {
+            return;
         }
         FileLog.d(logMessage);
-        this.interestedPluginsCache.clear();
-        this.hooksCacheDirty = true;
+        interestedPluginsCache.clear();
+        hooksCacheDirty = true;
     }
 
-    public final void removeEventHook(String pluginId, final String hookName) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-98438372148783L);
-        removeHook(pluginId, new Function1() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda21
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return Boolean.valueOf(PluginsController.$r8$lambda$m8Lepk5YSi6L1M4adJRbExRUjfI(hookName, (HookRecord) obj));
+    private void removeHook(String pluginId, java.util.function.Predicate<HookRecord> predicate, String logMessage) {
+        if (TextUtils.isEmpty(pluginId)) {
+            return;
+        }
+        Set<HookRecord> set = hooks.get(pluginId);
+        if (set == null || set.isEmpty()) {
+            return;
+        }
+
+        ArrayList<HookRecord> remaining = new ArrayList<>();
+        ArrayList<HookRecord> removed = new ArrayList<>();
+        for (HookRecord hookRecord : set) {
+            if (predicate.test(hookRecord)) {
+                removed.add(hookRecord);
+            } else {
+                remaining.add(hookRecord);
             }
-        }, Deobfuscator$exteraGramDev$TMessagesProj.getString(-98537156396591L) + hookName + Deobfuscator$exteraGramDev$TMessagesProj.getString(-98631645677103L) + pluginId);
+        }
+        if (removed.isEmpty()) {
+            return;
+        }
+        for (HookRecord record : removed) {
+            record.cleanup();
+        }
+        if (remaining.isEmpty()) {
+            hooks.remove(pluginId);
+        } else {
+            hooks.put(pluginId, new CopyOnWriteArraySet<>(remaining));
+        }
+        FileLog.d(logMessage);
+        interestedPluginsCache.clear();
+        hooksCacheDirty = true;
     }
 
-    public static boolean $r8$lambda$m8Lepk5YSi6L1M4adJRbExRUjfI(String str, HookRecord hookRecord) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76314995607087L);
-        return (hookRecord instanceof EventHookRecord) && Intrinsics.areEqual(((EventHookRecord) hookRecord).getHookName(), str);
+    public void addEventHook(String pluginId, String hookName, boolean matchSubstring, int priority) {
+        addHook(pluginId, new EventHookRecord(pluginId, hookName, matchSubstring, priority),
+                "Added event hook '" + hookName + "' for plugin " + pluginId);
     }
 
-    public final void addXposedHook(String pluginId, XC_MethodHook.Unhook unhook) {
-        addHook(pluginId, unhook != null ? new XposedHookRecord(unhook) : null, Deobfuscator$exteraGramDev$TMessagesProj.getString(-97042507777583L) + pluginId);
+    public void removeEventHook(String pluginId, String hookName) {
+        removeHook(pluginId,
+                record -> record instanceof EventHookRecord && TextUtils.equals(((EventHookRecord) record).getHookName(), hookName),
+                "Removed event hook(s) matching name '" + hookName + "' for plugin " + pluginId);
     }
 
-    public final void addXposedHooks(String pluginId, ArrayList<XC_MethodHook.Unhook> unhooks) {
+    public void addXposedHook(String pluginId, XC_MethodHook.Unhook unhook) {
+        addHook(pluginId, new XposedHookRecord(unhook), "Added Xposed hook for plugin " + pluginId);
+    }
+
+    public void addXposedHooks(String pluginId, ArrayList<XC_MethodHook.Unhook> unhooks) {
         if (unhooks == null) {
             return;
         }
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-97171356796463L);
         for (XC_MethodHook.Unhook unhook : unhooks) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-97300205815343L);
             addXposedHook(pluginId, unhook);
         }
     }
 
-    public final void removeXposedHook(String pluginId, final XC_MethodHook.Unhook unhook) {
-        removeHook(pluginId, new Function1() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda9
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return Boolean.valueOf(PluginsController.$r8$lambda$nCbAkJU29JwWnZ6UwahK1r3Ab34(unhook, (HookRecord) obj));
-            }
-        }, Deobfuscator$exteraGramDev$TMessagesProj.getString(-96793399674415L) + pluginId);
+    public void removeXposedHook(String pluginId, XC_MethodHook.Unhook unhook) {
+        removeHook(pluginId,
+                record -> record instanceof XposedHookRecord && ((XposedHookRecord) record).matches(unhook),
+                "Removed Xposed hook for plugin " + pluginId);
     }
 
-    public static boolean $r8$lambda$nCbAkJU29JwWnZ6UwahK1r3Ab34(XC_MethodHook.Unhook unhook, HookRecord hookRecord) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76284930836015L);
-        return (hookRecord instanceof XposedHookRecord) && ((XposedHookRecord) hookRecord).matches(unhook);
-    }
-
-    public final void removeHooksByPluginId(String pluginId) {
-        Set<HookRecord> setRemove;
-        if (pluginId == null || pluginId.length() == 0 || (setRemove = this.hooks.remove(pluginId)) == null) {
+    public void removeHooksByPluginId(String pluginId) {
+        if (TextUtils.isEmpty(pluginId)) {
             return;
         }
-        Iterator<HookRecord> it = setRemove.iterator();
-        while (it.hasNext()) {
-            it.next().cleanup();
+        Set<HookRecord> removed = hooks.remove(pluginId);
+        if (removed == null) {
+            return;
         }
-        FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-96930838627887L) + setRemove.size() + Deobfuscator$exteraGramDev$TMessagesProj.getString(-96922248693295L) + pluginId);
-        this.interestedPluginsCache.clear();
-        this.hooksCacheDirty = true;
+        for (HookRecord hookRecord : removed) {
+            hookRecord.cleanup();
+        }
+        FileLog.d("Removed all (" + removed.size() + ") hooks for plugin " + pluginId);
+        interestedPluginsCache.clear();
+        hooksCacheDirty = true;
     }
 
-    public final String addMenuItem(String pluginId, PyObject pyMenuItemData) {
-        if (INSTANCE.isPluginEngineAvailable() && pyMenuItemData != null && pluginId != null && pluginId.length() != 0) {
-            try {
-                final MenuItemRecord menuItemRecord = new MenuItemRecord(pluginId, pyMenuItemData);
-                String menuType = menuItemRecord.getMenuType();
-                if (menuType == null) {
-                    return null;
-                }
-                MenuItemRecord menuItemRecord2 = this.menuItemsById.get(menuItemRecord.getItemId());
-                if (menuItemRecord2 != null && !Intrinsics.areEqual(menuItemRecord2.getPluginId(), pluginId)) {
-                    FileLog.w(Deobfuscator$exteraGramDev$TMessagesProj.getString(-97626623329839L) + pluginId + Deobfuscator$exteraGramDev$TMessagesProj.getString(-97592263591471L) + menuItemRecord.getItemId() + Deobfuscator$exteraGramDev$TMessagesProj.getString(-97781242152495L) + menuItemRecord2.getPluginId());
-                    return null;
-                }
-                if (menuItemRecord2 != null) {
-                    CopyOnWriteArrayList<MenuItemRecord> copyOnWriteArrayList = this.menuItemsByMenuType.get(menuItemRecord2.getMenuType());
-                    if (copyOnWriteArrayList != null) {
-                        copyOnWriteArrayList.remove(menuItemRecord2);
-                    }
-                    menuItemRecord2.markRemoved();
-                }
-                this.menuItemsById.put(menuItemRecord.getItemId(), menuItemRecord);
-                ConcurrentHashMap<String, CopyOnWriteArrayList<MenuItemRecord>> concurrentHashMap = this.menuItemsByMenuType;
-                final Function2 function2 = new Function2() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda3
-                    @Override // kotlin.jvm.functions.Function2
-                    public final Object invoke(Object obj, Object obj2) {
-                        return PluginsController.m1307$r8$lambda$6XhX7yTKSS7CldZXwz1RN6kOJE(menuItemRecord, (String) obj, (CopyOnWriteArrayList) obj2);
-                    }
-                };
-                concurrentHashMap.compute(menuType, new BiFunction() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda4
-                    @Override // java.util.function.BiFunction
-                    public final Object apply(Object obj, Object obj2) {
-                        return PluginsController.$r8$lambda$D9is3Zmj_FosL19hVEaWnD7rlMc(function2, obj, obj2);
-                    }
-                });
-                FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-97321680651823L) + menuItemRecord.getItemId() + Deobfuscator$exteraGramDev$TMessagesProj.getString(-97398990063151L) + pluginId + Deobfuscator$exteraGramDev$TMessagesProj.getString(-97446234703407L) + menuType);
-                notifyMenuItemsUpdated();
-                return menuItemRecord.getItemId();
-            } catch (Exception unused) {
+    public String addMenuItem(String pluginId, PyObject object) {
+        if (!isPluginEngineAvailable() || object == null) {
+            return null;
+        }
+        try {
+            MenuItemRecord record = new MenuItemRecord(pluginId, object);
+            if (record.menuType == null) {
+                return null;
             }
-        }
-        return null;
-    }
-
-    public static CopyOnWriteArrayList $r8$lambda$D9is3Zmj_FosL19hVEaWnD7rlMc(Function2 function2, Object obj, Object obj2) {
-        return (CopyOnWriteArrayList) function2.invoke(obj, obj2);
-    }
-
-    /* JADX INFO: renamed from: $r8$lambda$-6XhX7yTKSS7CldZXwz1RN6kOJE, reason: not valid java name */
-    public static CopyOnWriteArrayList m1307$r8$lambda$6XhX7yTKSS7CldZXwz1RN6kOJE(final MenuItemRecord menuItemRecord, String str, CopyOnWriteArrayList copyOnWriteArrayList) {
-        ArrayList arrayList;
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76306405672495L);
-        if (copyOnWriteArrayList == null) {
-            arrayList = new ArrayList();
-        } else {
-            arrayList = new ArrayList(copyOnWriteArrayList);
-            CollectionsKt.removeAll((List) arrayList, new Function1() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda6
-                @Override // kotlin.jvm.functions.Function1
-                public final Object invoke(Object obj) {
-                    return Boolean.valueOf(PluginsController.addMenuItem$lambda$0$0$0(menuItemRecord, (MenuItemRecord) obj));
+            MenuItemRecord existing = menuItemsById.get(record.itemId);
+            if (existing != null && !TextUtils.equals(existing.pluginId, pluginId)) {
+                FileLog.w(String.format("Plugin %s tried to add a menu item: %s, which is already used by plugin %s", pluginId, record.itemId, existing.pluginId));
+                return null;
+            }
+            if (existing != null) {
+                CopyOnWriteArrayList<MenuItemRecord> existingList = menuItemsByMenuType.get(existing.menuType);
+                if (existingList != null) {
+                    existingList.remove(existing);
                 }
+                existing.markRemoved();
+            }
+            menuItemsById.put(record.itemId, record);
+            menuItemsByMenuType.compute(record.menuType, (key, oldList) -> {
+                ArrayList<MenuItemRecord> newItems = oldList == null ? new ArrayList<>() : new ArrayList<>(oldList);
+                newItems.removeIf(item -> TextUtils.equals(item.itemId, record.itemId));
+                newItems.add(record);
+                newItems.sort((a, b) -> Integer.compare(b.priority, a.priority));
+                return new CopyOnWriteArrayList<>(newItems);
             });
+            FileLog.d("Added menu item: " + record.itemId + " for plugin " + pluginId + " in type " + record.menuType);
+            NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginMenuItemsUpdated);
+            return record.itemId;
+        } catch (Exception ignored) {
+            return null;
         }
-        arrayList.add(menuItemRecord);
-        final Function1 function1 = new Function1() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda7
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return Integer.valueOf(((MenuItemRecord) obj).getPriority());
-            }
-        };
-        Comparator comparatorReversed = Comparator.comparingInt(new ToIntFunction() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda8
-            @Override // java.util.function.ToIntFunction
-            public final int applyAsInt(Object obj) {
-                return PluginsController.addMenuItem$lambda$0$2(function1, obj);
-            }
-        }).reversed();
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76370830181935L);
-        CollectionsKt.sortWith(arrayList, comparatorReversed);
-        return new CopyOnWriteArrayList(arrayList);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final boolean addMenuItem$lambda$0$0$0(MenuItemRecord menuItemRecord, MenuItemRecord menuItemRecord2) {
-        return Intrinsics.areEqual(menuItemRecord2.getItemId(), menuItemRecord.getItemId());
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final int addMenuItem$lambda$0$2(Function1 function1, Object obj) {
-        return ((Number) function1.invoke(obj)).intValue();
-    }
-
-    public final boolean removeMenuItem(String pluginId, String itemId) {
-        MenuItemRecord menuItemRecordRemove;
-        if (itemId == null || itemId.length() == 0 || (menuItemRecordRemove = this.menuItemsById.remove(itemId)) == null || menuItemRecordRemove.getMenuType() == null) {
+    public boolean removeMenuItem(String pluginId, String itemId) {
+        if (TextUtils.isEmpty(itemId)) {
             return false;
         }
-        if (!Intrinsics.areEqual(menuItemRecordRemove.getPluginId(), pluginId)) {
-            this.menuItemsById.put(itemId, menuItemRecordRemove);
+        MenuItemRecord record = menuItemsById.remove(itemId);
+        if (record == null || record.menuType == null) {
             return false;
         }
-        CopyOnWriteArrayList<MenuItemRecord> copyOnWriteArrayList = this.menuItemsByMenuType.get(menuItemRecordRemove.getMenuType());
-        if (copyOnWriteArrayList != null) {
-            copyOnWriteArrayList.remove(menuItemRecordRemove);
+        if (!TextUtils.equals(record.pluginId, pluginId)) {
+            menuItemsById.put(itemId, record);
+            return false;
         }
-        menuItemRecordRemove.markRemoved();
-        FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-97557903853103L) + itemId + Deobfuscator$exteraGramDev$TMessagesProj.getString(-78402349712943L) + pluginId);
-        notifyMenuItemsUpdated();
+        CopyOnWriteArrayList<MenuItemRecord> list = menuItemsByMenuType.get(record.menuType);
+        if (list != null) {
+            list.remove(record);
+        }
+        record.markRemoved();
+        FileLog.d("Removed menu item: " + itemId + " for plugin " + pluginId);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginMenuItemsUpdated);
         return true;
     }
 
-    public final void removeMenuItemsByPluginId(String pluginId) {
-        if (pluginId == null || pluginId.length() == 0) {
+    public void removeMenuItemsByPluginId(String pluginId) {
+        if (TextUtils.isEmpty(pluginId)) {
             return;
         }
-        ArrayList arrayList = new ArrayList();
-        for (MenuItemRecord menuItemRecord : this.menuItemsById.values()) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-78466774222383L);
-            MenuItemRecord menuItemRecord2 = menuItemRecord;
-            if (Intrinsics.areEqual(menuItemRecord2.getPluginId(), pluginId)) {
-                arrayList.add(menuItemRecord2.getItemId());
+        ArrayList<String> itemIds = new ArrayList<>();
+        for (MenuItemRecord item : menuItemsById.values()) {
+            if (TextUtils.equals(item.pluginId, pluginId)) {
+                itemIds.add(item.itemId);
             }
         }
-        if (arrayList.isEmpty()) {
-            return;
+        for (String itemId : itemIds) {
+            removeMenuItem(pluginId, itemId);
         }
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-78441004418607L);
-        for (Object obj : arrayList) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-78501133960751L);
-            removeMenuItem(pluginId, (String) obj);
-        }
-        FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-78612803110447L) + pluginId);
+        FileLog.d("Removed all menu items for plugin: " + pluginId);
     }
 
-    public final List<MenuItemRecord> getMenuItemsForLocation(String menuType, MenuContextBuilder builder) {
+    public List<MenuItemRecord> getMenuItemsForLocation(String menuType, MenuContextBuilder builder) {
         if (builder == null) {
-            return getMenuItemsForLocation(menuType, new HashMap());
+            return getMenuItemsForLocation(menuType, new java.util.HashMap<>());
         }
-        return getMenuItemsForLocation(menuType, (Map<String, ? extends Object>) builder.build());
+        return getMenuItemsForLocation(menuType, builder.build());
     }
 
-    public final List<MenuItemRecord> getMenuItemsForLocation(String menuType, Map<String, ? extends Object> contextData) {
-        CopyOnWriteArrayList<MenuItemRecord> copyOnWriteArrayList;
-        if (!INSTANCE.isPluginEngineAvailable() || menuType == null || menuType.length() == 0) {
-            List<MenuItemRecord> list = Collections.EMPTY_LIST;
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-78148946642479L);
-            return list;
+    public List<MenuItemRecord> getMenuItemsForLocation(String menuType, Map<String, Object> context) {
+        if (!isPluginEngineAvailable() || TextUtils.isEmpty(menuType)) {
+            return Collections.emptyList();
         }
-        LinkedHashSet linkedHashSet = new LinkedHashSet();
-        CopyOnWriteArrayList<MenuItemRecord> copyOnWriteArrayList2 = this.menuItemsByMenuType.get(menuType);
-        if (copyOnWriteArrayList2 != null && !copyOnWriteArrayList2.isEmpty()) {
-            linkedHashSet.addAll(copyOnWriteArrayList2);
-        }
-        if (Intrinsics.areEqual(Deobfuscator$exteraGramDev$TMessagesProj.getString(-78204781217327L), menuType) && (copyOnWriteArrayList = this.menuItemsByMenuType.get(Deobfuscator$exteraGramDev$TMessagesProj.getString(-78316450367023L))) != null && !copyOnWriteArrayList.isEmpty()) {
-            linkedHashSet.addAll(copyOnWriteArrayList);
-        }
-        if (linkedHashSet.isEmpty()) {
-            List<MenuItemRecord> list2 = Collections.EMPTY_LIST;
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-78299270497839L);
-            return list2;
-        }
-        ArrayList arrayList = new ArrayList();
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-78922040755759L);
-        for (Object obj : linkedHashSet) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-78982170297903L);
-            MenuItemRecord menuItemRecord = (MenuItemRecord) obj;
-            if (isPluginActive$TMessagesProj(menuItemRecord.getPluginId())) {
-                this.watchdog.onPluginExecutionStarted(menuItemRecord.getPluginId());
-                try {
-                    if (menuItemRecord.checkCondition(contextData)) {
-                        arrayList.add(menuItemRecord);
-                    }
-                    this.watchdog.onPluginExecutionFinished(menuItemRecord.getPluginId());
-                } catch (Throwable th) {
-                    this.watchdog.onPluginExecutionFinished(menuItemRecord.getPluginId());
-                    throw th;
-                }
-            }
-        }
-        return arrayList;
-    }
-
-    public final void notifyPluginsChanged() {
-        AndroidUtilities.cancelRunOnUIThread(this.updateNotificationRunnable);
-        AndroidUtilities.runOnUIThread(this.updateNotificationRunnable, 150L);
-    }
-
-    public final void executeOnAppEvent(String eventType) {
-        if (this.initialized) {
-            Companion companion = INSTANCE;
-            if (!companion.isPluginEngineAvailable() || eventType == null) {
-                return;
-            }
-            FileLog.d(Deobfuscator$exteraGramDev$TMessagesProj.getString(-79093839447599L) + eventType);
-            for (PluginsEngine pluginsEngine : companion.getEngines().values()) {
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-78672932652591L);
-                pluginsEngine.executeOnAppEvent(eventType);
-            }
-        }
-    }
-
-    /* JADX WARN: Multi-variable type inference failed */
-    /* JADX WARN: Type inference failed for: r0v10, types: [java.util.ArrayList] */
-    /* JADX WARN: Type inference failed for: r0v11, types: [java.lang.Object] */
-    /* JADX WARN: Type inference failed for: r0v12, types: [java.util.List] */
-    /* JADX WARN: Type inference failed for: r0v14 */
-    /* JADX WARN: Type inference failed for: r0v15 */
-    /* JADX WARN: Type inference failed for: r0v16 */
-    /* JADX WARN: Type inference failed for: r0v17 */
-    /* JADX WARN: Type inference failed for: r0v5, types: [java.util.List<java.lang.String>] */
-    /* JADX WARN: Type inference failed for: r5v4 */
-    /* JADX WARN: Type inference failed for: r5v7, types: [java.lang.StringBuilder] */
-    /* JADX WARN: Type inference incomplete: some casts might be missing */
-    private final List<String> getInterestedPluginIds(String eventName) {
-        String pluginId;
-        if (eventName == null || eventName.length() == 0) {
-            return Collections.EMPTY_LIST;
-        }
-        List<String> cachedList = this.interestedPluginsCache.get(eventName);
-        if (cachedList != null) {
-            return cachedList;
-        }
-        rebuildHooksCacheIfNeeded();
-        HashMap<String, Integer> map = new HashMap<>();
-        List<EventHookRecord> exactMatches = this.exactMatchEventHooksCache.get(eventName);
-        if (exactMatches != null) {
-            for (final EventHookRecord eventHookRecord : exactMatches) {
-                String pluginId2 = eventHookRecord.getPluginId();
-                if (pluginId2 != null) {
-                    map.compute(pluginId2, (key, value) -> getInterestedPluginIds$lambda$0$0(eventHookRecord, key, value));
-                }
-            }
-        }
-        for (final EventHookRecord eventHookRecord2 : this.substringMatchEventHooksCache) {
-            if (eventHookRecord2.matches(eventName) && (pluginId = eventHookRecord2.getPluginId()) != null) {
-                map.compute(pluginId, (key, value) -> m1309$r8$lambda$HfgCYkGwi8KAUz5HS9xUmkl8g(eventHookRecord2, key, value));
-            }
-        }
-        List<String> resultList;
-        if (map.isEmpty()) {
-            resultList = Collections.EMPTY_LIST;
-        } else {
-            ArrayList<Map.Entry<String, Integer>> entryList = new ArrayList<>(map.entrySet());
-            entryList.sort((e1, e2) -> m1310$r8$lambda$IAMjXVT_CPUvmW_ONgKDOtGfT4(e1, e2));
-            resultList = new ArrayList<>();
-            for (Map.Entry<String, Integer> entry : entryList) {
-                if (isPluginActive$TMessagesProj(entry.getKey())) {
-                    resultList.add(entry.getKey());
-                }
-            }
-        }
-        this.interestedPluginsCache.put(eventName, resultList);
-        return resultList;
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final Integer getInterestedPluginIds$lambda$0$1(Function2 function2, Object obj, Object obj2) {
-        return (Integer) function2.invoke(obj, obj2);
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final Integer getInterestedPluginIds$lambda$0$0(EventHookRecord eventHookRecord, String str, Integer num) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-75881203910191L);
-        return Integer.valueOf(num == null ? eventHookRecord.getPriority() : Math.max(num.intValue(), eventHookRecord.getPriority()));
-    }
-
-    public static Integer $r8$lambda$DCTD49SParBUBy24s3SCzJWiKD8(Function2 function2, Object obj, Object obj2) {
-        return (Integer) function2.invoke(obj, obj2);
-    }
-
-    /* JADX INFO: renamed from: $r8$lambda$Hf--gCYkGwi8KAUz5HS9xUmkl8g, reason: not valid java name */
-    public static Integer m1309$r8$lambda$HfgCYkGwi8KAUz5HS9xUmkl8g(EventHookRecord eventHookRecord, String str, Integer num) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-75997168027183L);
-        return num == null ? Integer.valueOf(eventHookRecord.getPriority()) : Integer.valueOf(Math.max(num.intValue(), eventHookRecord.getPriority()));
-    }
-
-    /* JADX INFO: renamed from: $r8$lambda$IAMjXVT_CPUvmW_ONgKDOt-GfT4, reason: not valid java name */
-    public static int m1310$r8$lambda$IAMjXVT_CPUvmW_ONgKDOtGfT4(Map.Entry entry, Map.Entry entry2) {
-        int iIntValue = ((Number) entry2.getValue()).intValue();
-        Object value = entry.getValue();
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76061592536623L);
-        int iCompare = Intrinsics.compare(iIntValue, ((Number) value).intValue());
-        if (iCompare != 0) {
-            return iCompare;
-        }
-        String str = (String) entry.getKey();
-        Object key = entry2.getKey();
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76126017046063L);
-        return str.compareTo((String) key);
-    }
-
-    private final void rebuildHooksCacheIfNeeded() {
-        if (this.hooksCacheDirty) {
-            synchronized (this.hooksCacheLock) {
-                try {
-                    if (this.hooksCacheDirty) {
-                        HashMap map = new HashMap();
-                        ArrayList arrayList = new ArrayList();
-                        for (Set<HookRecord> set : this.hooks.values()) {
-                            Deobfuscator$exteraGramDev$TMessagesProj.getString(-77401622332975L);
-                            for (HookRecord hookRecord : set) {
-                                if (hookRecord instanceof EventHookRecord) {
-                                    if (((EventHookRecord) hookRecord).getMatchSubstring()) {
-                                        arrayList.add(hookRecord);
-                                    } else {
-                                        String hookName = ((EventHookRecord) hookRecord).getHookName();
-                                        if (hookName != null) {
-                                            final Function1 function1 = new Function1() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda24
-                                                @Override // kotlin.jvm.functions.Function1
-                                                public final Object invoke(Object obj) {
-                                                    return PluginsController.rebuildHooksCacheIfNeeded$lambda$0$0((String) obj);
-                                                }
-                                            };
-                                            ((List) map.computeIfAbsent(hookName, new Function() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda25
-                                                @Override // java.util.function.Function
-                                                public final Object apply(Object obj) {
-                                                    return PluginsController.rebuildHooksCacheIfNeeded$lambda$0$1(function1, obj);
-                                                }
-                                            })).add(hookRecord);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        this.exactMatchEventHooksCache = map;
-                        this.substringMatchEventHooksCache = arrayList;
-                        this.hooksCacheDirty = false;
-                        Unit unit = Unit.INSTANCE;
-                    }
-                } catch (Throwable th) {
-                    throw th;
-                }
-            }
-        }
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final List rebuildHooksCacheIfNeeded$lambda$0$0(String str) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76748787303983L);
-        return new ArrayList();
-    }
-
-    /* JADX INFO: Access modifiers changed from: private */
-    public static final List rebuildHooksCacheIfNeeded$lambda$0$1(Function1 function1, Object obj) {
-        return (List) function1.invoke(obj);
-    }
-
-    private final void ensurePreferences() {
-        SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences(Deobfuscator$exteraGramDev$TMessagesProj.getString(-77513291482671L), 0);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77032255145519L);
-        this.preferences = sharedPreferences;
-    }
-
-    private final boolean isOnPluginsQueueThread() {
-        return (Utilities.pluginsQueue == null || Utilities.pluginsQueue.getHandler() == null || !Intrinsics.areEqual(Thread.currentThread(), Utilities.pluginsQueue.getHandler().getLooper().getThread())) ? false : true;
-    }
-
-    private final void notifyPluginSettingsRegistered(final String pluginId) {
-        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pluginSettingsRegistered, pluginId));
-    }
-
-    private final void notifyPluginSettingsUnregistered(final String pluginId) {
-        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pluginSettingsUnregistered, pluginId));
-    }
-
-    private final void notifyMenuItemsUpdated() {
-        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pluginMenuItemsUpdated));
-    }
-
-    private final <T> T executeGenericHook(String hookName, T initialObject, EngineHookCaller<T> caller) {
-        PluginsEngine pluginEngine;
-        if (INSTANCE.isPluginEngineAvailable()) {
-            List<String> interestedPluginIds = getInterestedPluginIds(hookName);
-            if (!interestedPluginIds.isEmpty()) {
-                for (String str : interestedPluginIds) {
-                    if (isPluginActive$TMessagesProj(str) && (pluginEngine = getPluginEngine(str)) != null) {
-                        this.watchdog.onPluginExecutionStarted(str);
-                        try {
-                            HookResult<T> hookResultCall = caller.call(pluginEngine, initialObject, str);
-                            T result = hookResultCall.getResult();
-                            if (!hookResultCall.getCancel()) {
-                                boolean isFinal = hookResultCall.getIsFinal();
-                                PluginsWatchdog pluginsWatchdog = this.watchdog;
-                                if (isFinal) {
-                                    pluginsWatchdog.onPluginExecutionFinished(str);
-                                    return result;
-                                }
-                                pluginsWatchdog.onPluginExecutionFinished(str);
-                                initialObject = result;
-                            } else {
-                                this.watchdog.onPluginExecutionFinished(str);
-                                return null;
-                            }
-                        } catch (Throwable th) {
-                            this.watchdog.onPluginExecutionFinished(str);
-                            throw th;
-                        }
-                    }
-                }
-                return initialObject;
-            }
-        }
-        return initialObject;
-    }
-
-    @Override // com.exteragram.messenger.plugins.hooks.PluginsHooks
-    public TLObject executePreRequestHook(final String requestName, final int account, TLObject request) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77143924295215L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77126744426031L);
-        return (TLObject) executeGenericHook(requestName, request, new EngineHookCaller() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda26
-            @Override // com.exteragram.messenger.plugins.PluginsController.EngineHookCaller
-            public final PluginsController.HookResult call(PluginsController.PluginsEngine pluginsEngine, Object obj, String str) {
-                return PluginsController.$r8$lambda$JziAQxL1SNJMVFFBpBtTlnfNOjw(requestName, account, pluginsEngine, (TLObject) obj, str);
-            }
-        });
-    }
-
-    public static HookResult $r8$lambda$JziAQxL1SNJMVFFBpBtTlnfNOjw(String str, int i, PluginsEngine pluginsEngine, TLObject tLObject, String str2) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76753082271279L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76723017500207L);
-        return pluginsEngine.executePreRequestHook(str, i, tLObject, str2);
-    }
-
-    @Override // com.exteragram.messenger.plugins.hooks.PluginsHooks
-    public PluginsHooks.PostRequestResult executePostRequestHook(final String requestName, final int account, TLObject response, TLRPC.TL_error error) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77229823641135L);
-        PluginsHooks.PostRequestResult postRequestResult = (PluginsHooks.PostRequestResult) executeGenericHook(requestName, new PluginsHooks.PostRequestResult(response, error), new EngineHookCaller() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda11
-            @Override // com.exteragram.messenger.plugins.PluginsController.EngineHookCaller
-            public final PluginsController.HookResult call(PluginsController.PluginsEngine pluginsEngine, Object obj, String str) {
-                return PluginsController.$r8$lambda$DNVJceqQWqE0LCLQl0WusvtpDkE(requestName, account, pluginsEngine, (PluginsHooks.PostRequestResult) obj, str);
-            }
-        });
-        return postRequestResult == null ? new PluginsHooks.PostRequestResult(response, error) : postRequestResult;
-    }
-
-    public static HookResult $r8$lambda$DNVJceqQWqE0LCLQl0WusvtpDkE(String str, int i, PluginsEngine pluginsEngine, PluginsHooks.PostRequestResult postRequestResult, String str2) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76821801748015L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76791736976943L);
-        return pluginsEngine.executePostRequestHook(str, i, postRequestResult != null ? postRequestResult.getResponse() : null, postRequestResult != null ? postRequestResult.getError() : null, str2);
-    }
-
-    @Override // com.exteragram.messenger.plugins.hooks.PluginsHooks
-    public TLRPC.Update executeUpdateHook(final String updateName, final int account, TLRPC.Update update) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77831119062575L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77801054291503L);
-        return (TLRPC.Update) executeGenericHook(updateName, update, new EngineHookCaller() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda17
-            @Override // com.exteragram.messenger.plugins.PluginsController.EngineHookCaller
-            public final PluginsController.HookResult call(PluginsController.PluginsEngine pluginsEngine, Object obj, String str) {
-                return PluginsController.$r8$lambda$OHXh3kQ8DZ_wjP82nv3qDlWGYDc(updateName, account, pluginsEngine, (TLRPC.Update) obj, str);
-            }
-        });
-    }
-
-    public static HookResult $r8$lambda$OHXh3kQ8DZ_wjP82nv3qDlWGYDc(String str, int i, PluginsEngine pluginsEngine, TLRPC.Update update, String str2) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76890521224751L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76860456453679L);
-        return pluginsEngine.executeUpdateHook(str, i, update, str2);
-    }
-
-    @Override // com.exteragram.messenger.plugins.hooks.PluginsHooks
-    public TLRPC.Updates executeUpdatesHook(final String containerName, final int account, TLRPC.Updates updates) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77908428473903L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77968558016047L);
-        return (TLRPC.Updates) executeGenericHook(containerName, updates, new EngineHookCaller() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda29
-            @Override // com.exteragram.messenger.plugins.PluginsController.EngineHookCaller
-            public final PluginsController.HookResult call(PluginsController.PluginsEngine pluginsEngine, Object obj, String str) {
-                return PluginsController.$r8$lambda$faHgcy3k1tshQuZQuTJlgU8Xri4(containerName, account, pluginsEngine, (TLRPC.Updates) obj, str);
-            }
-        });
-    }
-
-    public static HookResult $r8$lambda$faHgcy3k1tshQuZQuTJlgU8Xri4(String str, int i, PluginsEngine pluginsEngine, TLRPC.Updates updates, String str2) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76959240701487L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76929175930415L);
-        return pluginsEngine.executeUpdatesHook(str, i, updates, str2);
-    }
-
-    @Override // com.exteragram.messenger.plugins.hooks.PluginsHooks
-    public SendMessagesHelper.SendMessageParams executeSendMessageHook(final int account, SendMessagesHelper.SendMessageParams params) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-77934198277679L);
-        return (SendMessagesHelper.SendMessageParams) executeGenericHook(Deobfuscator$exteraGramDev$TMessagesProj.getString(-77955673114159L), params, new EngineHookCaller() { // from class: com.exteragram.messenger.plugins.PluginsController$$ExternalSyntheticLambda20
-            @Override // com.exteragram.messenger.plugins.PluginsController.EngineHookCaller
-            public final PluginsController.HookResult call(PluginsController.PluginsEngine pluginsEngine, Object obj, String str) {
-                return PluginsController.$r8$lambda$DAYJLe1d6xThRYHnkIRE8Mr2fSk(account, pluginsEngine, (SendMessagesHelper.SendMessageParams) obj, str);
-            }
-        });
-    }
-
-    public static HookResult $r8$lambda$DAYJLe1d6xThRYHnkIRE8Mr2fSk(int i, PluginsEngine pluginsEngine, SendMessagesHelper.SendMessageParams sendMessageParams, String str) {
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76478204364335L);
-        Deobfuscator$exteraGramDev$TMessagesProj.getString(-76448139593263L);
-        return pluginsEngine.executeSendMessageHook(i, sendMessageParams, str);
-    }
-
-    public static final class HookResult<T> {
-        private boolean cancel;
-        private boolean isFinal;
-        private T result;
-
-        public HookResult(T t, boolean z, boolean z2) {
-            this.result = t;
-            this.cancel = z;
-            this.isFinal = z2;
-        }
-
-        public final T getResult() {
-            return this.result;
-        }
-
-        public final void setResult(T t) {
-            this.result = t;
-        }
-
-        public final boolean getCancel() {
-            return this.cancel;
-        }
-
-        public final void setCancel(boolean z) {
-            this.cancel = z;
-        }
-
-        /* JADX INFO: renamed from: isFinal, reason: from getter */
-        public final boolean getIsFinal() {
-            return this.isFinal;
-        }
-
-        public final void setFinal(boolean z) {
-            this.isFinal = z;
-        }
-    }
-
-    public static final class PluginValidationResult {
-        private String error;
-        private Plugin plugin;
-
-        public PluginValidationResult(Plugin plugin, String str) {
-            this.plugin = plugin;
-            this.error = str;
-        }
-
-        public final Plugin getPlugin() {
-            return this.plugin;
-        }
-
-        public final void setPlugin(Plugin plugin) {
-            this.plugin = plugin;
-        }
-
-        public final String getError() {
-            return this.error;
-        }
-
-        public final void setError(String str) {
-            this.error = str;
-        }
-    }
-
-    public static final class SingletonHolder {
-        public static final SingletonHolder INSTANCE = new SingletonHolder();
-
-        private static final PluginsController instance = new PluginsController(null);
-
-        private SingletonHolder() {
-        }
-
-        public final PluginsController getINSTANCE() {
-            return instance;
-        }
-    }
-
-    public static final class Companion {
-        public /* synthetic */ Companion(DefaultConstructorMarker defaultConstructorMarker) {
-            this();
-        }
-
-        @JvmStatic
-        public final boolean isPluginEngineSupported() {
-            return true;
-        }
-
-        private Companion() {
-        }
-
-        @JvmStatic
-        public final ConcurrentHashMap<String, PluginsEngine> getEngines() {
-            return PluginsController.enginesMap;
-        }
-
-        @JvmStatic
-        public final PluginsController getInstance() {
-            return SingletonHolder.INSTANCE.getINSTANCE();
-        }
-
-        @JvmStatic
-        public final int registerFileIcon(String extension, Drawable drawable) {
-            return getInstance().registerFileIconInternal(extension, drawable);
-        }
-
-        @JvmStatic
-        public final void unregisterFileIcon(String extension) {
-            getInstance().unregisterFileIconInternal(extension);
-        }
-
-        @JvmStatic
-        public final void clearFileIcons() {
-            getInstance().clearFileIconsInternal();
-        }
-
-        @JvmStatic
-        public final int getFileIconId(String fileName) {
-            return getInstance().getFileIconIdInternal(fileName);
-        }
-
-        @JvmStatic
-        public final boolean isPluginFileIcon(int icon) {
-            if (icon < 101) {
-                return false;
-            }
-            return getInstance().fileIconDrawablesById.containsKey(Integer.valueOf(icon));
-        }
-
-        @JvmStatic
-        public final Drawable getPluginFileIconDrawable(int icon) {
-            return (Drawable) getInstance().fileIconDrawablesById.get(Integer.valueOf(icon));
-        }
-
-        @JvmStatic
-        public final boolean isPluginEngineAvailable() {
-            if (isPluginEngineSupported() && ExteraConfig.getPluginsEngine() && !ExteraConfig.getPluginsSafeMode()) {
-                for (PluginsEngine pluginsEngine : getEngines().values()) {
-                    Deobfuscator$exteraGramDev$TMessagesProj.getString(-56360577549871L);
-                    try {
-                        if (pluginsEngine.isEngineAvailable()) {
-                            return true;
-                        }
-                    } catch (Throwable th) {
-                        FileLog.e(Deobfuscator$exteraGramDev$TMessagesProj.getString(-56472246699567L), th);
-                    }
-                }
-            }
-            return false;
-        }
-
-        @JvmStatic
-        public final void applyArtOpts() {
-            if (ExteraConfig.getPreferences().getBoolean(Deobfuscator$exteraGramDev$TMessagesProj.getString(-56558146045487L), false) && ExteraConfig.getPluginsDisableArtOpts() && isPluginEngineSupported()) {
-                try {
-                    XposedBridge.disableProfileSaver();
-                } catch (Throwable th) {
-                    FileLog.e(th);
-                }
-            }
-        }
-
-        @JvmStatic
-        public final boolean isPlugin(MessageObject messageObject) {
-            if (messageObject == null) {
-                return false;
-            }
-            if (messageObject.getDocumentName() != null) {
-                String docName = messageObject.getDocumentName().toLowerCase(Locale.ROOT);
-                if (docName.endsWith(".plugin") || docName.endsWith(".py")) {
-                    return true;
-                }
-            }
-            String pathToMessage = ChatUtils.getInstance().getPathToMessage(messageObject);
-            if (!TextUtils.isEmpty(pathToMessage) && isPlugin(new File(pathToMessage), messageObject)) {
-                return true;
-            }
-            return false;
-        }
-
-        @JvmStatic
-        public final boolean isPlugin(File file, MessageObject messageObject) {
-            if (file == null) {
-                return false;
-            }
-            for (PluginsEngine pluginsEngine : getEngines().values()) {
-                Deobfuscator$exteraGramDev$TMessagesProj.getString(-56137239250479L);
-                if (pluginsEngine.isPlugin(file, messageObject)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @JvmStatic
-        public final PluginsEngine getPluginEngine(File file) {
-            if (file != null) {
-                for (PluginsEngine pluginsEngine : getEngines().values()) {
-                    if (pluginsEngine != null && pluginsEngine.isPlugin(file, null)) {
-                        return pluginsEngine;
-                    }
-                }
-            }
-            return getEngines().get("python");
-        }
-
-        @JvmStatic
-        public final void openPluginSettings(String pluginId) {
-            openPluginSettings(pluginId, null);
-        }
-
-        @JvmStatic
-        public final void openPluginSettings(String pluginId, String linkAlias) {
-            final BaseFragment lastFragment;
-            if (pluginId == null || pluginId.length() == 0 || (lastFragment = LaunchActivity.getLastFragment()) == null) {
-                return;
-            }
-            if (!ExteraConfig.getPluginsEngine()) {
-                BulletinFactory.of(lastFragment).createSimpleBulletin(R.raw.error, "Plugin engine is not enabled for " + pluginId, LocaleController.getString(R.string.Enable), 2750, () -> lastFragment.presentFragment(new PluginsActivity())).show();
-                return;
-            }
-            Plugin plugin = getInstance().getPlugins().get(pluginId);
-            if (plugin == null) {
-                BulletinFactory.of(lastFragment).createEmojiBulletin(Deobfuscator$exteraGramDev$TMessagesProj.getString(-56154419119663L), "Plugin not found: " + pluginId).show();
-                return;
-            }
-            if (!getInstance().hasPluginSettings(pluginId)) {
-                BulletinFactory.of(lastFragment).createEmojiBulletin(Deobfuscator$exteraGramDev$TMessagesProj.getString(-56248908400175L), plugin.getName() + " has no settings").show();
-                return;
-            }
-            PluginsEngine pluginEngine = getInstance().getPluginEngine(pluginId);
-            if (pluginEngine != null) {
-                if (linkAlias == null) {
-                    pluginEngine.openPluginSettings(pluginId, lastFragment);
+        CopyOnWriteArrayList<MenuItemRecord> list = menuItemsByMenuType.get(menuType);
+        if (PluginsConstants.MenuItemTypes.MAIN_MENU.equals(menuType)) {
+            CopyOnWriteArrayList<MenuItemRecord> drawerList = menuItemsByMenuType.get(PluginsConstants.MenuItemTypes.DRAWER_MENU);
+            if (drawerList != null && !drawerList.isEmpty()) {
+                if (list == null || list.isEmpty()) {
+                    list = drawerList;
                 } else {
-                    pluginEngine.openPluginSetting(pluginId, linkAlias, lastFragment);
+                    CopyOnWriteArrayList<MenuItemRecord> merged = new CopyOnWriteArrayList<>(list);
+                    merged.addAllAbsent(drawerList);
+                    list = merged;
                 }
             }
         }
+        if (list == null || list.isEmpty()) {
+            return Collections.emptyList();
+        }
+        ArrayList<MenuItemRecord> result = new ArrayList<>();
+        for (MenuItemRecord item : list) {
+            Plugin plugin = plugins.get(item.pluginId);
+            if (plugin != null && plugin.isEnabled() && !plugin.hasError()) {
+                watchdog.onPluginExecutionStarted(item.pluginId);
+                try {
+                    if (item.checkCondition(context)) {
+                        result.add(item);
+                    }
+                } finally {
+                    watchdog.onPluginExecutionFinished(item.pluginId);
+                }
+            }
+        }
+        return result;
+    }
 
-        @JvmStatic
-        public final boolean isPluginPinned(String pluginId) {
-            return (pluginId == null || pluginId.length() == 0 || !ExteraConfig.getPinnedPlugins().contains(pluginId)) ? false : true;
+    void notifyPluginsChanged() {
+        AndroidUtilities.cancelRunOnUIThread(updateNotificationRunnable);
+        AndroidUtilities.runOnUIThread(updateNotificationRunnable, 150);
+    }
+
+    public void executeOnAppEvent(String eventName) {
+        if (!isPluginEngineAvailable()) {
+            return;
+        }
+        FileLog.d("Execute scripts on app event " + eventName);
+        for (PluginsEngine engine : engines.values()) {
+            if (engine != null) {
+                engine.executeOnAppEvent(eventName);
+            }
+        }
+    }
+
+    List<String> getInterestedPluginIds(String hookName) {
+        if (TextUtils.isEmpty(hookName)) {
+            return Collections.emptyList();
+        }
+        List<String> cached = interestedPluginsCache.get(hookName);
+        if (cached != null) {
+            return cached;
         }
 
-        @JvmStatic
-        public final void setPluginPinned(String pluginId, boolean isPinned) {
-            if (pluginId == null || pluginId.length() == 0) {
+        rebuildHooksCacheIfNeeded();
+        java.util.HashMap<String, Integer> priorities = new java.util.HashMap<>();
+
+        List<EventHookRecord> exactMatches = exactMatchEventHooksCache.get(hookName);
+        if (exactMatches != null) {
+            for (EventHookRecord record : exactMatches) {
+                priorities.merge(record.getPluginId(), record.getPriority(), Math::max);
+            }
+        }
+        for (EventHookRecord record : substringMatchEventHooksCache) {
+            if (record.matches(hookName)) {
+                priorities.merge(record.getPluginId(), record.getPriority(), Math::max);
+            }
+        }
+
+        List<String> result;
+        if (priorities.isEmpty()) {
+            result = Collections.emptyList();
+        } else {
+            ArrayList<Map.Entry<String, Integer>> entries = new ArrayList<>(priorities.entrySet());
+            entries.sort((a, b) -> {
+                int priorityCompare = Integer.compare(b.getValue(), a.getValue());
+                return priorityCompare != 0 ? priorityCompare : a.getKey().compareTo(b.getKey());
+            });
+            ArrayList<String> filtered = new ArrayList<>(entries.size());
+            for (Map.Entry<String, Integer> entry : entries) {
+                Plugin plugin = plugins.get(entry.getKey());
+                if (plugin != null && plugin.isEnabled() && !plugin.hasError()) {
+                    filtered.add(entry.getKey());
+                }
+            }
+            result = filtered;
+        }
+        interestedPluginsCache.put(hookName, result);
+        if (!result.isEmpty()) {
+            FileLog.d("Calculated and cached potential plugins for '" + hookName + "': " + result);
+        }
+        return result;
+    }
+
+    private void rebuildHooksCacheIfNeeded() {
+        if (!hooksCacheDirty) {
+            return;
+        }
+        synchronized (hooksCacheLock) {
+            if (!hooksCacheDirty) {
                 return;
             }
-            HashSet hashSet = new HashSet(ExteraConfig.getPinnedPlugins());
-            if (!isPinned) {
-                hashSet.remove(pluginId);
-            } else {
-                hashSet.add(pluginId);
-            }
-            ExteraConfig.setPinnedPlugins(hashSet);
-            ExteraConfig.getEditor().putStringSet(Deobfuscator$exteraGramDev$TMessagesProj.getString(-56274678203951L), hashSet).apply();
-            getInstance().notifyPluginsChanged();
-        }
-
-        @JvmStatic
-        public final void runOnPluginsQueue(Runnable runnable) {
-            Deobfuscator$exteraGramDev$TMessagesProj.getString(-56334807746095L);
-            if (Utilities.pluginsQueue == null || !Utilities.pluginsQueue.isAlive()) {
-                synchronized (PluginsController.class) {
-                    try {
-                        if (Utilities.pluginsQueue == null || !Utilities.pluginsQueue.isAlive()) {
-                            Utilities.pluginsQueue = new DispatchQueue(Deobfuscator$exteraGramDev$TMessagesProj.getString(-56313332909615L));
-                        }
-                        Unit unit = Unit.INSTANCE;
-                    } catch (Throwable th) {
-                        throw th;
+            java.util.HashMap<String, List<EventHookRecord>> exact = new java.util.HashMap<>();
+            ArrayList<EventHookRecord> substring = new ArrayList<>();
+            for (Set<HookRecord> records : hooks.values()) {
+                for (HookRecord record : records) {
+                    if (!(record instanceof EventHookRecord)) {
+                        continue;
+                    }
+                    EventHookRecord eventHookRecord = (EventHookRecord) record;
+                    if (eventHookRecord.isMatchSubstring()) {
+                        substring.add(eventHookRecord);
+                    } else {
+                        exact.computeIfAbsent(eventHookRecord.getHookName(), ignored -> new ArrayList<>()).add(eventHookRecord);
                     }
                 }
             }
-            Utilities.pluginsQueue.postRunnable(runnable);
+            exactMatchEventHooksCache = exact;
+            substringMatchEventHooksCache = substring;
+            hooksCacheDirty = false;
+        }
+    }
+
+    @Override
+    public TLObject executePreRequestHook(String hookName, int account, TLObject request) {
+        if (!isPluginEngineAvailable()) {
+            return request;
+        }
+        List<String> pluginIds = getInterestedPluginIds(hookName);
+        if (pluginIds.isEmpty()) {
+            return request;
+        }
+        TLObject result = request;
+        for (String pluginId : pluginIds) {
+            PluginsEngine engine = getPluginEngine(pluginId);
+            if (engine == null) {
+                continue;
+            }
+            watchdog.onPluginExecutionStarted(pluginId);
+            try {
+                HookResult<TLObject> hookResult = engine.executePreRequestHook(hookName, account, result, pluginId);
+                result = hookResult.result;
+                if (hookResult.cancel) {
+                    return null;
+                }
+                if (hookResult.isFinal) {
+                    return result;
+                }
+            } finally {
+                watchdog.onPluginExecutionFinished(pluginId);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public PostRequestResult executePostRequestHook(String hookName, int account, TLObject response, TLRPC.TL_error error) {
+        if (!isPluginEngineAvailable()) {
+            return new PostRequestResult(response, error);
+        }
+        List<String> pluginIds = getInterestedPluginIds(hookName);
+        if (pluginIds.isEmpty()) {
+            return new PostRequestResult(response, error);
+        }
+        TLObject currentResponse = response;
+        TLRPC.TL_error currentError = error;
+        for (String pluginId : pluginIds) {
+            PluginsEngine engine = getPluginEngine(pluginId);
+            if (engine == null) {
+                continue;
+            }
+            watchdog.onPluginExecutionStarted(pluginId);
+            try {
+                HookResult<PostRequestResult> hookResult = engine.executePostRequestHook(hookName, account, currentResponse, currentError, pluginId);
+                PostRequestResult postRequestResult = hookResult.result;
+                currentResponse = postRequestResult.response;
+                currentError = postRequestResult.error;
+                if (hookResult.cancel) {
+                    return null;
+                }
+                if (hookResult.isFinal) {
+                    return new PostRequestResult(currentResponse, currentError);
+                }
+            } finally {
+                watchdog.onPluginExecutionFinished(pluginId);
+            }
+        }
+        return new PostRequestResult(currentResponse, currentError);
+    }
+
+    @Override
+    public TLRPC.Update executeUpdateHook(String hookName, int account, TLRPC.Update update) {
+        if (!isPluginEngineAvailable()) {
+            return update;
+        }
+        List<String> pluginIds = getInterestedPluginIds(hookName);
+        if (pluginIds.isEmpty()) {
+            return update;
+        }
+        TLRPC.Update result = update;
+        for (String pluginId : pluginIds) {
+            PluginsEngine engine = getPluginEngine(pluginId);
+            if (engine == null) {
+                continue;
+            }
+            watchdog.onPluginExecutionStarted(pluginId);
+            try {
+                HookResult<TLRPC.Update> hookResult = engine.executeUpdateHook(hookName, account, result, pluginId);
+                result = hookResult.result;
+                if (hookResult.cancel) {
+                    return null;
+                }
+                if (hookResult.isFinal) {
+                    return result;
+                }
+            } finally {
+                watchdog.onPluginExecutionFinished(pluginId);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public TLRPC.Updates executeUpdatesHook(String hookName, int account, TLRPC.Updates updates) {
+        if (!isPluginEngineAvailable()) {
+            return updates;
+        }
+        List<String> pluginIds = getInterestedPluginIds(hookName);
+        if (pluginIds.isEmpty()) {
+            return updates;
+        }
+        TLRPC.Updates result = updates;
+        for (String pluginId : pluginIds) {
+            PluginsEngine engine = getPluginEngine(pluginId);
+            if (engine == null) {
+                continue;
+            }
+            watchdog.onPluginExecutionStarted(pluginId);
+            try {
+                HookResult<TLRPC.Updates> hookResult = engine.executeUpdatesHook(hookName, account, result, pluginId);
+                result = hookResult.result;
+                if (hookResult.cancel) {
+                    return null;
+                }
+                if (hookResult.isFinal) {
+                    return result;
+                }
+            } finally {
+                watchdog.onPluginExecutionFinished(pluginId);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public SendMessagesHelper.SendMessageParams executeSendMessageHook(int account, SendMessagesHelper.SendMessageParams params) {
+        if (!isPluginEngineAvailable()) {
+            return params;
+        }
+        List<String> pluginIds = getInterestedPluginIds(PluginsConstants.SEND_MESSAGE_HOOK);
+        if (pluginIds.isEmpty()) {
+            return params;
+        }
+        SendMessagesHelper.SendMessageParams result = params;
+        for (String pluginId : pluginIds) {
+            PluginsEngine engine = getPluginEngine(pluginId);
+            if (engine == null) {
+                continue;
+            }
+            watchdog.onPluginExecutionStarted(pluginId);
+            try {
+                HookResult<SendMessagesHelper.SendMessageParams> hookResult = engine.executeSendMessageHook(account, result, pluginId);
+                result = hookResult.result;
+                if (hookResult.cancel) {
+                    return null;
+                }
+                if (hookResult.isFinal) {
+                    return result;
+                }
+            } finally {
+                watchdog.onPluginExecutionFinished(pluginId);
+            }
+        }
+        return result;
+    }
+
+    private static class SingletonHolder {
+        private static final PluginsController INSTANCE = new PluginsController();
+    }
+
+    public static class HookResult<T> {
+        public T result;
+        public boolean cancel;
+        public boolean isFinal;
+
+        public HookResult(T result, boolean cancel, boolean isFinal) {
+            this.result = result;
+            this.cancel = cancel;
+            this.isFinal = isFinal;
+        }
+    }
+
+    public static class PluginValidationResult {
+        public Plugin plugin;
+        public String error;
+
+        public PluginValidationResult(Plugin plugin, String error) {
+            this.plugin = plugin;
+            this.error = error;
         }
     }
 }

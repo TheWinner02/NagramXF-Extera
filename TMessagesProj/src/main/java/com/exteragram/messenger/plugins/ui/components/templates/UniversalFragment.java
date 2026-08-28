@@ -2,181 +2,126 @@ package com.exteragram.messenger.plugins.ui.components.templates;
 
 import android.content.Context;
 import android.view.View;
-import java.util.ArrayList;
-import kotlin.Metadata;
-import kotlin.jvm.internal.DefaultConstructorMarker;
-import okhttp3.internal.url._UrlKt;
+
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 
-/* JADX INFO: loaded from: classes4.dex */
-public final class UniversalFragment extends org.telegram.ui.Components.UniversalFragment {
+import java.util.ArrayList;
+
+public class UniversalFragment extends org.telegram.ui.Components.UniversalFragment {
     private UniversalFragmentDelegate delegate;
 
     public UniversalFragment() {
-        this((UniversalFragmentDelegate) null);
     }
 
-    public UniversalFragment(UniversalFragmentDelegate universalFragmentDelegate) {
-        this.delegate = universalFragmentDelegate;
+    public UniversalFragment(UniversalFragmentDelegate delegate) {
+        this.delegate = delegate;
     }
 
-    public /* synthetic */ UniversalFragment(UniversalFragmentDelegate universalFragmentDelegate, int i, DefaultConstructorMarker defaultConstructorMarker) {
-        this((i & 1) != 0 ? null : universalFragmentDelegate);
+    public void setDelegate(UniversalFragmentDelegate delegate) {
+        this.delegate = delegate;
     }
 
-    public final UniversalFragmentDelegate getDelegate() {
-        return this.delegate;
+    public UniversalFragmentDelegate getDelegate() {
+        return delegate;
     }
 
-    public final void setDelegate(UniversalFragmentDelegate universalFragmentDelegate) {
-        this.delegate = universalFragmentDelegate;
-    }
-
-    @Override // org.telegram.ui.Components.UniversalFragment, org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public View createView(Context context) {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        View viewBeforeCreateView = universalFragmentDelegate != null ? universalFragmentDelegate.beforeCreateView() : null;
-        if (viewBeforeCreateView != null) {
-            return viewBeforeCreateView;
+        View view = delegate != null ? delegate.beforeCreateView() : null;
+        if (view != null) {
+            return view;
         }
-        View viewCreateView = super.createView(context);
-        this.actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() { // from class: com.exteragram.messenger.plugins.ui.components.templates.UniversalFragment.createView.1
-            @Override // org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick
+        View createdView = super.createView(context);
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
             public void onItemClick(int id) {
-                UniversalFragment universalFragment = UniversalFragment.this;
                 if (id == -1) {
-                    if (universalFragment.onBackPressed(true)) {
-                        UniversalFragment.this.finishFragment();
+                    if (onBackPressed(true)) {
+                        finishFragment();
                     }
-                } else {
-                    UniversalFragmentDelegate delegate = universalFragment.getDelegate();
-                    if (delegate != null) {
-                        delegate.onMenuItemClick(id);
-                    }
+                } else if (delegate != null) {
+                    delegate.onMenuItemClick(id);
                 }
             }
         });
-        UniversalFragmentDelegate universalFragmentDelegate2 = this.delegate;
-        View viewAfterCreateView = universalFragmentDelegate2 != null ? universalFragmentDelegate2.afterCreateView(viewCreateView) : null;
-        return viewAfterCreateView == null ? viewCreateView : viewAfterCreateView;
+        View replacedView = delegate != null ? delegate.afterCreateView(createdView) : null;
+        return replacedView == null ? createdView : replacedView;
     }
 
-    public final ActionBarMenu getActionBarMenu() {
-        return this.actionBar.createMenu();
+    public ActionBarMenu getActionBarMenu() {
+        return actionBar.createMenu();
     }
 
-    @Override // org.telegram.ui.Components.UniversalFragment
-    public CharSequence getTitle() {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        if (universalFragmentDelegate != null) {
-            return universalFragmentDelegate.getTitle();
-        }
-        return null;
-    }
-
-    public final void setTitle(CharSequence title, boolean animated, long duration) {
-        ActionBar actionBar = this.actionBar;
+    public void setTitle(CharSequence title, boolean animated, long duration) {
         if (animated) {
-            if (duration <= 0) {
-                duration = 300;
-            }
-            actionBar.setTitleAnimated(title, false, duration);
-            return;
+            actionBar.setTitleAnimated(title, false, duration <= 0 ? 300 : duration);
+        } else {
+            actionBar.setTitle(title);
         }
-        actionBar.setTitle(title);
     }
 
-    @Override // org.telegram.ui.Components.UniversalFragment
+    @Override
+    public CharSequence getTitle() {
+        return delegate != null ? delegate.getTitle() : null;
+    }
+
+    @Override
     public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        if (universalFragmentDelegate != null) {
-            universalFragmentDelegate.fillItems(items, adapter);
+        if (delegate != null) {
+            delegate.fillItems(items, adapter);
         }
     }
 
-    @Override // org.telegram.ui.Components.UniversalFragment
+    @Override
     public void onClick(UItem item, View view, int position, float x, float y) {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        if (universalFragmentDelegate != null) {
-            universalFragmentDelegate.onClick(item, view, position, x, y);
+        if (delegate != null) {
+            delegate.onClick(item, view, position, x, y);
         }
     }
 
-    @Override // org.telegram.ui.Components.UniversalFragment
+    @Override
     public boolean onLongClick(UItem item, View view, int position, float x, float y) {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        if (universalFragmentDelegate != null) {
-            return universalFragmentDelegate.onLongClick(item, view, position, x, y);
-        }
-        return false;
+        return delegate != null && delegate.onLongClick(item, view, position, x, y);
     }
 
-    @Override // org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public boolean onFragmentCreate() {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        if (universalFragmentDelegate != null) {
-            universalFragmentDelegate.onFragmentCreate();
+        if (delegate != null) {
+            delegate.onFragmentCreate();
         }
         return super.onFragmentCreate();
     }
 
-    @Override // org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public void onFragmentDestroy() {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        if (universalFragmentDelegate != null) {
-            universalFragmentDelegate.onFragmentDestroy();
+        if (delegate != null) {
+            delegate.onFragmentDestroy();
         }
         super.onFragmentDestroy();
     }
 
-    @Override // org.telegram.ui.ActionBar.BaseFragment
+    @Override
     public boolean onBackPressed(boolean invoked) {
-        UniversalFragmentDelegate universalFragmentDelegate = this.delegate;
-        Boolean boolOnBackPressed = universalFragmentDelegate != null ? universalFragmentDelegate.onBackPressed() : null;
-        if (boolOnBackPressed != null) {
-            return !boolOnBackPressed.booleanValue();
+        Boolean handled = delegate != null ? delegate.onBackPressed() : null;
+        if (handled != null) {
+            return !handled;
         }
         return super.onBackPressed(invoked);
     }
 
     public interface UniversalFragmentDelegate {
-        default View afterCreateView(View view) {
-            return view;
-        }
-
-        default View beforeCreateView() {
-            return null;
-        }
-
-        default void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        }
-
-        default CharSequence getTitle() {
-            return null;
-        }
-
-        default Boolean onBackPressed() {
-            return null;
-        }
-
-        default void onClick(UItem item, View view, int position, float x, float y) {
-        }
-
-        default void onFragmentCreate() {
-        }
-
-        default void onFragmentDestroy() {
-        }
-
-        default boolean onLongClick(UItem item, View view, int position, float x, float y) {
-            return false;
-        }
-
-        default void onMenuItemClick(int id) {
-        }
-
+        default View beforeCreateView() { return null; }
+        default View afterCreateView(View view) { return view; }
+        default void onFragmentCreate() {}
+        default void onFragmentDestroy() {}
+        default Boolean onBackPressed() { return null; }
+        default CharSequence getTitle() { return null; }
+        default void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {}
+        default void onClick(UItem item, View view, int position, float x, float y) {}
+        default boolean onLongClick(UItem item, View view, int position, float x, float y) { return false; }
+        default void onMenuItemClick(int id) {}
     }
 }
