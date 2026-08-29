@@ -173,10 +173,12 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
         } else {
             imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
             progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
-            boolean isSquare = xyz.nextalone.nagram.NaConfig.INSTANCE.getSquareFloatingButton().Bool();
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            boolean isSquare = isM3 || xyz.nextalone.nagram.NaConfig.INSTANCE.getSquareFloatingButton().Bool();
             if (isSquare) {
-                setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(16)));
-                setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(16),
+                int radius = isM3 ? dp(18) : dp(16);
+                setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, radius));
+                setBackground(Theme.createSimpleSelectorRoundRectDrawable(radius,
                     Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
                     Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
                 ));

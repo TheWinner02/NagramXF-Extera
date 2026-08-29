@@ -462,4 +462,8 @@
     <string name="RestartPluginSystemToApplyUpdate">Update loaded, restart Plugin Engine to apply</string>
     <string name="RestoreSdkFromApk">Restore SDK from APK</string>
     <string name="PluginsRestartEngine">Restart Plugin Engine</string>
+    <string name="UiStyle">UI Design Style</string>
+    <string name="UiStyleClassic">Telegram Classic</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

@@ -533,4 +533,8 @@
     <string name="RestartPluginSystemToApplyUpdate">업데이트를 불러왔습니다. 적용하려면 플러그인 엔진을 다시 시작하세요.</string>
     <string name="RestoreSdkFromApk">APK에서 SDK 복원</string>
     <string name="PluginsRestartEngine">플러그인 엔진 다시 시작</string>
+    <string name="UiStyle">UI 디자인 스타일</string>
+    <string name="UiStyleClassic">클래식 Telegram</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

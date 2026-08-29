@@ -336,4 +336,8 @@
     <string name="DeepLTranslateKey">کلید API سرویس DeepL</string>
     <string name="DeepLTranslateKeyNotice">کلید رابط برنامه‌نویسی DeepL را پیکربندی کنید، برای استفاده از اعتبارنامه‌های داخلی آن را خالی بگذارید.</string>
     <string name="DefaultScheduleDelay">تاخیر پیش‌فرض</string>
+    <string name="UiStyle">سبک طراحی رابط کاربری</string>
+    <string name="UiStyleClassic">تلگرام کلاسیک</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

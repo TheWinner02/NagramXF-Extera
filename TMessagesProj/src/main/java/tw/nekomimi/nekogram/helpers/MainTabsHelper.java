@@ -26,14 +26,23 @@ public final class MainTabsHelper {
     }
 
     public static int getMainTabsHeight() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return 52;
+        }
         return MAIN_TABS_HEIGHT;
     }
 
     public static int getMainTabsMargin() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return 0;
+        }
         return MAIN_TABS_MARGIN;
     }
 
     public static int getMainTabsHeightWithMargins() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return 52;
+        }
         return getMainTabsHeight() + getMainTabsMargin() * 2;
     }
 

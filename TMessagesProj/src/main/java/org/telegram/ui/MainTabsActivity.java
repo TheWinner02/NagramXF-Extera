@@ -336,8 +336,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setClipChildren(false);
-        final int paddingH = dp(mainTabsMargin + 4);
-        final int paddingV = dp(mainTabsMargin + 4);
+        final int paddingH = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(6) : dp(mainTabsMargin + 4);
+        final int paddingV = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(4) : dp(mainTabsMargin + 4);
         tabsView.setPadding(paddingH, paddingV, paddingH, paddingV);
         tabsView.setMaxWidth(dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
 
@@ -402,24 +402,31 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         iBlur3FactoryGlass.setSourceRootView(viewPositionWatcher, contentView);
         iBlur3FactoryGlass.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
 
-        tabsViewBackground = iBlur3FactoryGlass.create(tabsView, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
-        tabsViewBackground.setRadius(dp(MainTabsHelper.getMainTabsHeight() / 2f));
-        tabsViewBackground.setPadding(dp(mainTabsMargin - 0.334f));
-        tabsView.setBackground(tabsViewBackground);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            tabsView.setBackground(Theme.createRoundRectDrawable(dp(MainTabsHelper.getMainTabsHeight() / 2f), getThemedColor(Theme.key_windowBackgroundGray)));
+        } else {
+            tabsViewBackground = iBlur3FactoryGlass.create(tabsView, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+            tabsViewBackground.setRadius(dp(MainTabsHelper.getMainTabsHeight() / 2f));
+            tabsViewBackground.setPadding(dp(mainTabsMargin - 0.334f));
+            tabsView.setBackground(tabsViewBackground);
+        }
 
         BlurredBackgroundDrawableViewFactory iBlur3FactoryFade = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
         iBlur3FactoryFade.setSourceRootView(viewPositionWatcher, contentView);
 
         fadeView = new View(context);
-        BlurredBackgroundWithFadeDrawable fadeDrawable = new BlurredBackgroundWithFadeDrawable(iBlur3FactoryFade.create(fadeView, null));
-        fadeDrawable.setFadeHeight(dp(60), true);
-        fadeView.setBackground(fadeDrawable);
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            BlurredBackgroundWithFadeDrawable fadeDrawable = new BlurredBackgroundWithFadeDrawable(iBlur3FactoryFade.create(fadeView, null));
+            fadeDrawable.setFadeHeight(dp(60), true);
+            fadeView.setBackground(fadeDrawable);
+        }
 
         contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
 
         tabsViewWrapper = new FrameLayout(context);
         tabsViewWrapper.setOnClickListener(v -> {});
-        tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(tabsViewWidth, MainTabsHelper.getMainTabsHeightWithMargins(), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+        int bottomMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : 0;
+        tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(tabsViewWidth, MainTabsHelper.getMainTabsHeightWithMargins(), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, bottomMargin));
         tabsViewWrapper.setClipToPadding(false);
         contentView.addView(tabsViewWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
@@ -1056,8 +1063,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             if (updateLayout != null && LaunchActivity.instance != null) {
                 updateLayout.updateAppUpdateViews(currentAccount, LaunchActivity.instance.getMainFragmentsStackSize() == 1);
             }
-        } else if (id == NotificationCenter.needSetDayNightTheme) {
+        } else if (id == NotificationCenter.needSetDayNightTheme || id == NotificationCenter.didSetNewTheme || id == NotificationCenter.reloadInterface) {
             clearAllHiddenFragments();
+            updateTabsTheme();
         } else if (id == NotificationCenter.callTabsVisibleToggled) {
             final boolean callTabsVisible = getUserConfig().showCallsTab;
             checkUi_callTabVisible(callTabsVisible, true);
@@ -1127,12 +1135,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
             if (lp != null) {
                 lp.width = tabsViewWidth;
-                lp.height = dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS);
+                lp.height = dp(tw.nekomimi.nekogram.helpers.MainTabsHelper.getMainTabsHeightWithMargins());
                 lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+                lp.bottomMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : 0;
                 tabsView.setLayoutParams(lp);
             }
-            final int paddingH = dp(mainTabsMargin + 4);
-            final int paddingV = dp(mainTabsMargin + 4);
+            final int paddingH = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(6) : dp(mainTabsMargin + 4);
+            final int paddingV = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(4) : dp(mainTabsMargin + 4);
             tabsView.setPadding(paddingH, paddingV, paddingH, paddingV);
             if (tabsViewBackground != null) {
                 tabsViewBackground.setRadius(dp(tw.nekomimi.nekogram.helpers.MainTabsHelper.getMainTabsHeight() / 2f));
@@ -1169,9 +1178,27 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             .add(NotificationCenter.appUpdateAvailable)
             .add(NotificationCenter.appUpdateLoading)
             .add(NotificationCenter.needSetDayNightTheme)
+            .add(NotificationCenter.didSetNewTheme)
+            .add(NotificationCenter.reloadInterface)
             .add(NotificationCenter.mainTabsLayoutChanged);
 
         return super.onFragmentCreate();
+    }
+
+    public void updateTabsTheme() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            if (tabsView != null) {
+                tabsView.setBackground(Theme.createRoundRectDrawable(dp(26), getThemedColor(Theme.key_windowBackgroundGray)));
+                tabsView.invalidate();
+            }
+        }
+        if (tabs != null) {
+            for (GlassTabView tab : tabs) {
+                if (tab != null) {
+                    tab.updateColorsLottie();
+                }
+            }
+        }
     }
 
     @Override

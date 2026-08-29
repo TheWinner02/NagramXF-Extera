@@ -340,4 +340,8 @@
     <string name="ImportAyuDB">Importuj bazę danych</string>
     <string name="ImportAyuDBAlert">Obecna baza danych wiadomości zostanie zastąpiona. Po zaimportowaniu aplikacja uruchomi się ponownie.</string>
     <string name="DisableSwipeToNext">Wyłącz gest przechodzenia</string>
+    <string name="UiStyle">Styl interfejsu</string>
+    <string name="UiStyleClassic">Klasyczny Telegram</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

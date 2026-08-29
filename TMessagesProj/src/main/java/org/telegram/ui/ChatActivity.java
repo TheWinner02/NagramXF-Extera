@@ -2904,7 +2904,7 @@ public class ChatActivity extends BaseFragment implements
         super(args);
 
         navbarContentSourceWallpaper = new BlurredBackgroundSourceWrapped();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool()) {
             scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
 
             recommendedAdditionalSizeY = Math.max(0, dp(48) - Math.min(AndroidUtilities.navigationBarHeight, AndroidUtilities.statusBarHeight));

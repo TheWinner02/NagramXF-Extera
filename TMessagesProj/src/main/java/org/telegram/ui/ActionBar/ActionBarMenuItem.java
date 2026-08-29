@@ -1027,7 +1027,10 @@ public class ActionBarMenuItem extends FrameLayout {
                 menuIcons.get(i).setAlpha(0f);
                 searchContainerAnimator.playTogether(ObjectAnimator.ofFloat(menuIcons.get(i), View.ALPHA, menuIcons.get(i).getAlpha(), 1f));
             }
-            searchContainerAnimator.setDuration(150);
+            searchContainerAnimator.setDuration(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 220 : 150);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                searchContainerAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            }
             searchContainerAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -1073,7 +1076,10 @@ public class ActionBarMenuItem extends FrameLayout {
             for (int i = 0; i < menuIcons.size(); i++) {
                 searchContainerAnimator.playTogether(ObjectAnimator.ofFloat(menuIcons.get(i), View.ALPHA, menuIcons.get(i).getAlpha(), 0f));
             }
-            searchContainerAnimator.setDuration(150);
+            searchContainerAnimator.setDuration(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 220 : 150);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                searchContainerAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            }
             searchContainerAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {

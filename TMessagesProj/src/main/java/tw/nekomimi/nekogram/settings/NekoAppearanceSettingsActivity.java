@@ -79,6 +79,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private final CellGroup cellGroup = new CellGroup(this);
 
     private final AbstractConfigCell headerAppearance = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Appearance)));
+    private final AbstractConfigCell uiStyleRow = cellGroup.appendCell(new ConfigCellSelectBox("UiStyle", NaConfig.INSTANCE.getUiStyle(), new String[]{
+            getString(R.string.UiStyleClassic),
+            getString(R.string.UiStyleMaterial3Expressive),
+            getString(R.string.UiStyleIosLiquidGlass)
+    }, null));
     private final AbstractConfigCell typefaceRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.typeface));
     private final AbstractConfigCell hideDividersRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideDividers()));
     private final AbstractConfigCell sectionsSeparatedHeadersRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSectionsSeparatedHeaders(), null, getString(R.string.SeparateHeaders)));
@@ -220,6 +225,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
 
     public NekoAppearanceSettingsActivity() {
         cellGroup.rows.remove(headerAppearance);
+        cellGroup.rows.remove(uiStyleRow);
         cellGroup.rows.remove(fabShapePreviewRow);
         cellGroup.rows.remove(typefaceRow);
         cellGroup.rows.remove(avatarCornersPreviewRow);
@@ -229,8 +235,9 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         cellGroup.rows.add(1, singleCornerRadiusRow);
         cellGroup.rows.add(2, avatarCornersInfoRow);
         cellGroup.rows.add(3, headerAppearance);
-        cellGroup.rows.add(4, fabShapePreviewRow);
-        cellGroup.rows.add(5, typefaceRow);
+        cellGroup.rows.add(4, uiStyleRow);
+        cellGroup.rows.add(5, fabShapePreviewRow);
+        cellGroup.rows.add(6, typefaceRow);
         // Hoist the entire "Chat List" (Dialogs) section in front of the Appearance subheader.
         List<AbstractConfigCell> dialogsBlock = Arrays.asList(
                 headerDialogs,
@@ -265,6 +272,28 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
         checkCustomTitleRows();
+
+        cellGroup.callBackSettingsChanged = (key, newValue) -> {
+            if ("UiStyle".equals(key) && newValue instanceof Integer) {
+                int index = (Integer) newValue;
+                if (index == xyz.nextalone.nagram.NaConfig.UI_STYLE_MATERIAL3_EXPRESSIVE) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        boolean isNight = Theme.isCurrentThemeDark();
+                        Theme.ThemeInfo targetTheme = Theme.getTheme(isNight ? "Monet Dark" : "Monet Light");
+                        if (targetTheme != null) {
+                            Theme.applyTheme(targetTheme, isNight);
+                        }
+                    }
+                }
+                AndroidUtilities.runOnUIThread(() -> {
+                    tw.nekomimi.nekogram.helpers.AppRestartHelper.triggerRebirth(
+                        getParentActivity() != null ? getParentActivity() : org.telegram.messenger.ApplicationLoader.applicationContext,
+                        new android.content.Intent(org.telegram.messenger.ApplicationLoader.applicationContext, org.telegram.ui.LaunchActivity.class)
+                    );
+                }, 200);
+            }
+        };
+
         addRowsToMap(cellGroup);
     }
 

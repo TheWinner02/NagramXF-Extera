@@ -332,4 +332,8 @@
     <string name="TabletModeOff">Kapalı</string>
     <string name="HideDialogsSearchField">Arama Kutusunu Gizle</string>
     <string name="HideHomeSearchField">Arama Kutusunu Gizle</string>
+    <string name="UiStyle">Arayüz Tasarım Stili</string>
+    <string name="UiStyleClassic">Klasik Telegram</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

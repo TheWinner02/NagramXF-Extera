@@ -69,6 +69,53 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
         final int minTotalWidthForTabs = Math.min(dp(320), maxTotalWidthForTabs);
 
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            measureTabTexts(12f);
+            applyPassTextSize(0);
+            int visibleCount = 0;
+            int selectedIndex = -1;
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                final View child = getChildAt(a);
+                if (isViewVisible(child)) {
+                    visibleCount++;
+                    if (child instanceof GlassTabView && ((GlassTabView) child).isTabSelected()) {
+                        selectedIndex = a;
+                    }
+                }
+            }
+            if (visibleCount == 0) visibleCount = 1;
+
+            int totalTabsWidth = maxTotalWidthForTabs;
+            int unselectedCount = Math.max(1, visibleCount - 1);
+
+            float activeTextW = selectedIndex >= 0 ? tabsTextWidth[selectedIndex] : 0;
+            int activeWidth = Math.round(dp(24) + dp(6) + activeTextW + dp(28));
+            activeWidth = Math.min(activeWidth, totalTabsWidth - dp(44) * unselectedCount);
+            int inactiveWidth = Math.max(dp(44), (totalTabsWidth - activeWidth) / unselectedCount);
+
+            int l = 0;
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                final View child = getChildAt(a);
+                if (!isViewVisible(child)) {
+                    tabsWidth[a] = 0;
+                    continue;
+                }
+                boolean isSelected = (a == selectedIndex);
+                tabsWidth[a] = isSelected ? activeWidth : inactiveWidth;
+                tabsLeftPos[a] = l;
+                l += tabsWidth[a];
+            }
+            setMeasuredDimension(l + getPaddingLeft() + getPaddingRight(), height);
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                final View child = getChildAt(a);
+                child.measure(
+                    MeasureSpec.makeMeasureSpec(tabsWidth[a], MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(tabHeight, MeasureSpec.EXACTLY));
+            }
+            calculateTotalSizesAfterMeasure();
+            return;
+        }
+
         int chosenPass = PASS_TEXT_SIZES_DP.length - 1;
         float lastMeasuredTextSize = -1;
         for (int pass = 0; pass < PASS_TEXT_SIZES_DP.length; pass++) {
@@ -262,6 +309,9 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             if (child instanceof GlassTabView) {
                 ((GlassTabView) child).setSelected(child == tab, animated);
             }
+        }
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            requestLayout();
         }
     }
 

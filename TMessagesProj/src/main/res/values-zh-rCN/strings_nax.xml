@@ -471,4 +471,8 @@
     <string name="LoadingUpdate">正在下载更新…</string>
     <string name="UpdateAvailable">发现新版本</string>
     <string name="PluginsRestartEngine">重启插件引擎</string>
+    <string name="UiStyle">界面设计风格</string>
+    <string name="UiStyleClassic">经典 Telegram</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

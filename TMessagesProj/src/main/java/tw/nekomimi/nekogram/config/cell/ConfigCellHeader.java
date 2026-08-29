@@ -25,4 +25,8 @@ public class ConfigCellHeader extends AbstractConfigCell {
         HeaderCell headerCell = (HeaderCell) holder.itemView;
         headerCell.setText(title);
     }
+
+    public String getTitle() {
+        return title;
+    }
 }

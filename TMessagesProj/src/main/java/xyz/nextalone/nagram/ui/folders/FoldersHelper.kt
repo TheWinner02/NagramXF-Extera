@@ -79,14 +79,22 @@ object FoldersHelper {
             fadeOverlay.fadeDrawable = fadeDrawable
         }
 
-        val tabsBackground = iBlur3FactoryLiquidGlass.create(
-            filterTabsView,
-            BlurredBackgroundProviderImpl.mainTabs(resourceProvider)
-        )
-        tabsBackground.setRadius(AndroidUtilities.dp(18f).toFloat())
-        tabsBackground.setPadding(AndroidUtilities.dp(6.666f))
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            filterTabsView.background = Theme.createRoundRectDrawable(
+                AndroidUtilities.dp(24f),
+                Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider)
+            )
+        } else {
+            val tabsBackground = iBlur3FactoryLiquidGlass.create(
+                filterTabsView,
+                BlurredBackgroundProviderImpl.mainTabs(resourceProvider)
+            )
+            val radius = AndroidUtilities.dp(18f).toFloat()
+            tabsBackground.setRadius(radius)
+            tabsBackground.setPadding(AndroidUtilities.dp(6.666f))
+            filterTabsView.setBlurredBackground(tabsBackground)
+        }
         filterTabsView.setPadding(0, AndroidUtilities.dp(7f), 0, AndroidUtilities.dp(7f))
-        filterTabsView.setBlurredBackground(tabsBackground)
         filterTabsView.setColors(
             Theme.key_chats_actionBackground,
             Theme.key_windowBackgroundWhiteBlackText,
@@ -98,6 +106,25 @@ object FoldersHelper {
             filterTabsView,
             LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, (36 + 7 + 7).toFloat(), Gravity.BOTTOM, 4f, 0f, 4f, 14f)
         )
+    }
+
+    @JvmStatic
+    fun updateFilterTabsTheme(filterTabsView: FilterTabsView?, resourceProvider: Theme.ResourcesProvider?) {
+        if (filterTabsView == null) return
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            filterTabsView.background = Theme.createRoundRectDrawable(
+                AndroidUtilities.dp(24f),
+                Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider)
+            )
+            filterTabsView.setColors(
+                Theme.key_chats_actionBackground,
+                Theme.key_windowBackgroundWhiteBlackText,
+                Theme.key_windowBackgroundWhiteGrayText,
+                Theme.key_listSelector,
+                Theme.key_windowBackgroundWhite
+            )
+            filterTabsView.invalidate()
+        }
     }
 
     @JvmStatic

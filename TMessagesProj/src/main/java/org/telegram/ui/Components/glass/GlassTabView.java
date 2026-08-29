@@ -82,6 +82,10 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private int colorDefault;
     private boolean usePremiumCounter;
 
+    public float getSelectedFactor() {
+        return hasGestureSelectedOverride ? gestureSelectedOverride : isSelectedAnimator.getFloatValue();
+    }
+
     private TabAnimation tabAnimation;
     private TLRPC.TL_attachMenuBot tabAnimationBot;
 
@@ -131,6 +135,11 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     }
 
     private void checkVisualWidth() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            imageView.setTranslationX(0);
+            textView.setTranslationX(0);
+            return;
+        }
         if (hasVisualWidth) {
             final float offset = (visualWidth - getMeasuredWidth()) / 2f;
             imageView.setTranslationX(offset);
@@ -158,20 +167,74 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     }
 
     @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            super.onLayout(changed, left, top, right, bottom);
+            return;
+        }
+        int w = right - left;
+        int h = bottom - top;
+        boolean isSelected = isTabSelected();
+
+        float textW = textView.getPaint().measureText(textView.getText() != null ? textView.getText().toString() : "");
+        int iconW = dp(24);
+        int iconH = dp(24);
+        int gap = dp(6);
+
+        float totalActiveW = iconW + (textW > 0 ? gap + textW : 0);
+
+        float activeIconLeft = Math.max(dp(6), (w - totalActiveW) / 2f);
+        float inactiveIconLeft = (w - iconW) / 2f;
+        float curIconLeft = isSelected ? activeIconLeft : inactiveIconLeft;
+        int curIconTop = (h - iconH) / 2;
+
+        imageView.layout((int) curIconLeft, curIconTop, (int) (curIconLeft + iconW), curIconTop + iconH);
+
+        float curTextLeft = curIconLeft + iconW + gap;
+        int textH = textView.getMeasuredHeight() > 0 ? textView.getMeasuredHeight() : dp(16);
+        int curTextTop = (h - textH) / 2;
+        int textRight = (int) Math.min(w - dp(4), curTextLeft + textW + dp(4));
+        textView.layout((int) curTextLeft, curTextTop, textRight, curTextTop + textH);
+
+        if (backupImageView != null) {
+            backupImageView.layout((int) curIconLeft, curIconTop, (int) (curIconLeft + iconW), curIconTop + iconH);
+        }
+    }
+
+    @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         final float viewWidth = hasVisualWidth ? visualWidth : getWidth();
         final float selectedFactor = hasGestureSelectedOverride ? gestureSelectedOverride : isSelectedAnimator.getFloatValue();
         if (selectedFactor > 0 && !skipDrawSelector) {
             final float alpha = AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            if (isM3) {
+                paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.25f * alpha));
+                float pillHeight = Math.min(dp(38), getHeight() - dp(6));
+                float pillPaddingH = dp(2);
+                tmpRectF.set(pillPaddingH, (getHeight() - pillHeight) / 2f, getWidth() - pillPaddingH, (getHeight() + pillHeight) / 2f);
+                final float r = pillHeight / 2f;
+                final float s = lerp(0.85f, 1f, selectedFactor);
+                canvas.save();
+                canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
+                canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+                canvas.restore();
+            } else {
+                paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
+                tmpRectF.set(0, 0, viewWidth, getHeight());
+                final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
+                final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
+                canvas.save();
+                canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
+                canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+                canvas.restore();
+            }
+        }
 
-            paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
-            tmpRectF.set(0, 0, viewWidth, getHeight());
-            final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
-            final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
-            canvas.save();
-            canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
-            canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
-            canvas.restore();
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            textView.setAlpha(selectedFactor);
+            textView.setScaleX(lerp(0.6f, 1f, selectedFactor));
+            textView.setScaleY(lerp(0.6f, 1f, selectedFactor));
         }
 
         final float hasCounter = (usePremiumCounter ? 1f : isHasCounterAnimator.getFloatValue()) * attachScale;
@@ -186,8 +249,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             canvas.save();
 
             final float gap = dpf2(1.33f);
-            final float cx = viewWidth / 2f + dpf2(11);
-            final float cy = dpf2(10);
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            final float cx = isM3 ? (imageView.getLeft() + imageView.getWidth() - dp(2)) : (viewWidth / 2f + dpf2(11));
+            final float cy = isM3 ? (imageView.getTop() + dp(4)) : dpf2(10);
             final float height = dpf2(16);
             final float width = Math.max(height, counter.getCurrentWidth() + dp(8));
             final float rOuter = dpf2(9.333f);

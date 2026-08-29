@@ -3905,4 +3905,9 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             return new float[]{drawFrom, drawTo, topRadius, bottomRadius, alpha};
         }
     }
+
+    @Override
+    public int computeVerticalScrollOffset() {
+        return super.computeVerticalScrollOffset();
+    }
 }

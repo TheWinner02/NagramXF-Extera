@@ -571,8 +571,9 @@ public class MessageDrawable extends Drawable {
             rad = dp(6);
             nearRad = dp(6);
         } else {
-            rad = dp(SharedConfig.bubbleRadius);
-            nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
+            int bubbleRad = (int) (xyz.nextalone.nagram.ui.UIStyleEngine.getBubbleCornerRadius() / AndroidUtilities.density);
+            rad = dp(bubbleRad);
+            nearRad = dp(Math.min(6, bubbleRad));
         }
         int smallRad = dp(6);
 
@@ -634,8 +635,9 @@ public class MessageDrawable extends Drawable {
             rad = dp(6);
             nearRad = dp(6);
         } else {
-            rad = dp(SharedConfig.bubbleRadius);
-            nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
+            int bubbleRad = (int) (xyz.nextalone.nagram.ui.UIStyleEngine.getBubbleCornerRadius() / AndroidUtilities.density);
+            rad = dp(bubbleRad);
+            nearRad = dp(Math.min(6, bubbleRad));
         }
         int smallRad = dp(6);
         int top = Math.max(bounds.top, 0);

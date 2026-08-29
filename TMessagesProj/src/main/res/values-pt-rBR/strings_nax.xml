@@ -339,4 +339,8 @@
     <string name="ImportAyuDB">Importar banco de dados</string>
     <string name="ImportAyuDBAlert">O banco de dados de mensagens atual será substituído. O aplicativo será reiniciado após a importação.</string>
     <string name="DisableSwipeToNext">Desativar deslizar para o próximo</string>
+    <string name="UiStyle">Estilo de design da interface</string>
+    <string name="UiStyleClassic">Telegram Clássico</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

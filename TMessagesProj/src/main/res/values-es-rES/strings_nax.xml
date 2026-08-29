@@ -336,4 +336,8 @@
     <string name="DeepLTranslateKey">Clave de API de DeepL</string>
     <string name="DeepLTranslateKeyNotice">Configura la clave de la API de DeepL, deja en blanco para usar las credenciales integradas.</string>
     <string name="DefaultScheduleDelay">Retraso predeterminado</string>
+    <string name="UiStyle">Estilo de diseño de interfaz</string>
+    <string name="UiStyleClassic">Telegram clásico</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

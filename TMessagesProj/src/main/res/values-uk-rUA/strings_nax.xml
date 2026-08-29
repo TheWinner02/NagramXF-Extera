@@ -340,4 +340,8 @@
     <string name="ImportAyuDB">Імпорт бази даних</string>
     <string name="ImportAyuDBAlert">Поточну базу даних повідомлень буде замінено. Після імпорту програма перезапуститься.</string>
     <string name="DisableSwipeToNext">Вимкнути свайп вперед</string>
+    <string name="UiStyle">Стиль інтерфейсу</string>
+    <string name="UiStyleClassic">Класичний Telegram</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

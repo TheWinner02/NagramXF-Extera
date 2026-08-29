@@ -146,10 +146,63 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         frameLayout.addView(tooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
 
         listView.setClipToPadding(false);
-        listView.setPadding(0, 0, 0, dp(80));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            actionBar.setTitle(getTitle());
+            actionBar.setTitleAlpha(0.0f);
+            actionBar.setM3HeaderOffset(0.0f);
+            listView.setPadding(0, getM3HeaderTopPadding(), 0, dp(80));
+            listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    if (listView.getChildCount() > 0) {
+                        View firstChild = listView.getChildAt(0);
+                        int adapterPos = listView.getChildAdapterPosition(firstChild);
+                        if (adapterPos == 0 && firstChild instanceof tw.nekomimi.nekogram.ui.cells.M3HeaderCell) {
+                            tw.nekomimi.nekogram.ui.cells.M3HeaderCell headerCell = (tw.nekomimi.nekogram.ui.cells.M3HeaderCell) firstChild;
+                            int top = firstChild.getTop();
+                            int atRest = getM3HeaderTopPadding();
+                            float scrolled = (float) (atRest - top);
+                            float offset = Math.max(0.0f, Math.min(1.0f, scrolled / (float) AndroidUtilities.dp(60)));
+                            headerCell.setIconAlpha(1.0f - offset);
+                            actionBar.setM3HeaderOffset(offset);
+                        } else if (adapterPos > 0) {
+                            actionBar.setM3HeaderOffset(1.0f);
+                        }
+                    }
+                }
+            });
+        } else {
+            listView.setPadding(0, 0, 0, dp(80));
+            actionBar.setAdaptiveBackground(listView);
+        }
         listView.setSections(true);
-        actionBar.setAdaptiveBackground(listView);
         return fragmentView;
+    }
+
+    private int getM3HeaderTopPadding() {
+        return (actionBar != null && actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
+    }
+
+    protected int getHeaderIconRes() {
+        String className = getClass().getName();
+        if (className.contains("Appearance")) {
+            return R.drawable.msg_theme;
+        } else if (className.contains("Chat")) {
+            return R.drawable.msg_discussion;
+        } else if (className.contains("Translator")) {
+            return R.drawable.ic_translate;
+        } else if (className.contains("Experimental")) {
+            return R.drawable.msg_fave;
+        } else if (className.contains("Passcode")) {
+            return R.drawable.msg_permissions;
+        } else if (className.contains("Emoji")) {
+            return R.drawable.msg_emoji_activities;
+        } else if (className.contains("General")) {
+            return R.drawable.msg_media;
+        } else if (className.contains("Ayu")) {
+            return R.drawable.ayu_ghost;
+        }
+        return R.drawable.msg_settings_solar;
     }
 
     protected void onActionBarItemClick(int id) {
@@ -171,7 +224,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
 
     @Override
     public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom + dp(80));
+        int topPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ?
+                getM3HeaderTopPadding() : 0;
+        listView.setPadding(0, topPadding, 0, bottom + dp(80));
         listView.setClipToPadding(false);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) tooltip.getLayoutParams();
         layoutParams.setMargins(dp(8), 0, dp(8), dp(8) + bottom);
@@ -451,6 +506,8 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         return themeDescriptions;
     }
 
+    public static final int ITEM_TYPE_M3_HEADER = 999;
+
     protected class BaseListAdapter extends RecyclerListView.SelectionAdapter {
 
         protected final Context mContext;
@@ -486,6 +543,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
                 return CellGroup.ITEM_TYPE_TEXT_DETAIL;
             }
             AbstractConfigCell a = cellGroup.rows.get(position);
+            if (position == 0 && a instanceof tw.nekomimi.nekogram.config.cell.ConfigCellHeader && xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                return ITEM_TYPE_M3_HEADER;
+            }
             return a != null ? a.getType() : CellGroup.ITEM_TYPE_TEXT_DETAIL;
         }
 
@@ -497,6 +557,12 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
             }
             AbstractConfigCell a = cellGroup.rows.get(position);
             if (a != null) {
+                if (holder.itemView instanceof tw.nekomimi.nekogram.ui.cells.M3HeaderCell) {
+                    tw.nekomimi.nekogram.ui.cells.M3HeaderCell headerCell = (tw.nekomimi.nekogram.ui.cells.M3HeaderCell) holder.itemView;
+                    String headerTitle = a instanceof tw.nekomimi.nekogram.config.cell.ConfigCellHeader ? ((tw.nekomimi.nekogram.config.cell.ConfigCellHeader) a).getTitle() : getTitle();
+                    headerCell.setIconAndTitle(getHeaderIconRes(), headerTitle != null ? headerTitle : getTitle());
+                    return;
+                }
                 if (a instanceof ConfigCellCustom) {
                     onBindCustomViewHolder(holder, position);
                 } else {
@@ -534,6 +600,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         protected View createDefaultViewByType(int viewType) {
             View view = null;
             switch (viewType) {
+                case ITEM_TYPE_M3_HEADER:
+                    view = new tw.nekomimi.nekogram.ui.cells.M3HeaderCell(mContext, getResourceProvider());
+                    break;
                 case CellGroup.ITEM_TYPE_DIVIDER:
                     view = new ShadowSectionCell(mContext);
                     break;

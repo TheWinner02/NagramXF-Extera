@@ -445,4 +445,8 @@
     <string name="ForceForwardStatusMediaReady">メディア準備完了</string>
     <string name="ForceForwardStatusStopping">転送を停止中</string>
     <string name="ForceForwardStatusStoppingCurrentBatch">現在のバッチを停止中</string>
+    <string name="UiStyle">UIデザインスタイル</string>
+    <string name="UiStyleClassic">クラシック Telegram</string>
+    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
+    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
 </resources>

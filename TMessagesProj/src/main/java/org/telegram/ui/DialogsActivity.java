@@ -1320,6 +1320,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     if (child == fragmentSearchField) {
                         childTop += dp(2);
+                        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                            int marginH = dp(8);
+                            child.layout(childLeft + marginH, childTop, childLeft + width - marginH, childTop + height);
+                            continue;
+                        }
                     }
                 } else if (child == searchViewPager) {
                     childTop = -dp(ADDITIONAL_LIST_HEIGHT_DP);
@@ -2947,6 +2952,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             currentConnectionState = getConnectionsManager().getConnectionState();
 
             globalObserversGroup.add(NotificationCenter.emojiLoaded);
+            globalObserversGroup.add(NotificationCenter.didSetNewTheme);
+            globalObserversGroup.add(NotificationCenter.reloadInterface);
             if (!onlySelect) {
                 globalObserversGroup.add(NotificationCenter.closeSearchByActiveAction);
                 globalObserversGroup.add(NotificationCenter.proxySettingsChanged);
@@ -3033,7 +3040,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         BirthdayController.getInstance(currentAccount).check();
         additionNavigationBarHeight = hasMainTabs && !NaConfig.INSTANCE.getHideBottomNavigationBar().Bool() ? dp(MainTabsHelper.getMainTabsHeightWithMargins()) : 0;
-        additionFloatingButtonOffset = hasMainTabs && !NaConfig.INSTANCE.getHideBottomNavigationBar().Bool() ? dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin()) : 0;
+        additionFloatingButtonOffset = hasMainTabs && !NaConfig.INSTANCE.getHideBottomNavigationBar().Bool() ? (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(78) : dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin())) : 0;
 
         LastSeenHelper.preload();
 
@@ -3303,7 +3310,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         selectedDialogs.clear();
 
         additionNavigationBarHeight = hasMainTabs && !NaConfig.INSTANCE.getHideBottomNavigationBar().Bool() ? dp(MainTabsHelper.getMainTabsHeightWithMargins()) : 0;
-        additionFloatingButtonOffset = hasMainTabs && !NaConfig.INSTANCE.getHideBottomNavigationBar().Bool() ? dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin()) : 0;
+        additionFloatingButtonOffset = hasMainTabs && !NaConfig.INSTANCE.getHideBottomNavigationBar().Bool() ? (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(78) : dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin())) : 0;
 
         maximumVelocity = ViewConfiguration.get(context).getScaledMaximumFlingVelocity();
 
@@ -5525,7 +5532,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             contentView.addView(animatedStatusView, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.TOP));
         }
         if (fragmentSearchField != null) {
-            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, 7, -2, 7, 0));
+            float sideMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 12f : 7f;
+            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, sideMargin, -2, sideMargin, 0));
         }
 
 
@@ -10857,6 +10865,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (filterTabsView != null) {
                 filterTabsView.getTabsContainer().invalidateViews();
             }
+        } else if (id == NotificationCenter.didSetNewTheme || id == NotificationCenter.reloadInterface) {
+            xyz.nextalone.nagram.ui.folders.FoldersHelper.updateFilterTabsTheme(filterTabsView, resourceProvider);
         } else if (id == NotificationCenter.closeSearchByActiveAction) {
             if (actionBar != null) {
                 actionBar.closeSearchField();

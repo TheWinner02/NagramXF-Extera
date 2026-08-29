@@ -403,6 +403,9 @@ public class Switch extends View {
         }
 
         int switchStyle = NaConfig.INSTANCE.getSwitchStyle().Int();
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            switchStyle = SWITCH_STYLE_MD3;
+        }
         if (switchStyle != SWITCH_STYLE_DEFAULT) {
             drawCustomSwitch(canvas, switchStyle);
             return;

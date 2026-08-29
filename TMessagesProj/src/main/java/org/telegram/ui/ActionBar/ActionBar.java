@@ -223,6 +223,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     public void setupGlass(BlurredBackgroundDrawableViewFactory factory,
                            BlurredBackgroundColorProvider colorProvider,
                            boolean isForum) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            glassMode = false;
+            return;
+        }
         setBackground(null);
         setClipChildren(false);
         glassMode = true;
@@ -595,6 +599,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         if (titleTextView[0] != null) {
             titleTextView[0].setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView[0].setText(lastTitle = value);
+            if (adaptiveBackground && adaptiveBackgroundHideTitle) {
+                titleTextView[0].setAlpha(1.0f - onTopAnimated);
+            }
             if (UserConfig.getInstance(UserConfig.selectedAccount).isPremiumOrLocal() || (NekoConfig.isGhostModeActive() && NekoConfig.showGhostModeStatus.Bool())) {
                 if (attached && lastRightDrawable instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) {
                     ((AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) lastRightDrawable).setParentView(null);
@@ -1331,6 +1338,25 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             layoutParams.bottomMargin = extraHeight;
             actionMode.setLayoutParams(layoutParams);
         }
+    }
+
+    public void setTitleAlpha(float alpha) {
+        if (titleTextView[0] != null) {
+            titleTextView[0].setAlpha(alpha);
+        }
+        if (titlesContainer != null) {
+            titlesContainer.setAlpha(alpha);
+        }
+    }
+
+    public void setM3HeaderOffset(float offset) {
+        offset = Math.max(0.0f, Math.min(1.0f, offset));
+        float p = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(offset);
+        setTitleAlpha(p);
+        int lowerColor = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
+        int topColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider);
+        setBackgroundColor(ColorUtils.blendARGB(topColor, lowerColor, p));
+        setShadowAlpha((int) (p * 0xFF));
     }
 
     public void closeSearchField() {
@@ -2203,6 +2229,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     public void setDrawBlurBackground(SizeNotifierFrameLayout contentView) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            blurredBackground = false;
+            return;
+        }
         if (!tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool() && !tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
             return;
         }
@@ -2586,10 +2616,18 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private void adaptive_updateColor() {
         if (!adaptiveBackground) return;
         if (adaptiveBackgroundHideTitle) {
+            float titleAlpha = 1.0f - onTopAnimated;
             if (titlesContainer != null) {
-                titlesContainer.setAlpha(1.0f - onTopAnimated);
-            } else if (titleTextView[0] != null) {
-                titleTextView[0].setAlpha(1.0f - onTopAnimated);
+                titlesContainer.setAlpha(titleAlpha);
+            }
+            if (titleTextView[0] != null) {
+                titleTextView[0].setAlpha(titleAlpha);
+            }
+            if (titleTextView[1] != null) {
+                titleTextView[1].setAlpha(titleAlpha);
+            }
+            if (subtitleTextView != null) {
+                subtitleTextView.setAlpha(titleAlpha);
             }
         }
 
