@@ -113,7 +113,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     };
 
     // Stickers
-    private final AbstractConfigCell headerChat = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Chat)));
     private final AbstractConfigCell stickerSizeRow = cellGroup.appendCell(new ConfigCellCustom("StickerSize", ConfigCellCustom.CUSTOM_ITEM_StickerSize, false));
     private final AbstractConfigCell hideTimeForStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideTimeForSticker));
     private final AbstractConfigCell dontSendGreetingStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.dontSendGreetingSticker));

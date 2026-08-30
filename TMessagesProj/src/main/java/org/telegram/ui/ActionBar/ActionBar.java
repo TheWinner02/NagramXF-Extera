@@ -124,6 +124,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private boolean interceptTouches = true;
     private boolean forceSkipTouches;
     private int extraHeight;
+    private boolean m3LargeFlexible;
+    private float m3CollapseProgress = 0.0f;
+    private int m3ExpandedExtraHeight = AndroidUtilities.dp(52);
     private AnimatorSet actionModeAnimation;
     private View actionModeExtraView;
     private View actionModeTranslationView;
@@ -599,7 +602,12 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         if (titleTextView[0] != null) {
             titleTextView[0].setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView[0].setText(lastTitle = value);
-            if (adaptiveBackground && adaptiveBackgroundHideTitle) {
+            if (m3LargeFlexible) {
+                titleTextView[0].setTextSize(30);
+                titleTextView[0].setTypeface(AndroidUtilities.bold());
+                titleTextView[0].setAlpha(1.0f);
+                updateM3TitleTransform();
+            } else if (adaptiveBackground && adaptiveBackgroundHideTitle) {
                 titleTextView[0].setAlpha(1.0f - onTopAnimated);
             }
             if (UserConfig.getInstance(UserConfig.selectedAccount).isPremiumOrLocal() || (NekoConfig.isGhostModeActive() && NekoConfig.showGhostModeStatus.Bool())) {
@@ -1340,23 +1348,81 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
     }
 
-    public void setTitleAlpha(float alpha) {
-        if (titleTextView[0] != null) {
-            titleTextView[0].setAlpha(alpha);
+    public void setM3LargeFlexible(boolean value) {
+        if (m3LargeFlexible == value) return;
+        m3LargeFlexible = value;
+        if (m3LargeFlexible) {
+            extraHeight = m3ExpandedExtraHeight;
+            setClipChildren(false);
+            setClipToPadding(false);
+            if (titleTextView[0] != null) {
+                titleTextView[0].setTextSize(30);
+                titleTextView[0].setTypeface(AndroidUtilities.bold());
+                titleTextView[0].setAlpha(1.0f);
+            }
+            int topColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider);
+            setBackgroundColor(topColor);
+            setShadowAlpha(0);
+            updateM3TitleTransform();
+        } else {
+            extraHeight = 0;
+            if (titleTextView[0] != null) {
+                titleTextView[0].setTextSize(AndroidUtilities.isTablet() ? 20 : 18);
+                titleTextView[0].setScaleX(1.0f);
+                titleTextView[0].setScaleY(1.0f);
+                titleTextView[0].setTranslationX(0f);
+                titleTextView[0].setTranslationY(0f);
+            }
         }
-        if (titlesContainer != null) {
-            titlesContainer.setAlpha(alpha);
-        }
+        requestLayout();
     }
 
-    public void setM3HeaderOffset(float offset) {
-        offset = Math.max(0.0f, Math.min(1.0f, offset));
-        float p = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(offset);
-        setTitleAlpha(p);
+    public boolean isM3LargeFlexible() {
+        return m3LargeFlexible;
+    }
+
+    public int getM3ExpandedExtraHeight() {
+        return m3ExpandedExtraHeight;
+    }
+
+    public void setM3CollapseProgress(float progress) {
+        if (!m3LargeFlexible) return;
+        progress = Math.max(0.0f, Math.min(1.0f, progress));
+        if (Math.abs(m3CollapseProgress - progress) < 0.0001f) return;
+        m3CollapseProgress = progress;
+
+        updateM3TitleTransform();
+
         int lowerColor = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
         int topColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider);
-        setBackgroundColor(ColorUtils.blendARGB(topColor, lowerColor, p));
-        setShadowAlpha((int) (p * 0xFF));
+        setBackgroundColor(ColorUtils.blendARGB(topColor, lowerColor, m3CollapseProgress));
+        setShadowAlpha((int) (m3CollapseProgress * 0xFF));
+
+        requestLayout();
+    }
+
+    public void updateM3TitleTransform() {
+        if (!m3LargeFlexible || titleTextView[0] == null) return;
+        float p = m3CollapseProgress;
+        float targetScale = 20.0f / 30.0f;
+        float scale = AndroidUtilities.lerp(1.0f, targetScale, p);
+        titleTextView[0].setPivotX(0f);
+        titleTextView[0].setPivotY(0f);
+        titleTextView[0].setScaleX(scale);
+        titleTextView[0].setScaleY(scale);
+
+        int additionalTop = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
+        int collapsedX = backButtonImageView != null && backButtonImageView.getVisibility() != GONE ? dp(AndroidUtilities.isTablet() ? 80 : 72) : dp(AndroidUtilities.isTablet() ? 26 : 24);
+        int textH = titleTextView[0].getTextHeight() > 0 ? titleTextView[0].getTextHeight() : dp(38);
+        int collapsedY = additionalTop + (getCurrentActionBarHeight() - dp(24)) / 2;
+        int expandedX = dp(24);
+        int expandedY = additionalTop + getCurrentActionBarHeight() + (m3ExpandedExtraHeight - textH) / 2;
+
+        float transX = AndroidUtilities.lerp((float) (expandedX - collapsedX), 0f, p);
+        float transY = AndroidUtilities.lerp((float) (expandedY - collapsedY), 0f, p);
+        titleTextView[0].setTranslationX(transX);
+        titleTextView[0].setTranslationY(transY);
+        titleTextView[0].setAlpha(1.0f);
     }
 
     public void closeSearchField() {
@@ -1455,7 +1521,8 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
         ignoreLayoutRequest = false;
 
-        setMeasuredDimension(width, actionBarHeight + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0) + extraHeight);
+        int currentExtra = m3LargeFlexible ? (int) (m3ExpandedExtraHeight * (1.0f - m3CollapseProgress)) : extraHeight;
+        setMeasuredDimension(width, actionBarHeight + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0) + currentExtra);
 
         int textLeft;
         if (backButtonImageView != null && backButtonImageView.getVisibility() != GONE) {
@@ -1495,6 +1562,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         for (int i = 0; i < 2; i++) {
             if (titleTextView[0] != null && titleTextView[0].getVisibility() != GONE || subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
                 int availableWidth = width - (menu != null ? menu.getMeasuredWidth() : 0) - dp(16) - textLeft - titleRightMargin;
+                if (m3LargeFlexible) {
+                    availableWidth = Math.max(availableWidth, width - dp(48));
+                }
                 availableWidth = Math.max(availableWidth, 0);
 
                 if (((fromBottom && i == 0) || (!fromBottom && i == 1)) && overlayTitleAnimation && titleAnimationRunning) {
@@ -1510,7 +1580,11 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                         }
                     } else {
                         if (titleTextView[i] != null && titleTextView[i].getVisibility() != GONE) {
-                            titleTextView[i].setTextSize(glassMode ? 17 : !AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
+                            if (m3LargeFlexible) {
+                                titleTextView[i].setTextSize(30);
+                            } else {
+                                titleTextView[i].setTextSize(glassMode ? 17 : !AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
+                            }
                         }
                         if (subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
                             subtitleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 14 : 16);
@@ -1522,7 +1596,8 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 }
 
                 if (titleTextView[i] != null && titleTextView[i].getVisibility() != GONE) {
-                    titleTextView[i].measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(24) + titleTextView[i].getPaddingTop() + titleTextView[i].getPaddingBottom(), MeasureSpec.AT_MOST));
+                    int titleH = m3LargeFlexible ? dp(44) : dp(24);
+                    titleTextView[i].measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(titleH + titleTextView[i].getPaddingTop() + titleTextView[i].getPaddingBottom(), MeasureSpec.AT_MOST));
                     if (centerScale) {
                         CharSequence text = titleTextView[i].getText();
                         titleTextView[i].setPivotX(titleTextView[i].getTextPaint().measureText(text, 0, text.length()) / 2f);
@@ -1609,6 +1684,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 }
 
             }
+        }
+        if (m3LargeFlexible) {
+            updateM3TitleTransform();
         }
         if (additionalSubTitleOverlayContainer != null) {
             int textTop = getCurrentActionBarHeight() / 2 + (getCurrentActionBarHeight() / 2 - additionalSubTitleOverlayContainer.getMeasuredHeight()) / 2 - dp(2);
@@ -2614,7 +2692,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
     }
     private void adaptive_updateColor() {
-        if (!adaptiveBackground) return;
+        if (!adaptiveBackground || m3LargeFlexible) return;
         if (adaptiveBackgroundHideTitle) {
             float titleAlpha = 1.0f - onTopAnimated;
             if (titlesContainer != null) {
