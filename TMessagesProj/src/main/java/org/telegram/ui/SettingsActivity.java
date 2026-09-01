@@ -204,6 +204,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private View navigationBar;
 
     private int versionViewPressCount = 0;
+    private int m3ScrollOffset;
 
     public SettingsActivity() {
         this(null);
@@ -325,8 +326,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         });
         actionBar.setAddToContainer(false);
         actionBar.setOccupyStatusBar(true);
-        actionBar.setBackgroundColor(Color.TRANSPARENT);
-        actionBar.setBackground(null);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            actionBar.setM3LargeFlexible(true);
+            actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        } else {
+            actionBar.setBackgroundColor(Color.TRANSPARENT);
+            actionBar.setBackground(null);
+        }
 
         final ActionBarMenu menu = actionBar.createMenu();
         searchItem = menu.addItem(0, R.drawable.outline_header_search, resourceProvider).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
@@ -368,11 +374,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
         listView.adapter.setApplyBackground(false);
         listView.setSections();
-        listView.setPadding(0, AndroidUtilities.statusBarHeight + dp(12), 0, AndroidUtilities.navigationBarHeight + additionNavigationBarHeight);
+        m3ScrollOffset = 0;
+        listView.setPadding(0, getSettingsTopPadding(AndroidUtilities.statusBarHeight), 0, AndroidUtilities.navigationBarHeight + additionNavigationBarHeight);
         listView.setClipToPadding(false);
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                updateM3TopAppBarProgress(dy);
                 updateActionBarVisible();
                 if (listView.scrollingByUser) {
                     AndroidUtilities.hideKeyboard(fragmentView);
@@ -392,6 +400,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             private final Paint blurScrimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             @Override
             protected void onDraw(@NonNull Canvas canvas) {
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    return;
+                }
                 int top = actionBar.getHeight();
                 AndroidUtilities.rectTmp2.set(0, 0, getMeasuredWidth(), top);
                 blurScrimPaint.setColor(Theme.getColor(Theme.key_actionBarDefault, resourceProvider));
@@ -587,6 +598,21 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     private boolean actionBarVisible;
     private ValueAnimator actionBarVisibleAnimator;
+    private int getSettingsTopPadding(int statusBarHeight) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && actionBar != null) {
+            return statusBarHeight + ActionBar.getCurrentActionBarHeight() + actionBar.getM3ExpandedExtraHeight();
+        }
+        return statusBarHeight + dp(12);
+    }
+    private void updateM3TopAppBarProgress(int dy) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || actionBar == null || !actionBar.isM3LargeFlexible()) {
+            return;
+        }
+        int maxScroll = actionBar.getM3ExpandedExtraHeight();
+        m3ScrollOffset = Math.max(0, Math.min(maxScroll, m3ScrollOffset + dy));
+        float progress = maxScroll > 0 ? (float) m3ScrollOffset / (float) maxScroll : 1.0f;
+        actionBar.setM3CollapseProgress(progress);
+    }
     private float top() {
         if (listView.getChildCount() > 0) {
             final View firstChild = listView.getChildAt(0);
@@ -600,6 +626,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         updateActionBarVisible(false, true);
     }
     private void updateActionBarVisible(boolean force, boolean animated) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            actionBarVisible = true;
+            if (actionBarVisibleAnimator != null) {
+                actionBarVisibleAnimator.cancel();
+                actionBarVisibleAnimator = null;
+            }
+            actionBar.getTitlesContainer().setAlpha(1.0f);
+            if (actionBarBackground != null) {
+                actionBarBackground.setAlpha(0.0f);
+            }
+            return;
+        }
         final boolean visible;
         if (searchItem.isSearchFieldVisible2()) {
             visible = true;
@@ -980,7 +1018,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         final Insets systemInsets = AndroidUtilities.getDefaultWindowInsets(insets, false);
         navigationBarHeight = systemInsets.bottom;
         final int statusBarHeight = systemInsets.top;
-        listView.setPadding(0, statusBarHeight + dp(12), 0, navigationBarHeight + additionNavigationBarHeight);
+        listView.setPadding(0, getSettingsTopPadding(statusBarHeight), 0, navigationBarHeight + additionNavigationBarHeight);
+        if (actionBar != null && actionBar.isM3LargeFlexible()) {
+            actionBar.updateM3TitleTransform();
+        }
         return WindowInsetsCompat.CONSUMED;
     }
 

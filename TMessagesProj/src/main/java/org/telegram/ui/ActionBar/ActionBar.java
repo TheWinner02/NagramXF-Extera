@@ -2618,6 +2618,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private boolean onTop = true;
     private float onTopAnimated = 1.0f;
     private ValueAnimator adaptive_animator;
+    private RecyclerView m3AdaptiveBackgroundList;
     public void setAdaptiveBackground(RecyclerView list) {
         setAdaptiveBackground(list, false, Theme.key_windowBackgroundGray, Theme.key_actionBarDefault);
     }
@@ -2625,6 +2626,31 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         setAdaptiveBackground(list, hideTitle, Theme.key_windowBackgroundGray, Theme.key_actionBarDefault);
     }
     public void setAdaptiveBackground(RecyclerView list, boolean hideTitle, final int topColorKey, final int lowerColorKey) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            setM3LargeFlexible(true);
+            if (m3AdaptiveBackgroundList == list) {
+                setM3CollapseProgress(list.canScrollVertically(-1) ? 1.0f : 0.0f);
+                return;
+            }
+            m3AdaptiveBackgroundList = list;
+            final int[] m3ScrollOffset = new int[]{0};
+            list.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    if (!m3LargeFlexible) return;
+                    int maxScroll = getM3ExpandedExtraHeight();
+                    if (!recyclerView.canScrollVertically(-1)) {
+                        m3ScrollOffset[0] = 0;
+                    } else {
+                        m3ScrollOffset[0] = Math.max(0, Math.min(maxScroll, m3ScrollOffset[0] + dy));
+                    }
+                    float progress = maxScroll > 0 ? (float) m3ScrollOffset[0] / (float) maxScroll : 1.0f;
+                    setM3CollapseProgress(progress);
+                }
+            });
+            setM3CollapseProgress(list.canScrollVertically(-1) ? 1.0f : 0.0f);
+            return;
+        }
         this.adaptive_topColorKey = topColorKey;
         this.adaptive_lowerColorKey = lowerColorKey;
         final Runnable checkScroll = () -> {
