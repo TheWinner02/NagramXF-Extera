@@ -273,30 +273,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         checkOpenArchiveOnPullRows();
         checkCustomTitleRows();
 
-        cellGroup.callBackSettingsChanged = (key, newValue) -> {
-            if ("UiStyle".equals(key) && newValue instanceof Integer) {
-                int index = (Integer) newValue;
-                if (index == xyz.nextalone.nagram.NaConfig.UI_STYLE_MATERIAL3_EXPRESSIVE) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                        boolean isNight = Theme.isCurrentThemeDark();
-                        Theme.ThemeInfo targetTheme = Theme.getTheme(isNight ? "Monet Dark" : "Monet Light");
-                        if (targetTheme != null) {
-                            Theme.applyTheme(targetTheme, isNight);
-                            return;
-                        }
-                    }
-                }
-            }
-            if ("UiStyle".equals(key) || "SwitchStyle".equals(key) || "SliderStyle".equals(key) || "SingleCornerRadius".equals(key)) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    tw.nekomimi.nekogram.helpers.AppRestartHelper.triggerRebirth(
-                        getParentActivity() != null ? getParentActivity() : org.telegram.messenger.ApplicationLoader.applicationContext,
-                        new android.content.Intent(org.telegram.messenger.ApplicationLoader.applicationContext, org.telegram.ui.LaunchActivity.class)
-                    );
-                }, 200);
-            }
-        };
-
         addRowsToMap(cellGroup);
     }
 
@@ -323,6 +299,25 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         setupDefaultListeners();
 
         cellGroup.callBackSettingsChanged = (key, newValue) -> {
+            if (key.equals(NaConfig.INSTANCE.getUiStyle().getKey())) {
+                if (newValue instanceof Integer
+                        && (Integer) newValue == xyz.nextalone.nagram.NaConfig.UI_STYLE_MATERIAL3_EXPRESSIVE
+                        && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    boolean isNight = Theme.isCurrentThemeDark();
+                    Theme.ThemeInfo targetTheme = Theme.getTheme(isNight ? "Monet Dark" : "Monet Light");
+                    if (targetTheme != null) {
+                        Theme.applyTheme(targetTheme, isNight);
+                    }
+                }
+                AndroidUtilities.runOnUIThread(() -> {
+                    tw.nekomimi.nekogram.helpers.AppRestartHelper.triggerRebirth(
+                            getParentActivity() != null ? getParentActivity() : org.telegram.messenger.ApplicationLoader.applicationContext,
+                            new android.content.Intent(org.telegram.messenger.ApplicationLoader.applicationContext, org.telegram.ui.LaunchActivity.class)
+                    );
+                }, 200);
+                return;
+            }
+
             // Folder-tab tweaks that should never trigger a restart tooltip and
             // never require a restart to take effect:
             //   - hideAllTab, ignoreUnreadCount, tabsTitleType
