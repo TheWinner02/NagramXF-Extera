@@ -83,6 +83,7 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
     protected Theme.ResourcesProvider resourcesProvider;
 
     protected int rowCount;
+    private int m3ScrollOffset;
     protected HashMap<String, Integer> rowMap = new HashMap<>(20);
     protected HashMap<Integer, String> rowMapReverse = new HashMap<>(20);
 
@@ -147,13 +148,15 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
             actionBar.setTitle(getActionBarTitle());
             actionBar.setM3LargeFlexible(true);
+            m3ScrollOffset = 0;
             listView.setPadding(0, getM3HeaderTopPadding(), 0, dp(80));
             listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
                 public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                     if (layoutManager != null && actionBar != null && actionBar.isM3LargeFlexible()) {
-                        int scrolled = Math.max(0, recyclerView.computeVerticalScrollOffset());
-                        float progress = Math.max(0.0f, Math.min(1.0f, (float) scrolled / (float) actionBar.getM3ExpandedExtraHeight()));
+                        int maxScroll = actionBar.getM3ExpandedExtraHeight();
+                        m3ScrollOffset = Math.max(0, Math.min(maxScroll, m3ScrollOffset + dy));
+                        float progress = maxScroll > 0 ? (float) m3ScrollOffset / (float) maxScroll : 1.0f;
                         actionBar.setM3CollapseProgress(progress);
                     }
                 }

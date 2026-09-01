@@ -5877,15 +5877,7 @@ public class Theme {
             FileLog.e(e);
         }
         BlurSettingsBottomSheet.onThemeApplyed();
-        if (previousTheme == null && save && removeWallpaperOverride && !switchingNightTheme) {
-            MessagesController.getInstance(themeInfo.account).saveTheme(themeInfo, themeInfo.getAccent(false), nightTheme, false);
-            AndroidUtilities.runOnUIThread(() -> {
-                tw.nekomimi.nekogram.helpers.AppRestartHelper.triggerRebirth(
-                    ApplicationLoader.applicationContext,
-                    new android.content.Intent(ApplicationLoader.applicationContext, LaunchActivity.class)
-                );
-            }, 250);
-        } else if (previousTheme == null && save && !switchingNightTheme) {
+        if (previousTheme == null && save && !switchingNightTheme) {
             MessagesController.getInstance(themeInfo.account).saveTheme(themeInfo, themeInfo.getAccent(false), nightTheme, false);
         }
     }
