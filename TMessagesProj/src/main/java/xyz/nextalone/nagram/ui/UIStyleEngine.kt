@@ -9,6 +9,7 @@ import xyz.nextalone.nagram.NaConfig
 object UIStyleEngine {
 
     // Spring / Expressive Interpolator (Google Material 3 Expressive Motion)
+    @JvmStatic
     val expressiveSpringInterpolator: Interpolator by lazy {
         PathInterpolatorCompat.create(0.2f, 1.4f, 0.3f, 1.0f)
     }

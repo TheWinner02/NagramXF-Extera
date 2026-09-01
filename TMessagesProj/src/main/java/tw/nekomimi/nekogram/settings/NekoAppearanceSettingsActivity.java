@@ -282,9 +282,12 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                         Theme.ThemeInfo targetTheme = Theme.getTheme(isNight ? "Monet Dark" : "Monet Light");
                         if (targetTheme != null) {
                             Theme.applyTheme(targetTheme, isNight);
+                            return;
                         }
                     }
                 }
+            }
+            if ("UiStyle".equals(key) || "SwitchStyle".equals(key) || "SliderStyle".equals(key) || "SingleCornerRadius".equals(key)) {
                 AndroidUtilities.runOnUIThread(() -> {
                     tw.nekomimi.nekogram.helpers.AppRestartHelper.triggerRebirth(
                         getParentActivity() != null ? getParentActivity() : org.telegram.messenger.ApplicationLoader.applicationContext,

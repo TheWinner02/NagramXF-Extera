@@ -126,7 +126,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private int extraHeight;
     private boolean m3LargeFlexible;
     private float m3CollapseProgress = 0.0f;
-    private int m3ExpandedExtraHeight = AndroidUtilities.dp(52);
+    private int m3ExpandedExtraHeight = AndroidUtilities.dp(76);
     private AnimatorSet actionModeAnimation;
     private View actionModeExtraView;
     private View actionModeTranslationView;
@@ -603,7 +603,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             titleTextView[0].setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView[0].setText(lastTitle = value);
             if (m3LargeFlexible) {
-                titleTextView[0].setTextSize(30);
+                titleTextView[0].setTextSize(32);
                 titleTextView[0].setTypeface(AndroidUtilities.bold());
                 titleTextView[0].setAlpha(1.0f);
                 updateM3TitleTransform();
@@ -1356,7 +1356,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             setClipChildren(false);
             setClipToPadding(false);
             if (titleTextView[0] != null) {
-                titleTextView[0].setTextSize(30);
+                titleTextView[0].setTextSize(32);
                 titleTextView[0].setTypeface(AndroidUtilities.bold());
                 titleTextView[0].setAlpha(1.0f);
             }
@@ -1385,6 +1385,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         return m3ExpandedExtraHeight;
     }
 
+    public float getM3CollapseProgress() {
+        return m3CollapseProgress;
+    }
+
     public void setM3CollapseProgress(float progress) {
         if (!m3LargeFlexible) return;
         progress = Math.max(0.0f, Math.min(1.0f, progress));
@@ -1396,7 +1400,11 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         int lowerColor = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
         int topColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider);
         setBackgroundColor(ColorUtils.blendARGB(topColor, lowerColor, m3CollapseProgress));
-        setShadowAlpha((int) (m3CollapseProgress * 0xFF));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            setShadowAlpha(0);
+        } else {
+            setShadowAlpha((int) (m3CollapseProgress * 0xFF));
+        }
 
         requestLayout();
     }
@@ -1404,7 +1412,8 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     public void updateM3TitleTransform() {
         if (!m3LargeFlexible || titleTextView[0] == null) return;
         float p = m3CollapseProgress;
-        float targetScale = 20.0f / 30.0f;
+
+        float targetScale = 20.0f / 32.0f;
         float scale = AndroidUtilities.lerp(1.0f, targetScale, p);
         titleTextView[0].setPivotX(0f);
         titleTextView[0].setPivotY(0f);
@@ -1416,7 +1425,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         int textH = titleTextView[0].getTextHeight() > 0 ? titleTextView[0].getTextHeight() : dp(38);
         int collapsedY = additionalTop + (getCurrentActionBarHeight() - dp(24)) / 2;
         int expandedX = dp(24);
-        int expandedY = additionalTop + getCurrentActionBarHeight() + (m3ExpandedExtraHeight - textH) / 2;
+        int expandedY = additionalTop + getCurrentActionBarHeight() + m3ExpandedExtraHeight - dp(24) - textH;
 
         float transX = AndroidUtilities.lerp((float) (expandedX - collapsedX), 0f, p);
         float transY = AndroidUtilities.lerp((float) (expandedY - collapsedY), 0f, p);
@@ -1581,7 +1590,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                     } else {
                         if (titleTextView[i] != null && titleTextView[i].getVisibility() != GONE) {
                             if (m3LargeFlexible) {
-                                titleTextView[i].setTextSize(30);
+                                titleTextView[i].setTextSize(32);
                             } else {
                                 titleTextView[i].setTextSize(glassMode ? 17 : !AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
                             }
@@ -1596,7 +1605,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 }
 
                 if (titleTextView[i] != null && titleTextView[i].getVisibility() != GONE) {
-                    int titleH = m3LargeFlexible ? dp(44) : dp(24);
+                    int titleH = m3LargeFlexible ? dp(48) : dp(24);
                     titleTextView[i].measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(titleH + titleTextView[i].getPaddingTop() + titleTextView[i].getPaddingBottom(), MeasureSpec.AT_MOST));
                     if (centerScale) {
                         CharSequence text = titleTextView[i].getText();

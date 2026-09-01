@@ -144,7 +144,24 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
         });
 
         listView.setSections(true);
-        actionBar.setAdaptiveBackground(listView);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            actionBar.setTitle(getActionBarTitle());
+            actionBar.setM3LargeFlexible(true);
+            listView.setPadding(0, getM3HeaderTopPadding(), 0, dp(80));
+            listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    if (layoutManager != null && actionBar != null && actionBar.isM3LargeFlexible()) {
+                        int scrolled = Math.max(0, recyclerView.computeVerticalScrollOffset());
+                        float progress = Math.max(0.0f, Math.min(1.0f, (float) scrolled / (float) actionBar.getM3ExpandedExtraHeight()));
+                        actionBar.setM3CollapseProgress(progress);
+                    }
+                }
+            });
+            actionBar.setM3CollapseProgress(0.0f);
+        } else {
+            actionBar.setAdaptiveBackground(listView);
+        }
         return fragmentView;
     }
 
@@ -179,6 +196,12 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
             actionBar.setOccupyStatusBar(false);
         }
         return actionBar;
+    }
+
+    private int getM3HeaderTopPadding() {
+        int statusBar = actionBar != null && actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
+        int extra = actionBar != null ? actionBar.getM3ExpandedExtraHeight() : AndroidUtilities.dp(76);
+        return statusBar + ActionBar.getCurrentActionBarHeight() + extra;
     }
 
     protected String getKey() {
@@ -272,8 +295,14 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
 
     @Override
     public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom);
+        boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        int topPadding = m3Expressive ? getM3HeaderTopPadding() : 0;
+        int bottomPadding = bottom + (m3Expressive ? dp(80) : 0);
+        listView.setPadding(0, topPadding, 0, bottomPadding);
         listView.setClipToPadding(false);
+        if (actionBar != null && actionBar.isM3LargeFlexible()) {
+            actionBar.updateM3TitleTransform();
+        }
     }
 
     private class BlurContentView extends SizeNotifierFrameLayout {

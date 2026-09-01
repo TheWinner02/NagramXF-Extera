@@ -155,19 +155,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
                 @Override
                 public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                     if (layoutManager != null && actionBar != null && actionBar.isM3LargeFlexible()) {
-                        int firstPos = layoutManager.findFirstVisibleItemPosition();
-                        if (firstPos == 0) {
-                            View firstChild = layoutManager.findViewByPosition(0);
-                            if (firstChild != null) {
-                                int top = firstChild.getTop();
-                                int atRest = getM3HeaderTopPadding();
-                                int scrolled = atRest - top;
-                                float progress = Math.max(0.0f, Math.min(1.0f, (float) scrolled / (float) actionBar.getM3ExpandedExtraHeight()));
-                                actionBar.setM3CollapseProgress(progress);
-                            }
-                        } else if (firstPos > 0) {
-                            actionBar.setM3CollapseProgress(1.0f);
-                        }
+                        int scrolled = Math.max(0, recyclerView.computeVerticalScrollOffset());
+                        float progress = Math.max(0.0f, Math.min(1.0f, (float) scrolled / (float) actionBar.getM3ExpandedExtraHeight()));
+                        actionBar.setM3CollapseProgress(progress);
                     }
                 }
             });
