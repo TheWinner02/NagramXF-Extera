@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class SeekBarView extends FrameLayout {
 
@@ -460,6 +461,9 @@ public class SeekBarView extends FrameLayout {
             return previewingState;
         }
         int configStyle = NaConfig.INSTANCE.getSliderStyle().Int();
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            configStyle = SLIDER_STYLE_MD3;
+        }
         if (sliderStyleOverride != -1 && configStyle == SLIDER_STYLE_MD3) {
             return sliderStyleOverride;
         }
@@ -475,9 +479,7 @@ public class SeekBarView extends FrameLayout {
             lineWidthDp = style == SLIDER_STYLE_MODERN ? 17 : (style == SLIDER_STYLE_MD3 ? 13 : 3);
         }
 
-        if (isModern && style == SLIDER_STYLE_MD3) {
-            thumbSize = AndroidUtilities.dp(4);
-        }
+        thumbSize = isModern && style == SLIDER_STYLE_MD3 ? AndroidUtilities.dp(4) : AndroidUtilities.dp(24);
     }
 
     private int needCustomDraw() {

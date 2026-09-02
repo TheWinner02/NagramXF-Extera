@@ -499,6 +499,7 @@ public class RichAudioCell extends RichBlockCell
         if (!isUploading()) {
             canvas.save();
             canvas.translate(seekBarX, seekBarY);
+            seekBar.setWavyProgressActive(messageObject != null && MediaController.getInstance().isPlayingMessage(messageObject) && !MediaController.getInstance().isMessagePaused());
             seekBar.draw(canvas);
             canvas.restore();
         }

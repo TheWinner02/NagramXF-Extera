@@ -1023,6 +1023,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
 
         public StickerSizeCell(Context context) {
             super(context);
+            boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
 
             // Title + value chip row (AyuGram-style)
             LinearLayout titleRow = new LinearLayout(context);
@@ -1039,7 +1040,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
 
             headerValueChip = new AnimatedTextView(context, false, true, true) {
                 final Drawable backgroundDrawable = Theme.createRoundRectDrawable(
-                        AndroidUtilities.dp(4f),
+                        AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 10f : 4f),
                         Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader), 0.15f));
 
                 @Override
@@ -1053,12 +1054,12 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             };
             headerValueChip.setAnimationProperties(0.45f, 0L, 240L, CubicBezierInterpolator.EASE_OUT_QUINT);
             headerValueChip.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
-            headerValueChip.setPadding(AndroidUtilities.dp(5.33f), AndroidUtilities.dp(2f), AndroidUtilities.dp(5.33f), AndroidUtilities.dp(2f));
+            headerValueChip.setPadding(AndroidUtilities.dp(m3Expressive ? 7f : 5.33f), AndroidUtilities.dp(2f), AndroidUtilities.dp(m3Expressive ? 7f : 5.33f), AndroidUtilities.dp(2f));
             headerValueChip.setTextSize(AndroidUtilities.dp(12f));
             headerValueChip.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
-            titleRow.addView(headerValueChip, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 17, Gravity.CENTER_VERTICAL, 6, 1, 0, 0));
+            titleRow.addView(headerValueChip, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, m3Expressive ? 20 : 17, Gravity.CENTER_VERTICAL, 6, 1, 0, 0));
 
-            addView(titleRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 21, 17, 21, 0));
+            addView(titleRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 21, m3Expressive ? 18 : 17, 21, 0));
 
             // Smaller / Larger labels row
             FrameLayout labelsRow = new FrameLayout(context);
@@ -1076,7 +1077,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             rightTextView.setText(LocaleController.getString(R.string.StickerSizeRight));
             labelsRow.addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
 
-            addView(labelsRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 21, 52, 21, 0));
+            addView(labelsRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 21, m3Expressive ? 55 : 52, 21, 0));
 
             // SeekBar row
             sizeBar = new SeekBarView(context);
@@ -1089,11 +1090,11 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 StickerSizeCell.this.invalidate();
                 menuItem.setVisibility(View.VISIBLE);
             });
-            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 6, 71, 6, 0));
+            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, m3Expressive ? 44 : 38, Gravity.LEFT | Gravity.TOP, 6, m3Expressive ? 76 : 71, 6, 0));
 
             // Preview
             messagesCell = new StickerSizePreviewMessagesCell(context, NekoChatSettingsActivity.this);
-            addView(messagesCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 119, 0, 0));
+            addView(messagesCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, m3Expressive ? 128 : 119, 0, 0));
 
             updateChip();
             updateLabelColors();

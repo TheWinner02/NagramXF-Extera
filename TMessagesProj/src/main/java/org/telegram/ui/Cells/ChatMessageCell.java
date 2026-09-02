@@ -14758,6 +14758,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     canvas.save();
                 }
                 canvas.translate(tx + seekBarX, y);
+                seekBar.setWavyProgressActive(MediaController.getInstance().isPlayingMessage(currentMessageObject) && !MediaController.getInstance().isMessagePaused());
                 seekBar.draw(canvas);
                 canvas.restore();
             }
@@ -14866,6 +14867,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     canvas.translate(seekBarX, seekBarY + yoffset);
                     seekBar.setAlpha(isRoundVideo ? CubicBezierInterpolator.EASE_IN.getInterpolation(getVideoTranscriptionProgress()) : 1f);
+                    seekBar.setWavyProgressActive(MediaController.getInstance().isPlayingMessage(currentMessageObject) && !MediaController.getInstance().isMessagePaused());
                     seekBar.draw(canvas);
                 }
             }

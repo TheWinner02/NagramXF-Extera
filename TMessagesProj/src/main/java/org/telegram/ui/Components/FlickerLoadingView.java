@@ -21,6 +21,8 @@ import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Random;
 
+import xyz.nextalone.nagram.ui.UIStyleEngine;
+
 public class FlickerLoadingView extends View implements Theme.Colorable {
 
     public final static int DIALOG_TYPE = 1;
@@ -916,6 +918,12 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
         }
         int color0 = getThemedColor(colorKey1);
         int color1 = getThemedColor(colorKey2);
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            int surfaceColor = getThemedColor(Theme.key_windowBackgroundWhite);
+            int contentColor = getThemedColor(Theme.key_windowBackgroundWhiteBlackText);
+            color0 = Theme.blendOver(surfaceColor, Theme.multAlpha(contentColor, 0.08f));
+            color1 = Theme.blendOver(surfaceColor, Theme.multAlpha(contentColor, 0.14f));
+        }
         if (this.color1 != color1 || this.color0 != color0) {
             this.color0 = color0;
             this.color1 = color1;

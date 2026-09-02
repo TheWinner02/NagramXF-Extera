@@ -13,6 +13,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
@@ -21,6 +22,8 @@ import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class RadialProgressView extends View {
 
@@ -41,6 +44,7 @@ public class RadialProgressView extends View {
     private static final float rotationTime = 2000;
     private static final float risingTime = 500;
     private int size;
+    private boolean hasCustomStrokeWidth;
 
     private float currentProgress;
     private float progressAnimationStart;
@@ -68,7 +72,7 @@ public class RadialProgressView extends View {
         progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         progressPaint.setStyle(Paint.Style.STROKE);
         progressPaint.setStrokeCap(Paint.Cap.ROUND);
-        progressPaint.setStrokeWidth(AndroidUtilities.dp(3));
+        progressPaint.setStrokeWidth(AndroidUtilities.dp(UIStyleEngine.isMaterial3Expressive() ? 4 : 3));
         progressPaint.setColor(progressColor);
     }
 
@@ -208,6 +212,7 @@ public class RadialProgressView extends View {
     }
 
     public void setStrokeWidth(float value) {
+        hasCustomStrokeWidth = true;
         progressPaint.setStrokeWidth(AndroidUtilities.dp(value));
     }
 
@@ -225,17 +230,61 @@ public class RadialProgressView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        updateDefaultStrokeWidth();
         int x = (getMeasuredWidth() - size) / 2;
         int y = (getMeasuredHeight() - size) / 2;
         cicleRect.set(x, y, x + size, y + size);
-        canvas.drawArc(cicleRect, radOffset, drawingCircleLenght = currentCircleLength, false, progressPaint);
+        drawM3DeterminateTrack(canvas);
+        drawProgressArc(canvas, cicleRect, radOffset, drawingCircleLenght = currentCircleLength);
         updateAnimation();
     }
 
     public void draw(Canvas canvas, float cx, float cy) {
+        updateDefaultStrokeWidth();
         cicleRect.set(cx - size / 2f, cy - size / 2f, cx + size / 2f, cy +  size / 2f);
-        canvas.drawArc(cicleRect, radOffset, drawingCircleLenght = currentCircleLength, false, progressPaint);
+        drawM3DeterminateTrack(canvas);
+        drawProgressArc(canvas, cicleRect, radOffset, drawingCircleLenght = currentCircleLength);
         updateAnimation();
+    }
+
+    private void updateDefaultStrokeWidth() {
+        if (!hasCustomStrokeWidth) {
+            progressPaint.setStrokeWidth(AndroidUtilities.dp(UIStyleEngine.isMaterial3Expressive() ? 4 : 3));
+        }
+    }
+
+    private void drawProgressArc(Canvas canvas, RectF rect, float startAngle, float sweepAngle) {
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            M3WavyProgress.drawCircular(
+                    canvas,
+                    rect,
+                    progressPaint,
+                    startAngle,
+                    sweepAngle,
+                    progressPaint.getStrokeWidth(),
+                    AndroidUtilities.dpf2(1.65f),
+                    SystemClock.uptimeMillis() * 0.16f);
+            return;
+        }
+        canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
+    }
+
+    private void drawM3DeterminateTrack(Canvas canvas) {
+        if (!UIStyleEngine.isMaterial3Expressive() || noProgress || Math.abs(currentCircleLength) >= 359f) {
+            return;
+        }
+        int oldAlpha = progressPaint.getAlpha();
+        progressPaint.setAlpha((int) (oldAlpha * 0.14f));
+        M3WavyProgress.drawCircular(
+                canvas,
+                cicleRect,
+                progressPaint,
+                0,
+                360,
+                progressPaint.getStrokeWidth(),
+                AndroidUtilities.dpf2(1.2f),
+                SystemClock.uptimeMillis() * 0.08f);
+        progressPaint.setAlpha(oldAlpha);
     }
 
     public boolean isCircle() {

@@ -449,6 +449,7 @@ public class PollContentDrawable extends Drawable implements DownloadController.
                     seekBar.setSize(bounds.right - (left + dp(56)), dp(30));
                     canvas.save();
                     canvas.translate(seekBarX = (left + dp(56 - 11)), seekBarY = (top + ty + dp(21)));
+                    seekBar.setWavyProgressActive(MediaController.getInstance().isPlayingMessage(messageObject) && !MediaController.getInstance().isMessagePaused());
                     seekBar.draw(canvas);
                     canvas.restore();
                 }

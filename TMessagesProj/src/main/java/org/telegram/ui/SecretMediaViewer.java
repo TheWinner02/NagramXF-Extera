@@ -557,18 +557,27 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 public void setPlayWhenReady(boolean playWhenReady) {
                     super.setPlayWhenReady(playWhenReady);
                     playButtonDrawable.setPause(playWhenReady);
+                    if (seekbar != null) {
+                        seekbar.setPlaying(playWhenReady);
+                    }
                 }
 
                 @Override
                 public void play() {
                     super.play();
                     playButtonDrawable.setPause(true);
+                    if (seekbar != null) {
+                        seekbar.setPlaying(true);
+                    }
                 }
 
                 @Override
                 public void pause() {
                     super.pause();
                     playButtonDrawable.setPause(false);
+                    if (seekbar != null) {
+                        seekbar.setPlaying(false);
+                    }
                 }
             };
             videoPlayer.setTextureView(videoTextureView);
@@ -595,6 +604,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                     }
                     if (playbackState == ExoPlayer.STATE_READY && aspectRatioFrameLayout.getVisibility() != View.VISIBLE) {
                         aspectRatioFrameLayout.setVisibility(View.VISIBLE);
+                    }
+                    if (seekbar != null) {
+                        seekbar.setPlaying(videoPlayer.isPlaying() && playbackState != ExoPlayer.STATE_ENDED && playbackState != ExoPlayer.STATE_IDLE);
                     }
                     if (videoPlayer.isPlaying() && playbackState != ExoPlayer.STATE_ENDED) {
                         if (!isPlaying) {

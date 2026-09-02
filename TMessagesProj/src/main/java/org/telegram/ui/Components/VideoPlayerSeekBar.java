@@ -37,6 +37,8 @@ import org.telegram.messenger.Utilities;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import xyz.nextalone.nagram.ui.UIStyleEngine;
+
 public class VideoPlayerSeekBar {
 
     public interface SeekBarDelegate {
@@ -79,6 +81,7 @@ public class VideoPlayerSeekBar {
     private float transitionProgress;
     private int horizontalPadding;
     private int smallLineColor;
+    private boolean playing;
 
     private int fromThumbX = 0;
     private float animateThumbProgress = 1f;
@@ -252,6 +255,15 @@ public class VideoPlayerSeekBar {
         this.horizontalPadding = horizontalPadding;
     }
 
+    public void setPlaying(boolean playing) {
+        if (this.playing != playing) {
+            this.playing = playing;
+            if (parentView != null) {
+                parentView.invalidate();
+            }
+        }
+    }
+
     private ArrayList<Pair<Float, CharSequence>> timestamps;
     private CharSequence lastCaption;
     private long lastVideoDuration;
@@ -340,9 +352,11 @@ public class VideoPlayerSeekBar {
     }
 
     public void draw(Canvas canvas, View view) {
+        int effectiveLineHeight = UIStyleEngine.isMaterial3Expressive() ? Math.max(lineHeight, AndroidUtilities.dp(6)) : lineHeight;
+        int effectiveSmallLineHeight = UIStyleEngine.isMaterial3Expressive() ? Math.max(smallLineHeight, AndroidUtilities.dp(3)) : smallLineHeight;
         rect.left = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f, 0, transitionProgress);
-        rect.top = AndroidUtilities.lerp((height - lineHeight) / 2f, height - AndroidUtilities.dp(3) - smallLineHeight, transitionProgress);
-        rect.bottom = AndroidUtilities.lerp((height + lineHeight) / 2f, height - AndroidUtilities.dp(3), transitionProgress);
+        rect.top = AndroidUtilities.lerp((height - effectiveLineHeight) / 2f, height - AndroidUtilities.dp(3) - effectiveSmallLineHeight, transitionProgress);
+        rect.bottom = AndroidUtilities.lerp((height + effectiveLineHeight) / 2f, height - AndroidUtilities.dp(3), transitionProgress);
 
         float thumbX = this.thumbX;
         animatedThumbX = Math.min(animatedThumbX, thumbX);
@@ -372,7 +386,7 @@ public class VideoPlayerSeekBar {
         // background
         rect.right = horizontalPadding + AndroidUtilities.lerp(width - thumbWidth / 2f, parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
         setPaintColor(selected ? backgroundSelectedColor : backgroundColor, 1f - transitionProgress);
-        drawProgressBar(canvas, rect, paint);
+        drawProgressBar(canvas, rect, paint, false);
 
         if (bufferedAnimationValue != 1f) {
             bufferedAnimationValue += 16 / 100f;
@@ -388,19 +402,19 @@ public class VideoPlayerSeekBar {
             if (animateFromBufferedProgress > 0) {
                 rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + animateFromBufferedProgress * (width - thumbWidth), parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
                 setPaintColor(selected ? backgroundSelectedColor : cacheColor, (1f - transitionProgress) * (1f - bufferedAnimationValue));
-                drawProgressBar(canvas, rect, paint);
+                drawProgressBar(canvas, rect, paint, false);
             }
             if (bufferedProgress > 0) {
                 rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + bufferedProgress * (width - thumbWidth), parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
                 setPaintColor(selected ? backgroundSelectedColor : cacheColor, 1f - transitionProgress);
-                drawProgressBar(canvas, rect, paint);
+                drawProgressBar(canvas, rect, paint, false);
             }
         } else {
             float currentBufferedProgress = animateFromBufferedProgress * (1f - bufferedAnimationValue) + bufferedProgress * bufferedAnimationValue;
             if (currentBufferedProgress > 0) {
                 rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + currentBufferedProgress * (width - thumbWidth), parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
                 setPaintColor(selected ? backgroundSelectedColor : cacheColor, 1f - transitionProgress);
-                drawProgressBar(canvas, rect, paint);
+                drawProgressBar(canvas, rect, paint, false);
             }
         }
 
@@ -436,10 +450,10 @@ public class VideoPlayerSeekBar {
             if (transitionProgress > 0f && rect.width() > 0) {
                 // progress stroke
                 strokePaint.setAlpha((int) (transitionProgress * 255 * 0.2f));
-                drawProgressBar(canvas, rect, strokePaint);
+                drawProgressBar(canvas, rect, strokePaint, false);
             }
             setPaintColor(ColorUtils.blendARGB(progressColor, smallLineColor, transitionProgress), 1f);
-            drawProgressBar(canvas, rect, paint);
+            drawProgressBar(canvas, rect, paint, playing);
 
             rect.left = wasLeft;
 
@@ -453,10 +467,10 @@ public class VideoPlayerSeekBar {
         if (transitionProgress > 0f && rect.width() > 0) {
             // progress stroke
             strokePaint.setAlpha((int) (transitionProgress * 255 * 0.2f));
-            drawProgressBar(canvas, rect, strokePaint);
+            drawProgressBar(canvas, rect, strokePaint, false);
         }
         setPaintColor(ColorUtils.blendARGB(progressColor, smallLineColor, transitionProgress), 1f);
-        drawProgressBar(canvas, rect, paint);
+        drawProgressBar(canvas, rect, paint, playing);
 
         // circle
         setPaintColor(ColorUtils.blendARGB(circleColor, getProgress() == 0 ? Color.TRANSPARENT : smallLineColor, transitionProgress), 1f - transitionProgress);
@@ -471,9 +485,19 @@ public class VideoPlayerSeekBar {
     private static float[] tmpRadii;
     private static Path tmpPath;
 
-    private void drawProgressBar(Canvas canvas, RectF rect, Paint paint) {
+    private void drawProgressBar(Canvas canvas, RectF rect, Paint paint, boolean wavy) {
         float radius = AndroidUtilities.dp(AndroidUtilities.lerp(2, 1, transitionProgress));
         if (timestamps == null || timestamps.isEmpty()) {
+            if (wavy && UIStyleEngine.isMaterial3Expressive()) {
+                M3WavyProgress.drawLinear(
+                        canvas,
+                        rect,
+                        paint,
+                        SystemClock.uptimeMillis() * 0.10f,
+                        AndroidUtilities.lerp(AndroidUtilities.dpf2(1.8f), AndroidUtilities.dpf2(0.8f), transitionProgress),
+                        AndroidUtilities.dp(26));
+                return;
+            }
             canvas.drawRoundRect(rect, radius, radius, paint);
         } else {
             float lineWidth = rect.bottom - rect.top;

@@ -30,7 +30,12 @@ import org.telegram.ui.Components.SeekBarView;
 import java.util.ArrayList;
 
 public class MaxFileSizeCell extends FrameLayout {
-    public void setSliderStyleOverride(int style) {}
+    public void setSliderStyleOverride(int style) {
+        if (seekBarView != null) {
+            seekBarView.setSliderStyleOverride(style);
+            seekBarView.invalidate();
+        }
+    }
 
     private TextView textView;
     private TextView sizeTextView;

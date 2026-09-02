@@ -10505,6 +10505,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (videoPlayer == null && (photoViewerWebView == null || !photoViewerWebView.isControllable())) {
             return;
         }
+        if (videoPlayerSeekbar != null) {
+            boolean seekbarPlaying = (videoPlayer != null ? videoPlayer.isPlaying() : photoViewerWebView != null && photoViewerWebView.isPlaying())
+                    && playbackState != ExoPlayer.STATE_ENDED
+                    && playbackState != ExoPlayer.STATE_IDLE;
+            videoPlayerSeekbar.setPlaying(seekbarPlaying);
+        }
         if (ads != null) {
             ads.setWaitingPaused(!playWhenReady || playbackState != ExoPlayer.STATE_READY);
         }
@@ -10672,6 +10678,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private void playVideoOrWeb() {
         android.util.Log.d("PhotoViewerVideo", "playVideoOrWeb called: player=" + videoPlayer + ", isPlaying=" + (videoPlayer != null && videoPlayer.isPlaying()) + ", isCurrentVideo=" + isCurrentVideo);
+        if (videoPlayerSeekbar != null) {
+            videoPlayerSeekbar.setPlaying(true);
+        }
         if (videoPlayer != null) {
             videoPlayer.play();
         } else if (photoViewerWebView != null) {
@@ -10681,6 +10690,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private void pauseVideoOrWeb() {
         android.util.Log.d("PhotoViewerVideo", "pauseVideoOrWeb called: player=" + videoPlayer);
+        if (videoPlayerSeekbar != null) {
+            videoPlayerSeekbar.setPlaying(false);
+        }
         if (videoPlayer != null) {
             videoPlayer.pause();
         } else if (photoViewerWebView != null) {

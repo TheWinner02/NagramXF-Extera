@@ -521,11 +521,12 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
 
         public TemperatureSeekBar(Context context) {
             super(context);
+            boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
 
             setWillNotDraw(false);
 
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            textPaint.setTextSize(AndroidUtilities.dp(16));
+            textPaint.setTextSize(AndroidUtilities.dp(m3Expressive ? 15 : 16));
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
@@ -537,14 +538,14 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
             });
             float currentValue = NaConfig.INSTANCE.getLlmTemperature().Float();
             sizeBar.setProgress(currentValue / 2f);
-            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 9, 5, 43, 11));
+            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, m3Expressive ? 44 : 38, Gravity.LEFT | Gravity.TOP, 9, m3Expressive ? 3 : 5, m3Expressive ? 50 : 43, 11));
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
             textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
             @SuppressLint("DefaultLocale") String text = String.format("%.1f", NaConfig.INSTANCE.getLlmTemperature().Float());
-            canvas.drawText(text, getMeasuredWidth() - AndroidUtilities.dp(39), AndroidUtilities.dp(28), textPaint);
+            canvas.drawText(text, getMeasuredWidth() - AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 45 : 39), AndroidUtilities.dp(28), textPaint);
         }
 
         @Override

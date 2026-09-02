@@ -667,6 +667,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
 
         public BlurSliderCell(Context context, String title, String unit, int min, int max, ConfigItem configItem, ConfigItem parentSwitch, Runnable onValueChange) {
             super(context);
+            boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
             this.unit = unit;
             this.min = min;
             this.max = max;
@@ -678,13 +679,14 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             setFocusableInTouchMode(false);
 
             titleTextView = new TextView(context);
-            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, m3Expressive ? 15.5f : 14.5f);
             titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             titleTextView.setText(title);
-            addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 21, 8, 110, 0));
+            addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 21, m3Expressive ? 11 : 8, m3Expressive ? 126 : 110, 0));
 
             LinearLayout rightContainer = new LinearLayout(context);
             rightContainer.setOrientation(LinearLayout.HORIZONTAL);
+            rightContainer.setGravity(Gravity.CENTER_VERTICAL);
             seekBarView = new SeekBarView(context);
             seekBarView.setReportChanges(true);
             seekBarView.setDelegate((stop, progress) -> {
@@ -698,14 +700,16 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     onValueChange.run();
                 }
             });
-            addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 11, 26, 11, 6));
+            addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, m3Expressive ? 44 : 36, Gravity.TOP | Gravity.LEFT, 9, m3Expressive ? 31 : 26, 9, 6));
 
             resetButton = new ImageView(context);
             resetButton.setFocusable(false);
             resetButton.setImageResource(R.drawable.msg_retry);
             resetButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             resetButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
-            resetButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+            resetButton.setBackground(m3Expressive
+                    ? Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(14), 0, Theme.getColor(Theme.key_listSelector))
+                    : Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
             resetButton.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
             resetButton.setOnClickListener(v -> {
                 if (parentSwitch != null && !parentSwitch.Bool()) {
@@ -719,16 +723,16 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     onValueChange.run();
                 }
             });
-            LinearLayout.LayoutParams resetParams = new LinearLayout.LayoutParams(AndroidUtilities.dp(20), AndroidUtilities.dp(20));
-            resetParams.rightMargin = AndroidUtilities.dp(6);
+            LinearLayout.LayoutParams resetParams = new LinearLayout.LayoutParams(AndroidUtilities.dp(m3Expressive ? 28 : 20), AndroidUtilities.dp(m3Expressive ? 28 : 20));
+            resetParams.rightMargin = AndroidUtilities.dp(m3Expressive ? 8 : 6);
             rightContainer.addView(resetButton, resetParams);
 
             valueTextView = new TextView(context);
-            valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
+            valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, m3Expressive ? 15f : 14.5f);
             valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
             rightContainer.addView(valueTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-            addView(rightContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 7, 21, 0));
+            addView(rightContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, m3Expressive ? 32 : LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, m3Expressive ? 7 : 7, 21, 0));
 
             int currentVal = configItem.Int();
             if (currentVal < min) currentVal = min;
@@ -805,7 +809,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                    MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(66), MeasureSpec.EXACTLY));
+                    MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 78 : 66), MeasureSpec.EXACTLY));
         }
     }
 }

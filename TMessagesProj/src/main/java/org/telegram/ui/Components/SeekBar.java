@@ -31,6 +31,8 @@ import org.telegram.messenger.Utilities;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import xyz.nextalone.nagram.ui.UIStyleEngine;
+
 public class SeekBar {
 
     public interface SeekBarDelegate {
@@ -73,6 +75,7 @@ public class SeekBar {
     private long lastUpdateTime;
     private View parentView;
     private float alpha = 1f;
+    private boolean wavyProgressActive;
 
     public SeekBar(View parent) {
         if (paint == null) {
@@ -193,6 +196,15 @@ public class SeekBar {
         lineHeight = value;
     }
 
+    public void setWavyProgressActive(boolean value) {
+        if (wavyProgressActive != value) {
+            wavyProgressActive = value;
+            if (parentView != null) {
+                parentView.invalidate();
+            }
+        }
+    }
+
     public void draw(Canvas canvas) {
         if (alpha <= 0) {
             return;
@@ -200,17 +212,18 @@ public class SeekBar {
         if (alpha < 1) {
             canvas.saveLayerAlpha(0, 0, width, height, (int) (255 * alpha), Canvas.ALL_SAVE_FLAG);
         }
-        rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, width - thumbWidth / 2, height / 2 + lineHeight / 2);
+        int effectiveLineHeight = UIStyleEngine.isMaterial3Expressive() ? Math.max(lineHeight, AndroidUtilities.dp(4)) : lineHeight;
+        rect.set(thumbWidth / 2, height / 2 - effectiveLineHeight / 2, width - thumbWidth / 2, height / 2 + effectiveLineHeight / 2);
         paint.setColor(selected ? backgroundSelectedColor : backgroundColor);
-        drawProgressBar(canvas, rect, paint);
+        drawProgressBar(canvas, rect, paint, false);
         if (bufferedProgress > 0) {
             paint.setColor(selected ? backgroundSelectedColor : cacheColor);
-            rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, thumbWidth / 2 + bufferedProgress * (width - thumbWidth), height / 2 + lineHeight / 2);
-            drawProgressBar(canvas, rect, paint);
+            rect.set(thumbWidth / 2, height / 2 - effectiveLineHeight / 2, thumbWidth / 2 + bufferedProgress * (width - thumbWidth), height / 2 + effectiveLineHeight / 2);
+            drawProgressBar(canvas, rect, paint, false);
         }
-        rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, thumbWidth / 2 + (pressed ? draggingThumbX : thumbX), height / 2 + lineHeight / 2);
+        rect.set(thumbWidth / 2, height / 2 - effectiveLineHeight / 2, thumbWidth / 2 + (pressed ? draggingThumbX : thumbX), height / 2 + effectiveLineHeight / 2);
         paint.setColor(progressColor);
-        drawProgressBar(canvas, rect, paint);
+        drawProgressBar(canvas, rect, paint, wavyProgressActive);
         paint.setColor(circleColor);
 
         int newRad = AndroidUtilities.dp(pressed ? 8 : 6);
@@ -361,9 +374,19 @@ public class SeekBar {
         });
     }
 
-    private void drawProgressBar(Canvas canvas, RectF rect, Paint paint) {
+    private void drawProgressBar(Canvas canvas, RectF rect, Paint paint, boolean wavy) {
         float radius = thumbWidth / 2f;
         if (timestamps == null || timestamps.isEmpty()) {
+            if (wavy && UIStyleEngine.isMaterial3Expressive()) {
+                M3WavyProgress.drawLinear(
+                        canvas,
+                        rect,
+                        paint,
+                        SystemClock.uptimeMillis() * 0.09f,
+                        AndroidUtilities.dpf2(1.4f),
+                        AndroidUtilities.dp(24));
+                return;
+            }
             canvas.drawRoundRect(rect, radius, radius, paint);
         } else {
             float lineWidth = rect.bottom - rect.top;

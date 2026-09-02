@@ -144,6 +144,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         canvas.save();
         if (buttonState == 0 || buttonState == 1) {
             canvas.translate(seekBarX, seekBarY);
+            seekBar.setWavyProgressActive(MediaController.getInstance().isPlayingMessage(currentMessageObject) && !MediaController.getInstance().isMessagePaused());
             seekBar.draw(canvas);
         } else {
             canvas.translate(seekBarX + AndroidUtilities.dp(12), seekBarY);
