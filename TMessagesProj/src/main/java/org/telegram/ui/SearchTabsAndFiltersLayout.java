@@ -24,8 +24,9 @@ public class SearchTabsAndFiltersLayout extends FrameLayout implements Theme.Col
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         clipPath.rewind();
+        float rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 22 : 16);
         clipPath.addRoundRect(dp(9), dp(9), w - dp(9), h - dp(9),
-                dp(16), dp(16), Path.Direction.CW);
+                rad, rad, Path.Direction.CW);
     }
 
     @Override

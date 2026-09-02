@@ -71,6 +71,11 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         super(context);
         this.resourcesProvider = resourcesProvider;
 
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            animatorCloseIconVisible.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+            animatorSearchIconVisible.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+        }
+
         editText = new EditTextBoldCursor(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -205,7 +210,7 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     }
 
     public void setupBlurredBackground(BlurredBackgroundDrawable drawable) {
-        drawable.setRadius(dp(20));
+        drawable.setRadius(dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 28 : 20));
         drawable.setPadding(dp(4));
         blurredBackgroundDrawable = drawable;
     }
@@ -272,10 +277,10 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
         boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
         if (isM3) {
-            bg = Theme.createRoundRectDrawable(dp(24), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundGray));
+            bg = Theme.createRoundRectDrawable(dp(28), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundGray));
             searchIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.75f), PorterDuff.Mode.MULTIPLY);
             closeIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.75f), PorterDuff.Mode.MULTIPLY);
-            closeIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(20)));
+            closeIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(24)));
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.55f));
             editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));

@@ -1027,14 +1027,21 @@ public class ActionBarMenuItem extends FrameLayout {
                 menuIcons.get(i).setAlpha(0f);
                 searchContainerAnimator.playTogether(ObjectAnimator.ofFloat(menuIcons.get(i), View.ALPHA, menuIcons.get(i).getAlpha(), 1f));
             }
-            searchContainerAnimator.setDuration(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 220 : 150);
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                searchContainerAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                searchContainerAnimator.playTogether(
+                        ObjectAnimator.ofFloat(searchContainer, View.SCALE_X, searchContainer.getScaleX(), 0.92f),
+                        ObjectAnimator.ofFloat(searchContainer, View.SCALE_Y, searchContainer.getScaleY(), 0.92f));
+                searchContainerAnimator.setDuration(220);
+                searchContainerAnimator.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getExpressiveSpringInterpolator());
+            } else {
+                searchContainerAnimator.setDuration(150);
             }
             searchContainerAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     searchContainer.setAlpha(0);
+                    searchContainer.setScaleX(1f);
+                    searchContainer.setScaleY(1f);
                     for (int i = 0; i < menuIcons.size(); i++) {
                         menuIcons.get(i).setAlpha(1f);
                     }
@@ -1076,14 +1083,23 @@ public class ActionBarMenuItem extends FrameLayout {
             for (int i = 0; i < menuIcons.size(); i++) {
                 searchContainerAnimator.playTogether(ObjectAnimator.ofFloat(menuIcons.get(i), View.ALPHA, menuIcons.get(i).getAlpha(), 0f));
             }
-            searchContainerAnimator.setDuration(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 220 : 150);
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                searchContainerAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                searchContainer.setScaleX(0.92f);
+                searchContainer.setScaleY(0.92f);
+                searchContainerAnimator.playTogether(
+                        ObjectAnimator.ofFloat(searchContainer, View.SCALE_X, 0.92f, 1f),
+                        ObjectAnimator.ofFloat(searchContainer, View.SCALE_Y, 0.92f, 1f));
+                searchContainerAnimator.setDuration(280);
+                searchContainerAnimator.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+            } else {
+                searchContainerAnimator.setDuration(150);
             }
             searchContainerAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     searchContainer.setAlpha(1f);
+                    searchContainer.setScaleX(1f);
+                    searchContainer.setScaleY(1f);
                     for (int i = 0; i < menuIcons.size(); i++) {
                         menuIcons.get(i).setAlpha(0f);
                     }
@@ -1714,7 +1730,11 @@ public class ActionBarMenuItem extends FrameLayout {
                     return parentMenu.parentActionBar.itemsColor;
                 }
             });
-            clearButton.setBackground(Theme.createSelectorDrawable(parentMenu.parentActionBar.itemsActionModeBackgroundColor, 1));
+            int clearRad = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 20 : 16);
+            clearButton.setBackground(Theme.createSelectorDrawable(parentMenu.parentActionBar.itemsActionModeBackgroundColor, 1, clearRad));
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                org.telegram.ui.Components.ScaleStateListAnimator.apply(clearButton, 0.05f, 1.2f);
+            }
             clearButton.setScaleType(ImageView.ScaleType.CENTER);
             clearButton.setAlpha(0.0f);
             clearButton.setRotation(45);

@@ -5532,8 +5532,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             contentView.addView(animatedStatusView, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.TOP));
         }
         if (fragmentSearchField != null) {
-            float sideMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 12f : 7f;
-            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, sideMargin, -2, sideMargin, 0));
+            float sideMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 16f : 7f;
+            int searchBarHeight = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 56 : 48;
+            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, searchBarHeight, Gravity.TOP, sideMargin, -2, sideMargin, 0));
         }
 
 
