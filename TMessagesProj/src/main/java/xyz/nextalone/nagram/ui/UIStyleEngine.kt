@@ -20,6 +20,7 @@ object UIStyleEngine {
     }
 
     // Overshoot bouncy for small badges / switches
+    @JvmStatic
     val bouncyInterpolator: Interpolator by lazy {
         OvershootInterpolator(1.8f)
     }

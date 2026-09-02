@@ -23,12 +23,14 @@ import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Insets;
+import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
@@ -44,6 +46,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -53,6 +56,8 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -1217,6 +1222,11 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         backgroundPaddingLeft = padding.left;
         backgroundPaddingTop = padding.top;
 
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            openInterpolator = xyz.nextalone.nagram.ui.UIStyleEngine.getExpressiveSpringInterpolator();
+            openDuration = 360;
+        }
+
         container = new ContainerView(getContext()) {
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
@@ -1257,9 +1267,9 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 Bulletin.removeDelegate(this);
             }
         };
+        container.setBackground(backDrawable);
         container.setClipChildren(false);
         container.setClipToPadding(false);
-        container.setBackground(backDrawable);
         focusable = needFocus;
         if (!edgeToEdge) {
             container.setFitsSystemWindows(true);
@@ -1301,6 +1311,19 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
     protected void mainContainerDispatchDraw(Canvas canvas) {
 
+    }
+
+    protected boolean showM3DragHandle = true;
+
+    public void setShowM3DragHandle(boolean show) {
+        showM3DragHandle = show;
+        if (containerView != null) {
+            containerView.invalidate();
+        }
+    }
+
+    protected boolean shouldDrawM3DragHandle() {
+        return showM3DragHandle && !(this instanceof BottomSheetWithRecyclerListView);
     }
 
     public void fixNavigationBar() {
@@ -1359,6 +1382,9 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
         if (containerView == null) {
             containerView = new FrameLayout(getContext()) {
+                private final Paint m3HandlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                private final RectF m3HandleRect = new RectF();
+
                 @Override
                 public boolean hasOverlappingRendering() {
                     return false;
@@ -1372,9 +1398,41 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                     }
                     onContainerTranslationYChanged(translationY);
                 }
+
+                @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    super.dispatchDraw(canvas);
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && shouldDrawM3DragHandle()) {
+                        int w = AndroidUtilities.dp(32);
+                        int h = AndroidUtilities.dp(4);
+                        int y = backgroundPaddingTop + AndroidUtilities.dp(10);
+                        float left = (getWidth() - w) / 2.0f;
+                        m3HandleRect.set(left, y, left + w, y + h);
+                        int color = getThemedColor(Theme.key_sheet_scrollUp);
+                        m3HandlePaint.setColor(color);
+                        canvas.drawRoundRect(m3HandleRect, AndroidUtilities.dp(2), AndroidUtilities.dp(2), m3HandlePaint);
+                    }
+                }
             };
             containerView.setBackgroundDrawable(shadowDrawable);
-            containerView.setPadding(backgroundPaddingLeft, (applyTopPadding ? dp(8) : 0) + backgroundPaddingTop - 1, backgroundPaddingLeft, (applyBottomPadding ? dp(8) : 0));
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                containerView.setOutlineProvider(new ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        float rad = xyz.nextalone.nagram.ui.UIStyleEngine.getDialogCornerRadius();
+                        outline.setRoundRect(
+                            backgroundPaddingLeft,
+                            backgroundPaddingTop,
+                            view.getWidth() - backgroundPaddingLeft,
+                            view.getHeight() + (int) rad,
+                            rad
+                        );
+                    }
+                });
+                containerView.setClipToOutline(true);
+            }
+            int extraTopPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && shouldDrawM3DragHandle() ? dp(14) : 0;
+            containerView.setPadding(backgroundPaddingLeft, (applyTopPadding ? dp(8) : 0) + backgroundPaddingTop - 1 + extraTopPadding, backgroundPaddingLeft, (applyBottomPadding ? dp(8) : 0));
         }
         containerView.setVisibility(View.INVISIBLE);
         container.addView(containerView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));

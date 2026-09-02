@@ -690,7 +690,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 shadowDrawable.draw(canvas);
 
                 if (showHandle && handleAlpha > 0) {
-                    int w = dp(36);
+                    int w = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(32) : dp(36);
                     int y = top + AndroidUtilities.dp(20);
                     handleRect.set((parent.getMeasuredWidth() - w) / 2.0f, y, (parent.getMeasuredWidth() + w) / 2.0f, y + dp(4));
                     int color = getThemedColor(Theme.key_sheet_scrollUp);

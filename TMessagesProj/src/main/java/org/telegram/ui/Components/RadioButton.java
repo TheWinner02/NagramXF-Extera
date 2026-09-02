@@ -120,9 +120,16 @@ public class RadioButton extends View {
     }
 
     private void animateToCheckedState(boolean newCheckedState) {
-        checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
-        checkAnimator.setDuration(200);
-        checkAnimator.start();
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1.0f : 0.0f);
+            checkAnimator.setDuration(newCheckedState ? 260 : 160);
+            checkAnimator.setInterpolator(newCheckedState ? xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator() : CubicBezierInterpolator.EASE_OUT);
+            checkAnimator.start();
+        } else {
+            checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
+            checkAnimator.setDuration(200);
+            checkAnimator.start();
+        }
     }
 
     @Override
@@ -157,6 +164,50 @@ public class RadioButton extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            float cx = getMeasuredWidth() / 2f;
+            float cy = getMeasuredHeight() / 2f;
+            float effectiveSize = Math.max(size, AndroidUtilities.dp(20));
+            float strokeWidth = AndroidUtilities.dp(2);
+            float outerRadius = effectiveSize / 2f - strokeWidth / 2f;
+
+            float clampedP = Math.max(0f, Math.min(1f, progress));
+            int blendedColor = ColorUtils.blendARGB(color, checkedColor, clampedP);
+
+            paint.setColor(blendedColor);
+            paint.setStrokeWidth(strokeWidth);
+            paint.setStyle(Paint.Style.STROKE);
+
+            float ringSqueeze = 0f;
+            if (progress > 0f && progress < 1.25f) {
+                ringSqueeze = AndroidUtilities.dp(0.6f) * (float) Math.sin(clampedP * Math.PI);
+            }
+            canvas.drawCircle(cx, cy, outerRadius - ringSqueeze, paint);
+
+            if (icon == null) {
+                if (progress > 0f) {
+                    checkedPaint.setColor(checkedColor);
+                    checkedPaint.setStyle(Paint.Style.FILL);
+                    float targetDotRadius = effectiveSize / 4f;
+                    float currentDotRadius = Math.max(0f, targetDotRadius * progress);
+                    canvas.drawCircle(cx, cy, currentDotRadius, checkedPaint);
+                }
+            } else {
+                final int finalIconColor = ColorUtils.blendARGB(color, checkedColor, Utilities.clamp(progress, 1, 0));
+                if (iconColor != finalIconColor) {
+                    icon.setColorFilter(new PorterDuffColorFilter(iconColor = finalIconColor, PorterDuff.Mode.SRC_IN));
+                }
+                icon.setBounds(
+                        (int) (getWidth() / 2f  - icon.getIntrinsicWidth() / 2f),
+                        (int) (getHeight() / 2f - icon.getIntrinsicHeight() / 2f),
+                        (int) (getWidth() / 2f  + icon.getIntrinsicWidth() / 2f),
+                        (int) (getHeight() / 2f + icon.getIntrinsicHeight() / 2f)
+                );
+                icon.draw(canvas);
+            }
+            return;
+        }
+
         float circleProgress;
         if (progress <= 0.5f) {
             paint.setColor(color);
