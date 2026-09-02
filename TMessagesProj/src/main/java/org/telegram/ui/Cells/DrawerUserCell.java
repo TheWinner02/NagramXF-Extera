@@ -62,7 +62,10 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
 
         imageView = new BackupImageView(context);
         imageView.setRoundRadius(dp(18));
-        addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 14, 6, 0, 0));
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        int iconLeft = isM3 ? 12 : 14;
+        int textLeft = isM3 ? 56 : 72;
+        addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.CENTER_VERTICAL, iconLeft, 0, 0, 0));
 
         textView = new SimpleTextView(context);
         textView.setPadding(0, dp(4), 0, dp(4));
@@ -72,7 +75,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         textView.setMaxLines(1);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         textView.setEllipsizeByGradient(24);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 72, 0, 14, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, textLeft, 0, 14, 0));
 
         botVerification = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, dp(18));
         status = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, dp(20));
@@ -83,14 +86,16 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         checkBox.setCheckScale(0.9f);
         checkBox.setInnerRadDiff(dp(1.5f));
         checkBox.setColorKeysOverrides(Theme.key_chats_unreadCounterText, Theme.key_chats_unreadCounter, Theme.key_chats_menuBackground);
-        addView(checkBox, LayoutHelper.createFrame(18, 18, Gravity.LEFT | Gravity.TOP, 37, 27, 0, 0));
+        addView(checkBox, LayoutHelper.createFrame(18, 18, Gravity.LEFT | Gravity.CENTER_VERTICAL, iconLeft + 23, 9, 0, 0));
 
         setWillNotDraw(false);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        int h = isM3 ? 56 : 48;
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(h), MeasureSpec.EXACTLY));
     }
 
     @Override

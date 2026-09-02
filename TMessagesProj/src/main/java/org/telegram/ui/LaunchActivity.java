@@ -1132,8 +1132,25 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         itemAnimator = new SideMenultItemAnimator(sideMenu);
         sideMenu.setItemAnimator(itemAnimator);
         sideMenu.setClipToPadding(false);
-        sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
-        sideMenuContainer.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        if (isM3) {
+            sideMenu.setSections(
+                v -> v instanceof org.telegram.ui.Cells.DrawerActionCell ||
+                     v instanceof org.telegram.ui.Cells.DrawerUserCell ||
+                     v instanceof org.telegram.ui.Cells.DrawerAddCell ||
+                     v instanceof org.telegram.ui.Cells.DrawerActionCheckCell,
+                type -> type == 3 || type == 4 || type == 5,
+                AndroidUtilities.dp(12),
+                (int) (xyz.nextalone.nagram.ui.UIStyleEngine.getCardCornerRadius() / AndroidUtilities.density),
+                sideMenu::drawBackgroundRect,
+                true
+            );
+            sideMenu.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+            sideMenuContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        } else {
+            sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+            sideMenuContainer.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+        }
         sideMenu.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         sideMenu.setAllowItemsInteractionDuringAnimation(false);
         sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator, drawerLayoutContainer));
@@ -1144,7 +1161,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sideMenuContainer.getLayoutParams();
         if (layoutParams != null) {
             android.graphics.Point screenSize = AndroidUtilities.getRealScreenSize();
-            layoutParams.width = AndroidUtilities.isTablet() ? AndroidUtilities.dp(320) : Math.min(AndroidUtilities.dp(320), Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56));
+            int maxDrawerWidth = isM3 ? AndroidUtilities.dp(360) : AndroidUtilities.dp(320);
+            layoutParams.width = AndroidUtilities.isTablet() ? maxDrawerWidth : Math.min(maxDrawerWidth, Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56));
             layoutParams.height = LayoutHelper.MATCH_PARENT;
             sideMenuContainer.setLayoutParams(layoutParams);
         }

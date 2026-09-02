@@ -143,7 +143,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
 
     public void updateThemeColors() {
         if (listView == null) return;
-        listView.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        listView.setBackgroundColor(Theme.getColor(isM3 ? Theme.key_windowBackgroundGray : Theme.key_chats_menuBackground));
         for (int i = 0; i < listView.getChildCount(); i++) {
             View child = listView.getChildAt(i);
             if (child instanceof DrawerProfileCell) {
@@ -198,7 +199,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                 break;
             case 1:
             default:
-                view = new EmptyCell(mContext, AndroidUtilities.dp(8));
+                view = new EmptyCell(mContext, AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 12 : 8));
                 break;
         }
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -275,6 +276,12 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         notifyItemMoved(fromIndex, toIndex);
     }
 
+    private void addDivider() {
+        if (!items.isEmpty() && items.get(items.size() - 1) != null) {
+            items.add(null);
+        }
+    }
+
     private void resetItems() {
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
@@ -316,7 +323,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                             : LocaleController.getString(R.string.EnableGhostMode),
                     R.drawable.ayu_ghost
             ));
-            items.add(null);
         }
 
         boolean showMyProfile = NaConfig.INSTANCE.getDrawerItemMyProfile().Bool();
@@ -334,23 +340,14 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
             ));
         }
         boolean showArchivedChats = NaConfig.INSTANCE.getDrawerItemArchivedChats().Bool();
-        boolean showDivider = false;
-        if (showGhostInDrawer && showArchivedChats) {
+        if (showArchivedChats) {
             items.add(new Item(nkbtnArchivedChats, LocaleController.getString(R.string.ArchivedChats), R.drawable.msg_archive));
         }
-        if (!showGhostInDrawer && (showMyProfile || showSetEmojiStatus)) {
-            showDivider = true;
+
+        if (showGhostInDrawer || showMyProfile || showSetEmojiStatus || showArchivedChats) {
+            addDivider();
         }
-        if (!showGhostInDrawer && showArchivedChats) {
-            if (showDivider) {
-                items.add(null);
-            }
-            items.add(new Item(nkbtnArchivedChats, LocaleController.getString(R.string.ArchivedChats), R.drawable.msg_archive));
-            showDivider = true;
-        }
-        if (showDivider) {
-            items.add(null);
-        }
+
         if (NaConfig.INSTANCE.getDrawerItemNewGroup().Bool()) {
             items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));
         }
@@ -385,7 +382,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                     continue;
                 }
                 if (!addedDivider) {
-                    items.add(null);
+                    addDivider();
                     addedDivider = true;
                 }
                 items.add(new Item(bot));
@@ -397,14 +394,11 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         boolean showQrLogin = NaConfig.INSTANCE.getDrawerItemQrLogin().Bool();
         boolean showSessions = NaConfig.INSTANCE.getDrawerItemSessions().Bool();
         boolean showRestartApp = NaConfig.INSTANCE.getDrawerItemRestartApp().Bool();
-        if (showNSettings || showBrowser || showQrLogin || showSessions) {
-            items.add(null);
+        if (showNSettings || showBrowser || showQrLogin || showSessions || showRestartApp) {
+            addDivider();
         }
         if (showNSettings) {
             items.add(new Item(nkbtnSettings, LocaleController.getString(R.string.NekoSettings), R.drawable.nagramx_outline));
-        }
-        if (NekoConfig.showGhostInDrawer.Bool()) {
-            items.add(new Item(nkbtnGhostMode, LocaleController.getString(R.string.GhostMode), R.drawable.ayu_ghost));
         }
         if (showBrowser) {
             items.add(new Item(nkbtnBrowser, LocaleController.getString(R.string.InappBrowser), R.drawable.web_browser));
@@ -416,7 +410,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
             items.add(new Item(nkbtnSessions, LocaleController.getString(R.string.Devices), R.drawable.msg2_devices));
         }
         if (showRestartApp) {
-            items.add(null);
             items.add(new Item(nkbtnRestartApp, LocaleController.getString(R.string.RestartApp), R.drawable.msg_retry));
         }
 
@@ -436,7 +429,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                     continue;
                 }
                 if (!addedPluginDivider) {
-                    items.add(null);
+                    addDivider();
                     addedPluginDivider = true;
                 }
                 int iconRes = record.iconResId != 0 ? record.iconResId : R.drawable.msg_plugins;
@@ -552,13 +545,16 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(8));
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(isM3 ? 17 : 8));
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
             int y = getMeasuredHeight() / 2;
-            canvas.drawLine(0, y, getMeasuredWidth(), y, Theme.dividerPaint);
+            int inset = isM3 ? AndroidUtilities.dp(16) : 0;
+            canvas.drawLine(inset, y, getMeasuredWidth() - inset, y, Theme.dividerPaint);
         }
     }
 
