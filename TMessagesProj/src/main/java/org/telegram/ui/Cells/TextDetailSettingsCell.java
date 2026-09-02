@@ -67,10 +67,51 @@ public class TextDetailSettingsCell extends FrameLayout {
 
     }
 
+    private boolean isM3Expressive() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+    }
+
+    private void updateIconLayout(boolean visible) {
+        FrameLayout.LayoutParams iconParams = (FrameLayout.LayoutParams) imageView.getLayoutParams();
+        if (!visible) {
+            imageView.setVisibility(GONE);
+            imageView.setBackground(null);
+            iconParams.width = AndroidUtilities.dp(52);
+            iconParams.height = AndroidUtilities.dp(52);
+            iconParams.leftMargin = AndroidUtilities.dp(8);
+            iconParams.rightMargin = AndroidUtilities.dp(8);
+            iconParams.topMargin = AndroidUtilities.dp(6);
+            textView.setPadding(0, 0, 0, 0);
+            valueTextView.setPadding(0, 0, 0, multiline ? AndroidUtilities.dp(12) : 0);
+        } else if (isM3Expressive()) {
+            imageView.setVisibility(VISIBLE);
+            iconParams.width = AndroidUtilities.dp(28);
+            iconParams.height = AndroidUtilities.dp(28);
+            iconParams.leftMargin = AndroidUtilities.dp(18);
+            iconParams.rightMargin = AndroidUtilities.dp(18);
+            iconParams.topMargin = AndroidUtilities.dp(18);
+            int textInset = AndroidUtilities.dp(58);
+            textView.setPadding(LocaleController.isRTL ? 0 : textInset, 0, LocaleController.isRTL ? textInset : 0, 0);
+            valueTextView.setPadding(LocaleController.isRTL ? 0 : textInset, 0, LocaleController.isRTL ? textInset : 0, multiline ? AndroidUtilities.dp(12) : 0);
+        } else {
+            imageView.setVisibility(VISIBLE);
+            iconParams.width = AndroidUtilities.dp(52);
+            iconParams.height = AndroidUtilities.dp(52);
+            iconParams.leftMargin = AndroidUtilities.dp(8);
+            iconParams.rightMargin = AndroidUtilities.dp(8);
+            iconParams.topMargin = AndroidUtilities.dp(6);
+            int textInset = AndroidUtilities.dp(50);
+            textView.setPadding(LocaleController.isRTL ? 0 : textInset, 0, LocaleController.isRTL ? textInset : 0, 0);
+            valueTextView.setPadding(LocaleController.isRTL ? 0 : textInset, 0, LocaleController.isRTL ? textInset : 0, multiline ? AndroidUtilities.dp(12) : 0);
+        }
+        imageView.setLayoutParams(iconParams);
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (!multiline) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+            int cellHeight = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 72 : 64;
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(cellHeight) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
         }
@@ -108,7 +149,7 @@ public class TextDetailSettingsCell extends FrameLayout {
         }
         valueTextView.setText(value);
         needDivider = divider;
-        imageView.setVisibility(GONE);
+        updateIconLayout(false);
         setWillNotDraw(!divider);
     }
 
@@ -116,9 +157,9 @@ public class TextDetailSettingsCell extends FrameLayout {
         textView.setText(text);
         valueTextView.setText(value);
         imageView.setImageResource(resId);
-        imageView.setVisibility(VISIBLE);
-        textView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(50), 0, LocaleController.isRTL ? AndroidUtilities.dp(50) : 0, 0);
-        valueTextView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(50), 0, LocaleController.isRTL ? AndroidUtilities.dp(50) : 0, multiline ? AndroidUtilities.dp(12) : 0);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        imageView.setBackground(null);
+        updateIconLayout(true);
         needDivider = divider;
         setWillNotDraw(!divider);
     }
@@ -143,7 +184,12 @@ public class TextDetailSettingsCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider && Theme.dividerPaint != null) {
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+            }
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : 20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : 20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            Theme.dividerPaint.setAlpha(alpha);
         }
     }
 }

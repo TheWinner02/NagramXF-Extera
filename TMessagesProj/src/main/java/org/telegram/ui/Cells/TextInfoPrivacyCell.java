@@ -60,6 +60,11 @@ public class TextInfoPrivacyCell extends FrameLayout {
     public TextInfoPrivacyCell(Context context, int padding, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        if (m3Expressive) {
+            topPadding = 8;
+            bottomPadding = 20;
+        }
 
         textView = new LinkSpanDrawable.LinksTextView(context, links = new LinkSpanDrawable.LinkCollector(this), resourcesProvider) {
             @Override
@@ -78,8 +83,11 @@ public class TextInfoPrivacyCell extends FrameLayout {
             }
         };
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        if (m3Expressive) {
+            textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+        }
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
+        textView.setPadding(0, AndroidUtilities.dp(topPadding), 0, AndroidUtilities.dp(bottomPadding));
         textView.setMovementMethod(LinkMovementMethod.getInstance());
         textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText4));
         textView.setEmojiColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText4));

@@ -72,7 +72,12 @@ public class TextCheckCell2 extends FrameLayout {
                 @Override
                 protected void onDraw(Canvas canvas) {
                     super.onDraw(canvas);
+                    int alpha = Theme.dividerPaint.getAlpha();
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+                    }
                     canvas.drawLine(0, dp(14), 2, getMeasuredHeight()- dp(14), Theme.dividerPaint);
+                    Theme.dividerPaint.setAlpha(alpha);
                 }
             };
             checkBoxClickArea.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
@@ -128,7 +133,9 @@ public class TextCheckCell2 extends FrameLayout {
         if (isMultiline) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
         } else {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(valueTextView.getVisibility() == VISIBLE ? 64 : 50) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+            boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            int cellHeight = valueTextView.getVisibility() == VISIBLE ? (m3Expressive ? 72 : 64) : (m3Expressive ? 56 : 50);
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(cellHeight) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
         }
     }
 
@@ -262,7 +269,12 @@ public class TextCheckCell2 extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+            }
             canvas.drawLine(LocaleController.isRTL ? 0 : dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            Theme.dividerPaint.setAlpha(alpha);
         }
     }
 

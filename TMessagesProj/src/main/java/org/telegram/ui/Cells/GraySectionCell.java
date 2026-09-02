@@ -50,8 +50,13 @@ public class GraySectionCell extends FrameLayout implements Theme.Colorable {
     public GraySectionCell(Context context, int padding, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        if (m3Expressive) {
+            padding = Math.max(padding, 20);
+            layerHeight = Math.max(layerHeight, 36);
+        }
 
-        setBackgroundColor(getThemedColor(Theme.key_graySection));
+        setBackgroundColor(m3Expressive ? 0 : getThemedColor(Theme.key_graySection));
 
         textView = new AnimatedEmojiSpan.TextViewEmojis(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -83,7 +88,8 @@ public class GraySectionCell extends FrameLayout implements Theme.Colorable {
     }
 
     public void updateColors() {
-        setBackgroundColor(noBackground ? 0 : getThemedColor(Theme.key_graySection));
+        boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        setBackgroundColor(noBackground || m3Expressive ? 0 : getThemedColor(Theme.key_graySection));
         textView.setTextColor(getThemedColor(Theme.key_graySectionText));
         rightTextView.setTextColor(getThemedColor(Theme.key_graySectionText));
     }

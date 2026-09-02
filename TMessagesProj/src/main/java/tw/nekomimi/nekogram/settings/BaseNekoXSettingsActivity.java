@@ -165,12 +165,38 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
                 }
             });
             actionBar.setM3CollapseProgress(0.0f);
+            listView.setSections(
+                this::isM3SettingsSectionView,
+                this::isM3SettingsSectionViewType,
+                dp(12),
+                dp(16),
+                listView::drawBackgroundRect,
+                true
+            );
         } else {
             listView.setPadding(0, 0, 0, dp(80));
             actionBar.setAdaptiveBackground(listView);
+            listView.setSections(true);
         }
-        listView.setSections(true);
         return fragmentView;
+    }
+
+    private boolean isM3SettingsSectionView(View view) {
+        if (view == null || view.getParent() != listView) {
+            return false;
+        }
+        RecyclerView.ViewHolder holder = listView.getChildViewHolder(view);
+        return holder != null && isM3SettingsSectionViewType(holder.getItemViewType());
+    }
+
+    private boolean isM3SettingsSectionViewType(int viewType) {
+        return viewType == CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL ||
+            viewType == CellGroup.ITEM_TYPE_TEXT_CHECK ||
+            viewType == CellGroup.ITEM_TYPE_TEXT_DETAIL ||
+            viewType == CellGroup.ITEM_TYPE_TEXT_CHECK_ICON ||
+            viewType == CellGroup.ITEM_TYPE_CHECK2 ||
+            viewType == CellGroup.ITEM_TYPE_CHECK_BOX ||
+            viewType == CellGroup.ITEM_TYPE_TEXT_DETAIL_ICON;
     }
 
     private int getM3HeaderTopPadding() {

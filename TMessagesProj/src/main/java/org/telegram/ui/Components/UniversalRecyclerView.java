@@ -438,12 +438,24 @@ public class UniversalRecyclerView extends RecyclerListView {
             view -> {
                 if (view.getParent() != this) return false;
                 final ViewHolder viewHolder = getChildViewHolder(view);
-                return !UniversalAdapter.isShadow(viewHolder.getItemViewType());
+                return viewHolder != null && isUniversalSectionViewType(viewHolder.getItemViewType());
             },
-            UniversalAdapter::isShadow,
+            viewType -> xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? isUniversalSectionViewType(viewType) : UniversalAdapter.isShadow(viewType),
             padding, roundRadius,
             super::drawBackgroundRect,
             topPadding
         );
+    }
+
+    private boolean isUniversalSectionViewType(int viewType) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return !UniversalAdapter.isShadow(viewType);
+        }
+        return !UniversalAdapter.isShadow(viewType) &&
+            viewType != UniversalAdapter.VIEW_TYPE_HEADER &&
+            viewType != UniversalAdapter.VIEW_TYPE_BLACK_HEADER &&
+            viewType != UniversalAdapter.VIEW_TYPE_LARGE_HEADER &&
+            viewType != UniversalAdapter.VIEW_TYPE_ANIMATED_HEADER &&
+            viewType != UniversalAdapter.VIEW_TYPE_TEXT;
     }
 }

@@ -77,6 +77,14 @@ public class HeaderCell extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
         this.padding = padding;
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            height = Math.max(height, 44);
+            topMargin = Math.max(topMargin, 10);
+            bottomMargin = Math.max(bottomMargin, 2);
+            if (textColorKey == Theme.key_windowBackgroundWhiteBlueHeader) {
+                textColorKey = Theme.key_windowBackgroundWhiteGrayText2;
+            }
+        }
         this.bottomMargin = bottomMargin;
         this.animated = animated;
 

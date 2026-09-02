@@ -108,6 +108,52 @@ public class TextSettingsCell extends FrameLayout {
         addView(valueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
     }
 
+    private boolean isM3Expressive() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+    }
+
+    private void updateIconLayout(boolean visible) {
+        MarginLayoutParams textParams = (MarginLayoutParams) textView.getLayoutParams();
+        FrameLayout.LayoutParams iconParams = (FrameLayout.LayoutParams) imageView.getLayoutParams();
+        if (!visible) {
+            imageView.setVisibility(GONE);
+            imageView.setBackground(null);
+            iconParams.width = LayoutHelper.WRAP_CONTENT;
+            iconParams.height = LayoutHelper.WRAP_CONTENT;
+            iconParams.leftMargin = AndroidUtilities.dp(16);
+            iconParams.rightMargin = AndroidUtilities.dp(16);
+            if (LocaleController.isRTL) {
+                textParams.rightMargin = AndroidUtilities.dp(this.padding);
+            } else {
+                textParams.leftMargin = AndroidUtilities.dp(this.padding);
+            }
+        } else if (isM3Expressive()) {
+            imageView.setVisibility(VISIBLE);
+            iconParams.width = AndroidUtilities.dp(28);
+            iconParams.height = AndroidUtilities.dp(28);
+            iconParams.leftMargin = AndroidUtilities.dp(18);
+            iconParams.rightMargin = AndroidUtilities.dp(18);
+            if (LocaleController.isRTL) {
+                textParams.rightMargin = AndroidUtilities.dp(64);
+            } else {
+                textParams.leftMargin = AndroidUtilities.dp(64);
+            }
+        } else {
+            imageView.setVisibility(VISIBLE);
+            iconParams.width = LayoutHelper.WRAP_CONTENT;
+            iconParams.height = LayoutHelper.WRAP_CONTENT;
+            iconParams.leftMargin = AndroidUtilities.dp(16);
+            iconParams.rightMargin = AndroidUtilities.dp(16);
+            if (LocaleController.isRTL) {
+                textParams.rightMargin = AndroidUtilities.dp(58);
+            } else {
+                textParams.leftMargin = AndroidUtilities.dp(58);
+            }
+        }
+        imageView.setLayoutParams(iconParams);
+        textView.setLayoutParams(textParams);
+    }
+
     public ImageView getValueImageView() {
         return valueImageView;
     }
@@ -120,7 +166,8 @@ public class TextSettingsCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
+        int cellHeight = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 56 : 50;
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(cellHeight) + (needDivider ? 1 : 0));
 
         int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(34);
         int width = betterLayout ? availableWidth : availableWidth / 2;
@@ -244,48 +291,31 @@ public class TextSettingsCell extends FrameLayout {
     }
 
     public void setIcon(int resId) {
-        MarginLayoutParams params = (MarginLayoutParams) textView.getLayoutParams();
         imageViewIsColorful = false;
         if (resId == 0) {
-            imageView.setVisibility(GONE);
-            if (LocaleController.isRTL) {
-                params.rightMargin = AndroidUtilities.dp(this.padding);
-            } else {
-                params.leftMargin = AndroidUtilities.dp(this.padding);
-            }
+            updateIconLayout(false);
         } else {
             imageView.setImageResource(resId);
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             imageView.setBackground(null);
-            imageView.setVisibility(VISIBLE);
-            if (LocaleController.isRTL) {
-                params.rightMargin = AndroidUtilities.dp(58);
-            } else {
-                params.leftMargin = AndroidUtilities.dp(58);
-            }
+            updateIconLayout(true);
         }
     }
 
     public void setColorfulIcon(int resId, int color) {
-        MarginLayoutParams params = (MarginLayoutParams) textView.getLayoutParams();
         imageViewIsColorful = true;
         if (resId == 0) {
-            imageView.setVisibility(GONE);
-            if (LocaleController.isRTL) {
-                params.rightMargin = AndroidUtilities.dp(this.padding);
-            } else {
-                params.leftMargin = AndroidUtilities.dp(this.padding);
-            }
+            updateIconLayout(false);
         } else {
-            imageView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), color));
             imageView.setImageResource(resId);
-            imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
-            imageView.setVisibility(VISIBLE);
-            if (LocaleController.isRTL) {
-                params.rightMargin = AndroidUtilities.dp(58);
+            if (isM3Expressive()) {
+                imageView.setBackground(null);
+                imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             } else {
-                params.leftMargin = AndroidUtilities.dp(58);
+                imageView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), color));
+                imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
             }
+            updateIconLayout(true);
         }
     }
 
@@ -374,7 +404,12 @@ public class TextSettingsCell extends FrameLayout {
 
         if (needDivider) {
             int offset = AndroidUtilities.dp(imageView.getVisibility() == View.VISIBLE ? 58 : 20);
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+            }
             canvas.drawLine(LocaleController.isRTL ? 0 : offset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? offset : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            Theme.dividerPaint.setAlpha(alpha);
         }
     }
 
@@ -428,5 +463,7 @@ public class TextSettingsCell extends FrameLayout {
 
         removeView(valueImageView);
         addView(valueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
+
+        updateIconLayout(imageView.getVisibility() == VISIBLE);
     }
 }

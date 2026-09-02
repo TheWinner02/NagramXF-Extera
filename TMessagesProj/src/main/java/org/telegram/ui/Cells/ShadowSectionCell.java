@@ -43,7 +43,7 @@ public class ShadowSectionCell extends View {
     public ShadowSectionCell(Context context, int s, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        this.size = s;
+        this.size = getExpressiveSize(s);
         updateBackground();
     }
 
@@ -55,7 +55,7 @@ public class ShadowSectionCell extends View {
         super(context);
         this.resourcesProvider = resourcesProvider;
         this.backgroundColor = backgroundColor;
-        this.size = s;
+        this.size = getExpressiveSize(s);
         updateBackground();
     }
 
@@ -68,7 +68,14 @@ public class ShadowSectionCell extends View {
     }
 
     public void setSize(int size) {
-        this.size = size;
+        this.size = getExpressiveSize(size);
+    }
+
+    private int getExpressiveSize(int size) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && size >= 12) {
+            return Math.max(size, 16);
+        }
+        return size;
     }
 
     private void updateBackground() {

@@ -144,8 +144,15 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
             return false;
         });
 
-        listView.setSections(true);
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            listView.setSections(
+                this::isM3SettingsSectionView,
+                this::isM3SettingsSectionViewType,
+                dp(12),
+                dp(16),
+                listView::drawBackgroundRect,
+                true
+            );
             actionBar.setTitle(getActionBarTitle());
             actionBar.setM3LargeFlexible(true);
             m3ScrollOffset = 0;
@@ -163,9 +170,34 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
             });
             actionBar.setM3CollapseProgress(0.0f);
         } else {
+            listView.setSections(true);
             actionBar.setAdaptiveBackground(listView);
         }
         return fragmentView;
+    }
+
+    private boolean isM3SettingsSectionView(View view) {
+        if (view == null || view.getParent() != listView) {
+            return false;
+        }
+        RecyclerView.ViewHolder holder = listView.getChildViewHolder(view);
+        return holder != null && isM3SettingsSectionViewType(holder.getItemViewType());
+    }
+
+    private boolean isM3SettingsSectionViewType(int viewType) {
+        return viewType == TYPE_SETTINGS ||
+            viewType == TYPE_CHECK ||
+            viewType == TYPE_NOTIFICATION_CHECK ||
+            viewType == TYPE_DETAIL_SETTINGS ||
+            viewType == TYPE_TEXT ||
+            viewType == TYPE_CHECKBOX ||
+            viewType == TYPE_RADIO ||
+            viewType == TYPE_ACCOUNT ||
+            viewType == TYPE_EMOJI ||
+            viewType == TYPE_EMOJI_SELECTION ||
+            viewType == TYPE_CREATION ||
+            viewType == TYPE_CHECK2 ||
+            viewType == TYPE_CHECKBOX2;
     }
 
     // @Override
