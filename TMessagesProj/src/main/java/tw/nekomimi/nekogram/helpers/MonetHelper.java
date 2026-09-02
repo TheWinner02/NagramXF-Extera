@@ -226,7 +226,7 @@ public class MonetHelper {
     }
 
     public static boolean useMonetMd3Colors() {
-        return NaConfig.INSTANCE.getSwitchStyle().Int() == SWITCH_STYLE_MD3
+        return (NaConfig.INSTANCE.getSwitchStyle().Int() == SWITCH_STYLE_MD3 || xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive())
             && Theme.getActiveTheme() != null
             && Theme.getActiveTheme().isMonet();
     }
