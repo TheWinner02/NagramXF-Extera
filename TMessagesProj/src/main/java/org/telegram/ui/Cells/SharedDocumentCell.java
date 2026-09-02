@@ -383,6 +383,10 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         checkBox.setChecked(checked, animated);
     }
 
+    public boolean isChecked() {
+        return checkBox != null && checkBox.isChecked();
+    }
+
     public void setDocument(MessageObject messageObject, boolean divider) {
         boolean animated = message != null && messageObject != null && message.getId() != messageObject.getId();
         needDivider = divider;
@@ -750,7 +754,8 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
 
     private void drawDivider(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
+            int rightPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? AndroidUtilities.dp(16) : getPaddingRight();
+            canvas.drawLine(AndroidUtilities.dp(72), getHeight() - 1, getWidth() - rightPadding, getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
         }
     }
 

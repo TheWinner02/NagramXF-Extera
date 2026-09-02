@@ -15663,7 +15663,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 if (stringBuilder == null) {
                                     stringBuilder = new SpannableStringBuilder(result.searchTitle);
                                 }
-                                stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + searchString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                try {
+                                    stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                } catch (Exception ignore) {
+                                }
                             } else {
                                 break;
                             }
@@ -15700,14 +15703,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     index = title.indexOf(" " + searchString);
                                 }
                                 if (index >= 0) {
-                                    int spanEnd = index + searchString.length();
-                                    if (index < 0 || spanEnd > result.title.length() || index >= spanEnd) {
+                                    int spanStart = index;
+                                    int spanEnd = spanStart + searchString.length();
+                                    if (spanStart < 0 || spanEnd > result.title.length() || spanStart >= spanEnd) {
                                         break;
                                     }
                                     if (stringBuilder == null) {
                                         stringBuilder = new SpannableStringBuilder(result.title);
                                     }
-                                    stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + searchString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    try {
+                                        stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    } catch (Exception ignore) {
+                                    }
                                 } else {
                                     break;
                                 }

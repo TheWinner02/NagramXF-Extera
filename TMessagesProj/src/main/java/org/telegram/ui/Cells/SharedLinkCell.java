@@ -865,6 +865,10 @@ public class SharedLinkCell extends FrameLayout {
         checkBox.setChecked(checked, animated);
     }
 
+    public boolean isChecked() {
+        return checkBox != null && checkBox.isChecked();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
@@ -967,10 +971,11 @@ public class SharedLinkCell extends FrameLayout {
         }
 
         if (needDivider) {
+            int rightPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : 0;
             if (LocaleController.isRTL) {
-                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, Theme.dividerPaint);
+                canvas.drawLine(rightPadding, getMeasuredHeight() - 1, getMeasuredWidth() - dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, Theme.dividerPaint);
             } else {
-                canvas.drawLine(dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+                canvas.drawLine(dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth() - rightPadding, getMeasuredHeight() - 1, Theme.dividerPaint);
             }
         }
     }

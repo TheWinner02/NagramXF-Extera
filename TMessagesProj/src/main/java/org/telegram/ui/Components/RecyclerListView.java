@@ -3569,6 +3569,41 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                 return true;
             }
         }
+        if (view instanceof org.telegram.ui.Cells.SharedDocumentCell) {
+            if (((org.telegram.ui.Cells.SharedDocumentCell) view).isChecked()) {
+                return true;
+            }
+        }
+        if (view instanceof org.telegram.ui.Cells.SharedLinkCell) {
+            if (((org.telegram.ui.Cells.SharedLinkCell) view).isChecked()) {
+                return true;
+            }
+        }
+        if (view instanceof org.telegram.ui.Cells.SharedAudioCell) {
+            if (((org.telegram.ui.Cells.SharedAudioCell) view).isChecked()) {
+                return true;
+            }
+        }
+        if (view instanceof org.telegram.ui.Cells.ContextLinkCell) {
+            if (((org.telegram.ui.Cells.ContextLinkCell) view).isChecked()) {
+                return true;
+            }
+        }
+        if (view instanceof org.telegram.ui.Cells.ProfileSearchCell) {
+            if (((org.telegram.ui.Cells.ProfileSearchCell) view).isChecked()) {
+                return true;
+            }
+        }
+        if (view instanceof org.telegram.ui.Cells.UserCell) {
+            if (((org.telegram.ui.Cells.UserCell) view).isChecked()) {
+                return true;
+            }
+        }
+        if (view instanceof org.telegram.ui.Cells.GroupCreateUserCell) {
+            if (((org.telegram.ui.Cells.GroupCreateUserCell) view).isChecked()) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -3767,17 +3802,49 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         }
     }
 
+    private static class M3ItemCornerState {
+        final AnimatedFloat topProgress;
+        final AnimatedFloat bottomProgress;
+        final AnimatedFloat isolatedProgress;
+
+        M3ItemCornerState(View parent) {
+            topProgress = new AnimatedFloat(parent, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+            bottomProgress = new AnimatedFloat(parent, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+            isolatedProgress = new AnimatedFloat(parent, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+        }
+    }
+
+    private final java.util.WeakHashMap<View, M3ItemCornerState> m3CornerStates = new java.util.WeakHashMap<>();
+
+    private M3ItemCornerState getM3CornerState(View view) {
+        M3ItemCornerState state = m3CornerStates.get(view);
+        if (state == null) {
+            state = new M3ItemCornerState(this);
+            m3CornerStates.put(view, state);
+        }
+        return state;
+    }
+
     private void drawM3ExpressiveSectionItemBackground(Canvas canvas, View child, boolean hasAbove, boolean hasBelow) {
-        float topRadius = hasAbove ? getM3ExpressiveInnerRadius() : sectionRadius;
-        float bottomRadius = hasBelow ? getM3ExpressiveInnerRadius() : sectionRadius;
+        M3ItemCornerState state = getM3CornerState(child);
+        float topP = state.topProgress.set(hasAbove ? 1f : 0f);
+        float bottomP = state.bottomProgress.set(hasBelow ? 1f : 0f);
         boolean isIsolated = !hasAbove && !hasBelow;
-        float gap = isIsolated ? dp(2) : getM3ExpressiveSegmentGap();
+        float isolatedP = state.isolatedProgress.set(isIsolated ? 1f : 0f);
+
+        float innerRadius = getM3ExpressiveInnerRadius();
+        float topRadius = AndroidUtilities.lerp(sectionRadius, innerRadius, topP);
+        float bottomRadius = AndroidUtilities.lerp(sectionRadius, innerRadius, bottomP);
+        float gap = AndroidUtilities.lerp(getM3ExpressiveSegmentGap(), dp(2), isolatedP);
+        float extraPad = AndroidUtilities.lerp(0, dp(1), isolatedP);
+        float topGap = AndroidUtilities.lerp(0, gap, topP);
+        float bottomGap = AndroidUtilities.lerp(0, gap, bottomP);
 
         AndroidUtilities.rectTmp.set(
             getPaddingLeft() + sectionsItemDecoration.padding,
-            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child) + (hasAbove ? gap : 0) + (isIsolated ? dp(1) : 0)),
+            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child) + topGap + extraPad),
             getWidth() - getPaddingRight() - sectionsItemDecoration.padding,
-            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - (hasBelow ? gap : 0) - (isIsolated ? dp(1) : 0))
+            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - bottomGap - extraPad)
         );
         if (AndroidUtilities.rectTmp.bottom >= AndroidUtilities.rectTmp.top) {
             drawSectionBackground.run(canvas, AndroidUtilities.rectTmp, topRadius, bottomRadius, child.getAlpha());
@@ -3858,8 +3925,10 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             if (prev && next) return;
         }
         if (m3Expressive) {
-            float topRadius = prev ? getM3ExpressiveInnerRadius() : sectionRadius;
-            float bottomRadius = next ? getM3ExpressiveInnerRadius() : sectionRadius;
+            M3ItemCornerState state = getM3CornerState(child);
+            float innerRadius = getM3ExpressiveInnerRadius();
+            float topRadius = AndroidUtilities.lerp(sectionRadius, innerRadius, state.topProgress.get());
+            float bottomRadius = AndroidUtilities.lerp(sectionRadius, innerRadius, state.bottomProgress.get());
             clipPath.rewind();
             radii[0] = radii[1] = radii[2] = radii[3] = topRadius;
             radii[4] = radii[5] = radii[6] = radii[7] = bottomRadius;

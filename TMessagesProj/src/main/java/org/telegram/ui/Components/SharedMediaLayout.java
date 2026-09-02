@@ -3128,6 +3128,52 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             mediaPages[a].listView.setClipToPadding(false);
             mediaPages[a].listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
             mediaPages[a].listView.setLayoutManager(layoutManager);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                mediaPages[a].listView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                final int pageIdx = a;
+                mediaPages[a].listView.setSelectionChecker((v, pos) -> {
+                    if (v instanceof SharedDocumentCell) {
+                        return ((SharedDocumentCell) v).isChecked();
+                    } else if (v instanceof SharedLinkCell) {
+                        return ((SharedLinkCell) v).isChecked();
+                    } else if (v instanceof SharedAudioCell) {
+                        return ((SharedAudioCell) v).isChecked();
+                    } else if (v instanceof ContextLinkCell) {
+                        return ((ContextLinkCell) v).isChecked();
+                    } else if (v instanceof DialogCell) {
+                        return ((DialogCell) v).isChecked() || ((DialogCell) v).isDialogSelected();
+                    } else if (v instanceof UserCell) {
+                        return ((UserCell) v).isChecked();
+                    } else if (v instanceof org.telegram.ui.Cells.GroupCreateUserCell) {
+                        return ((org.telegram.ui.Cells.GroupCreateUserCell) v).isChecked();
+                    }
+                    return false;
+                });
+                mediaPages[a].listView.setSections(
+                    view -> {
+                        if (view == null || view.getParent() != mediaPages[pageIdx].listView) {
+                            return false;
+                        }
+                        if (mediaPages[pageIdx].selectedType == TAB_PHOTOVIDEO || mediaPages[pageIdx].selectedType == TAB_GIF || mediaPages[pageIdx].selectedType == TAB_STORIES || mediaPages[pageIdx].selectedType == TAB_ARCHIVED_STORIES) {
+                            return false;
+                        }
+                        return view instanceof SharedDocumentCell
+                            || view instanceof SharedLinkCell
+                            || view instanceof SharedAudioCell
+                            || view instanceof ContextLinkCell
+                            || view instanceof DialogCell
+                            || view instanceof ProfileSearchCell
+                            || view instanceof UserCell
+                            || view instanceof org.telegram.ui.Cells.ManageChatUserCell
+                            || view instanceof org.telegram.ui.Cells.GroupCreateUserCell;
+                    },
+                    type -> mediaPages[pageIdx].selectedType != TAB_PHOTOVIDEO && mediaPages[pageIdx].selectedType != TAB_GIF && mediaPages[pageIdx].selectedType != TAB_STORIES && mediaPages[pageIdx].selectedType != TAB_ARCHIVED_STORIES && type != 1 && type != 2,
+                    AndroidUtilities.dp(12),
+                    AndroidUtilities.dp(16),
+                    mediaPages[a].listView::drawBackgroundRect,
+                    false
+                );
+            }
             mediaPages[a].addView(mediaPages[a].listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             mediaPages[a].animationSupportingListView = new InternalListView(context);
             mediaPages[a].animationSupportingListView.setLayoutManager(mediaPages[a].animationSupportingLayoutManager = new GridLayoutManager(context, 3) {
@@ -6867,6 +6913,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     ((DialogCell) child).setChecked(false, animated);
                 }
             }
+            if (mediaPages[i].listView != null) {
+                mediaPages[i].listView.invalidate();
+            }
         }
     }
 
@@ -7853,6 +7902,12 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 ((ContextLinkCell) view).setChecked(selectedFiles[loadIndex].indexOfKey(message.getId()) >= 0, true);
             } else if (view instanceof SharedPhotoVideoCell2) {
                 ((SharedPhotoVideoCell2) view).setChecked(selectedFiles[loadIndex].indexOfKey(message.getId()) >= 0, true);
+            }
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                int tab = getClosestTab();
+                if (tab >= 0 && tab < mediaPages.length && mediaPages[tab].listView != null) {
+                    mediaPages[tab].listView.invalidate();
+                }
             }
         } else {
             if (selectedMode == TAB_PHOTOVIDEO) {

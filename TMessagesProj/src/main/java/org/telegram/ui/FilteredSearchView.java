@@ -295,7 +295,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         super(fragment.getParentActivity());
         parentFragment = fragment;
         Context context = parentActivity = fragment.getParentActivity();
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        setBackgroundColor(Theme.getColor(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? Theme.key_windowBackgroundGray : Theme.key_windowBackgroundWhite));
         recyclerListView = new RecyclerListView(context) {
 
             @Override
@@ -383,6 +383,29 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
         recyclerListView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
         recyclerListView.setSkipDrawSection(true);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            recyclerListView.setSections(
+                view -> {
+                    if (view == null || view.getParent() != recyclerListView) {
+                        return false;
+                    }
+                    if (recyclerListView.getAdapter() == sharedPhotoVideoAdapter) {
+                        return false;
+                    }
+                    return view instanceof SharedDocumentCell
+                        || view instanceof SharedLinkCell
+                        || view instanceof SharedAudioCell
+                        || view instanceof ContextLinkCell
+                        || view instanceof DialogCell
+                        || view instanceof ProfileSearchCell;
+                },
+                vt -> recyclerListView.getAdapter() != sharedPhotoVideoAdapter && vt != 1 && vt != 2,
+                AndroidUtilities.dp(12),
+                AndroidUtilities.dp(16),
+                recyclerListView::drawBackgroundRect,
+                false
+            );
+        }
         recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {

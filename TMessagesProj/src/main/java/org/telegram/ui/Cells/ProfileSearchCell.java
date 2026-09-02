@@ -954,10 +954,11 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             if (dividerPaint == null) {
                 dividerPaint = Theme.dividerPaint;
             }
+            int rightPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : 0;
             if (LocaleController.isRTL) {
-                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, dividerPaint);
+                canvas.drawLine(rightPadding, getMeasuredHeight() - 1, getMeasuredWidth() - dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, dividerPaint);
             } else {
-                canvas.drawLine(dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerPaint);
+                canvas.drawLine(dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth() - rightPadding, getMeasuredHeight() - 1, dividerPaint);
             }
         }
 
@@ -1165,6 +1166,10 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             return;
         }
         checkBox.setChecked(checked, animated);
+    }
+
+    public boolean isChecked() {
+        return checkBox != null && checkBox.isChecked();
     }
 
     @Override

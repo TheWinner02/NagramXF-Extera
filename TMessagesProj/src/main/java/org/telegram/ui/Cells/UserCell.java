@@ -487,6 +487,10 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
     }
 
+    public boolean isChecked() {
+        return (checkBox != null && checkBox.isChecked()) || (checkBoxBig != null && checkBoxBig.isChecked()) || (checkBox3 != null && checkBox3.getVisibility() == View.VISIBLE);
+    }
+
     public void setCheckDisabled(boolean disabled) {
         if (checkBoxBig != null) {
             checkBoxBig.setDisabled(disabled);
@@ -794,7 +798,9 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(68) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int rightPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : (LocaleController.isRTL ? dp(68) : 0);
+            int leftPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && LocaleController.isRTL ? dp(16) : (LocaleController.isRTL ? 0 : dp(68));
+            canvas.drawLine(leftPadding, getMeasuredHeight() - 1, getMeasuredWidth() - rightPadding, getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

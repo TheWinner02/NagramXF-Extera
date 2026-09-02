@@ -263,6 +263,7 @@ public class GroupCreateUserCell extends FrameLayout {
         return checkBox;
     }
 
+
     public void setChecked(boolean checked, boolean animated) {
         if (checkBox != null) {
             checkBox.setChecked(checked, animated);

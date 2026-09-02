@@ -206,7 +206,9 @@ public class SettingsSearchCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(left), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(left) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int rightPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? AndroidUtilities.dp(16) : (LocaleController.isRTL ? AndroidUtilities.dp(left) : 0);
+            int leftPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && LocaleController.isRTL ? AndroidUtilities.dp(16) : (LocaleController.isRTL ? 0 : AndroidUtilities.dp(left));
+            canvas.drawLine(leftPadding, getMeasuredHeight() - 1, getMeasuredWidth() - rightPadding, getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

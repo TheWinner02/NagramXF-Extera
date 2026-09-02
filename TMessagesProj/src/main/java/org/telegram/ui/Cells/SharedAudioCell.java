@@ -290,6 +290,10 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         checkBox.setChecked(checked, animated);
     }
 
+    public boolean isChecked() {
+        return checkBox != null && checkBox.isChecked();
+    }
+
     public void setCheckForButtonPress(boolean value) {
         checkForButtonPress = value;
     }
@@ -767,10 +771,11 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         radialProgress.draw(canvas);
 
         if (needDivider) {
+            int rightPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : getPaddingRight();
             if (LocaleController.isRTL) {
-                canvas.drawLine(0, getHeight() - 1, getWidth() - dp(72) - getPaddingRight(), getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
+                canvas.drawLine(0, getHeight() - 1, getWidth() - dp(72) - rightPadding, getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
             } else {
-                canvas.drawLine(dp(72), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
+                canvas.drawLine(dp(72), getHeight() - 1, getWidth() - rightPadding, getHeight() - 1, Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider));
             }
         }
     }

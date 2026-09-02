@@ -1142,6 +1142,12 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         }
     };
 
+
+
+    public boolean isChecked() {
+        return checkBox != null && checkBox.isChecked();
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         if (checkBox == null) {
             return;

@@ -463,7 +463,7 @@
     <string name="RestoreSdkFromApk">Restore SDK from APK</string>
     <string name="PluginsRestartEngine">Restart Plugin Engine</string>
     <string name="UiStyle">UI Design Style</string>
-    <string name="UiStyleClassic">Telegram Classic</string>
+    <string name="UiStyleClassic">Telegram</string>
     <string name="UiStyleMaterial3Expressive">Expressive</string>
     <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

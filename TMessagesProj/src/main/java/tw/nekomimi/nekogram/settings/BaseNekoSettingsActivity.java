@@ -233,7 +233,7 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
         return actionBar;
     }
 
-    private int getM3HeaderTopPadding() {
+    protected int getM3HeaderTopPadding() {
         int statusBar = actionBar != null && actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0;
         int extra = actionBar != null ? actionBar.getM3ExpandedExtraHeight() : AndroidUtilities.dp(76);
         return statusBar + ActionBar.getCurrentActionBarHeight() + extra;

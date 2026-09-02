@@ -318,6 +318,31 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         searchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         searchListView.setLayoutManager(searchLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         searchListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            searchListView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+            searchListView.setSections(
+                view -> {
+                    if (view == null || view.getParent() != searchListView) {
+                        return false;
+                    }
+                    RecyclerView.ViewHolder holder = searchListView.getChildViewHolder(view);
+                    if (holder == null) return false;
+                    int vt = holder.getItemViewType();
+                    return vt != DialogsSearchAdapter.VIEW_TYPE_GRAY_SECTION
+                        && vt != DialogsSearchAdapter.VIEW_TYPE_LOADING
+                        && vt != DialogsSearchAdapter.VIEW_TYPE_CATEGORY_LIST
+                        && vt != DialogsSearchAdapter.VIEW_TYPE_EMPTY_RESULT;
+                },
+                vt -> vt != DialogsSearchAdapter.VIEW_TYPE_GRAY_SECTION
+                    && vt != DialogsSearchAdapter.VIEW_TYPE_LOADING
+                    && vt != DialogsSearchAdapter.VIEW_TYPE_CATEGORY_LIST
+                    && vt != DialogsSearchAdapter.VIEW_TYPE_EMPTY_RESULT,
+                AndroidUtilities.dp(12),
+                AndroidUtilities.dp(16),
+                searchListView::drawBackgroundRect,
+                false
+            );
+        }
         searchListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -484,6 +509,24 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         botsSearchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         botsSearchListView.setLayoutManager(botsSearchLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         botsSearchListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            botsSearchListView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+            botsSearchListView.setSections(
+                view -> {
+                    if (view == null || view.getParent() != botsSearchListView) {
+                        return false;
+                    }
+                    RecyclerView.ViewHolder holder = botsSearchListView.getChildViewHolder(view);
+                    if (holder == null) return false;
+                    return holder.getItemViewType() != 1;
+                },
+                vt -> vt != 1,
+                AndroidUtilities.dp(12),
+                AndroidUtilities.dp(16),
+                botsSearchListView::drawBackgroundRect,
+                false
+            );
+        }
 
         loadingView = new FlickerLoadingView(context);
         loadingView.setViewType(1);

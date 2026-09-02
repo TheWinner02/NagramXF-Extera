@@ -521,6 +521,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private final AnimatedFloat premiumBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private boolean premiumBlocked;
     private final AnimatedFloat starsBlockedT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final AnimatedFloat m3SelectedAlpha = new AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
     private long starsPriceBlocked;
 
     public boolean isBlocked() {
@@ -3157,7 +3158,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     }
 
     public boolean isChecked() {
-        return checkBox != null && (checkBox.isChecked() || checkBox.getProgress() > 0);
+        return checkBox != null && checkBox.isChecked();
     }
 
     public boolean isDialogSelected() {
@@ -4110,12 +4111,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
         float cardRad = isM3 ? xyz.nextalone.nagram.ui.UIStyleEngine.getCardCornerRadius() : 0;
         float cornersRadius = isM3 ? cardRad : dp(8) * cornerProgress;
-        boolean isItemChecked = isM3 && checkBox != null && (checkBox.isChecked() || checkBox.getProgress() > 0);
-        if (isSelected || isItemChecked) {
+        boolean isItemChecked = isM3 && checkBox != null && checkBox.isChecked();
+        float selectedP = isM3 ? m3SelectedAlpha.set((isSelected || isItemChecked) ? 1.0f : 0.0f) : ((isSelected || isItemChecked) ? 1.0f : 0.0f);
+        if (selectedP > 0) {
             rect.set(0, 0, getMeasuredWidth(), AndroidUtilities.lerp(getMeasuredHeight(), getCollapsedHeight(), rightFragmentOpenedProgress));
             rect.offset(0, -translateY + collapseOffset);
             float rad = isM3 ? cardRad : cornersRadius;
+            int oldAlpha = Theme.dialogs_tabletSeletedPaint.getAlpha();
+            Theme.dialogs_tabletSeletedPaint.setAlpha((int) (oldAlpha * selectedP));
             canvas.drawRoundRect(rect, rad, rad, Theme.dialogs_tabletSeletedPaint);
+            Theme.dialogs_tabletSeletedPaint.setAlpha(oldAlpha);
         }
 
         canvas.save();
