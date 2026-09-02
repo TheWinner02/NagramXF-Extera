@@ -339,6 +339,6 @@
     <string name="ExportAyuDB">Ekspor Basis Data</string>
     <string name="UiStyle">Gaya Desain Antarmuka</string>
     <string name="UiStyleClassic">Telegram Klasik</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

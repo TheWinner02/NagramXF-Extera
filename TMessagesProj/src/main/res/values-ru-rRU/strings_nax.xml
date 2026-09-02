@@ -449,6 +449,6 @@
     <string name="ForceForwardStatusStoppingCurrentBatch">Остановка текущей партии</string>
     <string name="UiStyle">Стиль интерфейса</string>
     <string name="UiStyleClassic">Классический Telegram</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

@@ -464,6 +464,6 @@
     <string name="PluginsRestartEngine">Restart Plugin Engine</string>
     <string name="UiStyle">UI Design Style</string>
     <string name="UiStyleClassic">Telegram Classic</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

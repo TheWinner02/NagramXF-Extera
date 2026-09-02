@@ -342,6 +342,6 @@
     <string name="DisableSwipeToNext">Wyłącz gest przechodzenia</string>
     <string name="UiStyle">Styl interfejsu</string>
     <string name="UiStyleClassic">Klasyczny Telegram</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

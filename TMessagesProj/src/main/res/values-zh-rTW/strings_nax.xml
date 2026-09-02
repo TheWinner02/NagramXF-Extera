@@ -448,6 +448,6 @@
     <string name="ForceForwardStatusStoppingCurrentBatch">正在停止目前批次</string>
     <string name="UiStyle">介面設計風格</string>
     <string name="UiStyleClassic">傳統 Telegram</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

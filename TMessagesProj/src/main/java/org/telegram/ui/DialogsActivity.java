@@ -4270,6 +4270,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     return false;
                 });
+                viewPage.listView.setSectionGroupingChecker((v1, pos1, v2, pos2) -> {
+                    boolean p1Pinned = false;
+                    if (v1 instanceof org.telegram.ui.Cells.DialogCell) {
+                        p1Pinned = ((org.telegram.ui.Cells.DialogCell) v1).getIsPinned();
+                    } else if (viewPage.dialogsAdapter != null) {
+                        Object o1 = viewPage.dialogsAdapter.getItem(pos1);
+                        p1Pinned = (o1 instanceof TLRPC.Dialog) && isDialogPinned((TLRPC.Dialog) o1);
+                    }
+
+                    boolean p2Pinned = false;
+                    if (v2 instanceof org.telegram.ui.Cells.DialogCell) {
+                        p2Pinned = ((org.telegram.ui.Cells.DialogCell) v2).getIsPinned();
+                    } else if (viewPage.dialogsAdapter != null) {
+                        Object o2 = viewPage.dialogsAdapter.getItem(pos2);
+                        p2Pinned = (o2 instanceof TLRPC.Dialog) && isDialogPinned((TLRPC.Dialog) o2);
+                    }
+
+                    return p1Pinned == p2Pinned;
+                });
                 viewPage.listView.setSections(
                     view -> {
                         if (view == null || view.getParent() != viewPage.listView) {
@@ -5720,7 +5739,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 transitionPage.animationSupportDialogsAdapter.setDialogsListFrozen(true);
                 transitionPage.layoutManager.setNeedFixEndGap(false);
                 setDialogsListFrozen(true);
-                hideFloatingButton(anotherFragmentOpened);
+                hideFloatingButton(open);
                 transitionPage.dialogsAdapter.notifyDataSetChanged();
                 transitionPage.animationSupportDialogsAdapter.notifyDataSetChanged();
                 float scrollOffset = !open ? scrollYOffset : -scrollYOffset;
@@ -5745,6 +5764,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 transitionPage.listView.setAnimationSupportView(null, 0, hasFragment(), backward);
                 rightFragmentTransitionInProgress = false;
                 contentView.requestLayout();
+                hideFloatingButton(hasFragment());
                 if (!hasFragment()) {
                     invalidateScrollY = true;
                     fixScrollYAfterArchiveOpened = true;
@@ -5768,6 +5788,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (fragmentView != null) {
                     fragmentView.invalidate();
+                }
+
+                if (floatingButton3 != null) {
+                    floatingButton3.setAlpha(1f - progress);
+                    floatingButton3.setVisibility(progress >= 1f ? View.GONE : View.VISIBLE);
+                }
+                if (floatingButtonStories != null) {
+                    floatingButtonStories.setAlpha(1f - progress);
+                    floatingButtonStories.setVisibility(progress >= 1f ? View.GONE : View.VISIBLE);
                 }
 
                 updateActionBarTitleAlpha(lastActionBarTitleAlpha);
@@ -9135,7 +9164,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateFloatingButtonVisibility(boolean animated) {
-        final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden);
+        final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden || (rightSlidingDialogContainer != null && (rightSlidingDialogContainer.hasFragment() || rightSlidingDialogContainer.openedProgress > 0f)));
 
         if (floatingButton3 != null) {
             floatingButton3.setButtonVisible(isVisible, animated);

@@ -3440,8 +3440,18 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                         final boolean last = position == adapter.getItemCount() - 1;
 
                         if (m3Expressive) {
+                            View aboveView = this.parent.findChildByAdapterPosition(position - 1);
                             boolean hasAbove = this.parent.hasM3ExpressiveSectionItem(position - 1);
+                            if (hasAbove && this.parent.sectionGroupingChecker != null) {
+                                hasAbove = this.parent.sectionGroupingChecker.canConnect(view, position, aboveView, position - 1);
+                            }
+
+                            View belowView = this.parent.findChildByAdapterPosition(position + 1);
                             boolean hasBelow = this.parent.hasM3ExpressiveSectionItem(position + 1);
+                            if (hasBelow && this.parent.sectionGroupingChecker != null) {
+                                hasBelow = this.parent.sectionGroupingChecker.canConnect(view, position, belowView, position + 1);
+                            }
+
                             outRect.top = hasAbove ? this.parent.getM3ExpressiveSegmentGap() : dp(6);
                             outRect.bottom = hasBelow ? this.parent.getM3ExpressiveSegmentGap() : dp(10);
                         }
@@ -3522,6 +3532,14 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     private SelectionChecker selectionChecker;
     public void setSelectionChecker(SelectionChecker checker) {
         this.selectionChecker = checker;
+    }
+
+    public interface SectionGroupingChecker {
+        boolean canConnect(View currentView, int currentPos, View neighborView, int neighborPos);
+    }
+    private SectionGroupingChecker sectionGroupingChecker;
+    public void setSectionGroupingChecker(SectionGroupingChecker checker) {
+        this.sectionGroupingChecker = checker;
     }
 
     private View findChildByAdapterPosition(int position) {
@@ -3737,11 +3755,13 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
 
             View aboveChild = findChildByAdapterPosition(position - 1);
             boolean isAboveIsolated = aboveChild != null && isM3ExpressiveIsolatedSectionItem(aboveChild, position - 1);
-            boolean hasAbove = hasM3ExpressiveSectionItem(position - 1) && !isAboveIsolated;
+            boolean canConnectAbove = sectionGroupingChecker == null || sectionGroupingChecker.canConnect(child, position, aboveChild, position - 1);
+            boolean hasAbove = hasM3ExpressiveSectionItem(position - 1) && !isAboveIsolated && canConnectAbove;
 
             View belowChild = findChildByAdapterPosition(position + 1);
             boolean isBelowIsolated = belowChild != null && isM3ExpressiveIsolatedSectionItem(belowChild, position + 1);
-            boolean hasBelow = hasM3ExpressiveSectionItem(position + 1) && !isBelowIsolated;
+            boolean canConnectBelow = sectionGroupingChecker == null || sectionGroupingChecker.canConnect(child, position, belowChild, position + 1);
+            boolean hasBelow = hasM3ExpressiveSectionItem(position + 1) && !isBelowIsolated && canConnectBelow;
 
             drawM3ExpressiveSectionItemBackground(canvas, child, hasAbove, hasBelow);
         }

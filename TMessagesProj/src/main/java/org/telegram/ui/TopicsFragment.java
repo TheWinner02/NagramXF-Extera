@@ -1012,6 +1012,47 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         recyclerListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
         itemsEnterAnimator = new RecyclerItemsEnterAnimator(recyclerListView, true);
         recyclerListView.setItemsEnterAnimator(itemsEnterAnimator);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            recyclerListView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+            recyclerListView.setSelectionChecker((v, pos) -> {
+                if (v instanceof TopicDialogCell) {
+                    TopicDialogCell tdc = (TopicDialogCell) v;
+                    return tdc.forumTopic != null && selectedTopics.contains(tdc.forumTopic.id);
+                }
+                return false;
+            });
+            recyclerListView.setSectionGroupingChecker((v1, pos1, v2, pos2) -> {
+                boolean p1Pinned = false;
+                if (v1 instanceof TopicDialogCell) {
+                    p1Pinned = ((TopicDialogCell) v1).getIsPinned();
+                } else if (forumTopics != null && pos1 >= 0 && pos1 < forumTopics.size() && forumTopics.get(pos1) != null && forumTopics.get(pos1).topic != null) {
+                    p1Pinned = forumTopics.get(pos1).topic.pinned;
+                }
+
+                boolean p2Pinned = false;
+                if (v2 instanceof TopicDialogCell) {
+                    p2Pinned = ((TopicDialogCell) v2).getIsPinned();
+                } else if (forumTopics != null && pos2 >= 0 && pos2 < forumTopics.size() && forumTopics.get(pos2) != null && forumTopics.get(pos2).topic != null) {
+                    p2Pinned = forumTopics.get(pos2).topic.pinned;
+                }
+
+                return p1Pinned == p2Pinned;
+            });
+            recyclerListView.setSections(
+                view -> {
+                    if (view == null || view.getParent() != recyclerListView) {
+                        return false;
+                    }
+                    RecyclerView.ViewHolder holder = recyclerListView.getChildViewHolder(view);
+                    return holder != null && isM3TopicSectionViewType(holder.getItemViewType());
+                },
+                this::isM3TopicSectionViewType,
+                AndroidUtilities.dp(12),
+                AndroidUtilities.dp(16),
+                recyclerListView::drawBackgroundRect,
+                false
+            );
+        }
         recyclerListView.setOnItemClickListener((view, position) -> {
             if (getParentLayout() == null || getParentLayout().isInPreviewMode()) {
                 return;
@@ -3117,17 +3158,20 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             xOffset = inPreviewMode && checkBox != null ? checkBox.getProgress() * AndroidUtilities.dp(30) : 0;
             canvas.save();
             canvas.translate(xOffset, translateY = -AndroidUtilities.dp(4));
-            canvas.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                canvas.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            }
             super.onDraw(canvas);
             canvas.restore();
             canvas.save();
             canvas.translate(super.translationX, 0);
             if (drawDivider) {
                 int left = fullSeparator ? 0 : AndroidUtilities.dp(messagePaddingStart);
+                int rightInset = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? AndroidUtilities.dp(16) : 0;
                 if (LocaleController.isRTL) {
-                    canvas.drawLine(0 - super.translationX, getMeasuredHeight() - 1, getMeasuredWidth() - left, getMeasuredHeight() - 1, Theme.dividerPaint);
+                    canvas.drawLine(rightInset - super.translationX, getMeasuredHeight() - 1, getMeasuredWidth() - left, getMeasuredHeight() - 1, Theme.dividerPaint);
                 } else {
-                    canvas.drawLine(left - super.translationX, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+                    canvas.drawLine(left - super.translationX, getMeasuredHeight() - 1, getMeasuredWidth() - rightInset, getMeasuredHeight() - 1, Theme.dividerPaint);
                 }
             }
             if ((!isGeneral || archivedChatsDrawable == null || archivedChatsDrawable.outProgress != 0.0f) && (animatedEmojiDrawable != null || forumIcon != null)) {
@@ -3472,6 +3516,23 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
 
             itemsEnterAnimator = new RecyclerItemsEnterAnimator(recyclerView, true);
             recyclerView.setItemsEnterAnimator(itemsEnterAnimator);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                recyclerView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+                recyclerView.setSections(
+                    view -> {
+                        if (view == null || view.getParent() != recyclerView) {
+                            return false;
+                        }
+                        RecyclerView.ViewHolder holder = recyclerView.getChildViewHolder(view);
+                        return holder != null && (holder.getItemViewType() == SearchAdapter.VIEW_TYPE_TOPIC || holder.getItemViewType() == SearchAdapter.VIEW_TYPE_MESSAGE);
+                    },
+                    vt -> vt == SearchAdapter.VIEW_TYPE_TOPIC || vt == SearchAdapter.VIEW_TYPE_MESSAGE,
+                    AndroidUtilities.dp(12),
+                    AndroidUtilities.dp(16),
+                    recyclerView::drawBackgroundRect,
+                    false
+                );
+            }
 
             setAdapter(viewPagerAdapter = new ViewPagerAdapter());
         }
@@ -4269,5 +4330,9 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     @Override
     public void onParentScrollToTop() {
         recyclerListView.smoothScrollToPosition(0);
+    }
+
+    private boolean isM3TopicSectionViewType(int viewType) {
+        return viewType == VIEW_TYPE_TOPIC || viewType == VIEW_TYPE_TOPIC_CREATE;
     }
 }

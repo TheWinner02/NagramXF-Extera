@@ -535,6 +535,6 @@
     <string name="PluginsRestartEngine">플러그인 엔진 다시 시작</string>
     <string name="UiStyle">UI 디자인 스타일</string>
     <string name="UiStyleClassic">클래식 Telegram</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

@@ -350,6 +350,6 @@ Non possiamo aiutarti in questo caso; se hai problemi di accesso, contatta il Su
     <string name="DisableSwipeToNext">Disabilita \"Scorri verso il Prossimo\"</string>
     <string name="UiStyle">Stile Interfaccia UI</string>
     <string name="UiStyleClassic">Telegram Classico</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>

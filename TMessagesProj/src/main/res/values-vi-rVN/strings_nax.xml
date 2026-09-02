@@ -311,6 +311,6 @@
     <string name="DisableSwipeToNext">Tắt tính năng vuốt để chuyển sang mục tiếp theo</string>
     <string name="UiStyle">Phong cách thiết kế giao diện</string>
     <string name="UiStyleClassic">Telegram cổ điển</string>
-    <string name="UiStyleMaterial3Expressive">Google Material 3 Expressive</string>
-    <string name="UiStyleIosLiquidGlass">iOS Liquid Glass</string>
+    <string name="UiStyleMaterial3Expressive">Expressive</string>
+    <string name="UiStyleIosLiquidGlass">Liquid Glass</string>
 </resources>
