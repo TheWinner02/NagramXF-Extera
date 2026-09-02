@@ -62,6 +62,8 @@ import java.io.File;
 import java.util.ArrayList;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.ui.cells.M3ConnectedButtonGroupCell;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class DataSettingsActivity extends BaseFragment {
 
@@ -431,43 +433,15 @@ public class DataSettingsActivity extends BaseFragment {
             } else if (position == storageUsageRow) {
                 presentFragment(new CacheControlActivity());
             } else if (position == useLessDataForCallsRow) {
+                if (UIStyleEngine.isMaterial3Expressive()) {
+                    return;
+                }
                 final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 int selected = 0;
-                switch (preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())) {
-                    case Instance.DATA_SAVING_NEVER:
-                        selected = 0;
-                        break;
-                    case Instance.DATA_SAVING_ROAMING:
-                        selected = 1;
-                        break;
-                    case Instance.DATA_SAVING_MOBILE:
-                        selected = 2;
-                        break;
-                    case Instance.DATA_SAVING_ALWAYS:
-                        selected = 3;
-                        break;
-                }
-                Dialog dlg = AlertsCreator.createSingleChoiceDialog(getParentActivity(), new String[]{
-                                LocaleController.getString(R.string.UseLessDataNever),
-                                LocaleController.getString(R.string.UseLessDataOnRoaming),
-                                LocaleController.getString(R.string.UseLessDataOnMobile),
-                                LocaleController.getString(R.string.UseLessDataAlways)},
+                selected = getVoipDataSavingIndex(preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault()));
+                Dialog dlg = AlertsCreator.createSingleChoiceDialog(getParentActivity(), getVoipDataSavingLabels(),
                         LocaleController.getString(R.string.VoipUseLessData), selected, (dialog, which) -> {
-                            int val = -1;
-                            switch (which) {
-                                case 0:
-                                    val = Instance.DATA_SAVING_NEVER;
-                                    break;
-                                case 1:
-                                    val = Instance.DATA_SAVING_ROAMING;
-                                    break;
-                                case 2:
-                                    val = Instance.DATA_SAVING_MOBILE;
-                                    break;
-                                case 3:
-                                    val = Instance.DATA_SAVING_ALWAYS;
-                                    break;
-                            }
+                            int val = getVoipDataSavingValue(which);
                             if (val != -1) {
                                 preferences.edit().putInt("VoipDataSaving", val).commit();
                                 updateVoipUseLessData = true;
@@ -618,6 +592,34 @@ public class DataSettingsActivity extends BaseFragment {
             CacheControlActivity.resetCalculatedTotalSIze();
             loadCacheSize();
         });
+    }
+
+    private String[] getVoipDataSavingLabels() {
+        return new String[]{
+                LocaleController.getString(R.string.UseLessDataNever),
+                LocaleController.getString(R.string.UseLessDataOnRoaming),
+                LocaleController.getString(R.string.UseLessDataOnMobile),
+                LocaleController.getString(R.string.UseLessDataAlways)
+        };
+    }
+
+    private int getVoipDataSavingIndex(int value) {
+        return switch (value) {
+            case Instance.DATA_SAVING_ROAMING -> 1;
+            case Instance.DATA_SAVING_MOBILE -> 2;
+            case Instance.DATA_SAVING_ALWAYS -> 3;
+            default -> 0;
+        };
+    }
+
+    private int getVoipDataSavingValue(int index) {
+        return switch (index) {
+            case 0 -> Instance.DATA_SAVING_NEVER;
+            case 1 -> Instance.DATA_SAVING_ROAMING;
+            case 2 -> Instance.DATA_SAVING_MOBILE;
+            case 3 -> Instance.DATA_SAVING_ALWAYS;
+            default -> -1;
+        };
     }
 
     @Override
@@ -859,6 +861,27 @@ public class DataSettingsActivity extends BaseFragment {
                     checkCell.setTextAndValueAndCheck(text, description, checked, 0, true, divider);
                     break;
                 }
+                case 7: {
+                    M3ConnectedButtonGroupCell cell = (M3ConnectedButtonGroupCell) holder.itemView;
+                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                    cell.setTextAndItems(
+                            LocaleController.getString(R.string.VoipUseLessData),
+                            getVoipDataSavingLabels(),
+                            getVoipDataSavingIndex(preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())),
+                            getResourceProvider(),
+                            index -> {
+                                int val = getVoipDataSavingValue(index);
+                                if (val != -1) {
+                                    preferences.edit().putInt("VoipDataSaving", val).commit();
+                                    updateVoipUseLessData = true;
+                                }
+                                if (listAdapter != null) {
+                                    listAdapter.notifyItemChanged(useLessDataForCallsRow);
+                                }
+                            });
+                    updateVoipUseLessData = false;
+                    break;
+                }
             }
         }
 
@@ -917,6 +940,9 @@ public class DataSettingsActivity extends BaseFragment {
                 case 5:
                     view = new NotificationsCheckCell(mContext);
                     break;
+                case 7:
+                    view = new M3ConnectedButtonGroupCell(mContext);
+                    break;
                 case 6:
                 default:
                     view = new TextCell(mContext);
@@ -938,6 +964,8 @@ public class DataSettingsActivity extends BaseFragment {
                 return 4;
             } else if (position == mobileRow || position == wifiRow || position == roamingRow || position == saveToGalleryGroupsRow || position == saveToGalleryPeerRow || position == saveToGalleryChannelsRow) {
                 return 5;
+            } else if (position == useLessDataForCallsRow && UIStyleEngine.isMaterial3Expressive()) {
+                return 7;
             } else if (position == storageUsageRow || position == dataUsageRow || position == storageNumRow) {
                 return 6;
             } else {

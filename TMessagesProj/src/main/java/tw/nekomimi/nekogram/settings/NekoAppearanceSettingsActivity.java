@@ -48,6 +48,7 @@ import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
+import tw.nekomimi.nekogram.config.cell.ConfigCellConnectedButtonGroup;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
@@ -84,6 +85,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.UiStyleMaterial3Expressive),
             getString(R.string.UiStyleIosLiquidGlass)
     }, null));
+    private final AbstractConfigCell uiStyleConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup("UiStyle", NaConfig.INSTANCE.getUiStyle(), new String[]{
+            getString(R.string.UiStyleClassic),
+            getString(R.string.UiStyleMaterial3Expressive),
+            getString(R.string.UiStyleIosLiquidGlass)
+    }));
     private final AbstractConfigCell typefaceRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.typeface));
     private final AbstractConfigCell hideDividersRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideDividers()));
     private final AbstractConfigCell sectionsSeparatedHeadersRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSectionsSeparatedHeaders(), null, getString(R.string.SeparateHeaders)));
@@ -101,11 +107,21 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.StyleMaterialDesign3),
             getString(R.string.StyleOneUI)
     }, null));
+    private final AbstractConfigCell switchStyleConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup("SwitchStyle", NaConfig.INSTANCE.getSwitchStyle(), new String[]{
+            getString(R.string.Default),
+            getString(R.string.StyleMaterialDesign3),
+            getString(R.string.StyleOneUI)
+    }));
     private final AbstractConfigCell sliderStyleRow = cellGroup.appendCell(new ConfigCellSelectBox("SliderStyle", NaConfig.INSTANCE.getSliderStyle(), new String[]{
             getString(R.string.Default),
             getString(R.string.StyleModern),
             getString(R.string.StyleMaterialDesign3)
     }, null));
+    private final AbstractConfigCell sliderStyleConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup("SliderStyle", NaConfig.INSTANCE.getSliderStyle(), new String[]{
+            getString(R.string.Default),
+            getString(R.string.StyleModern),
+            getString(R.string.StyleMaterialDesign3)
+    }));
     private final AbstractConfigCell notificationIconRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getNotificationIcon(), new String[]{
             getString(R.string.MapPreviewProviderTelegram),
             getString(R.string.NagramX),
@@ -117,6 +133,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.Enable),
             getString(R.string.Disable)
     }, null));
+    private final AbstractConfigCell tabletModeConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup(null, NekoConfig.tabletMode, new String[]{
+            getString(R.string.TabletModeDefault),
+            getString(R.string.Enable),
+            getString(R.string.Disable)
+    }));
     private final AbstractConfigCell dividerAppearance = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell avatarCornersPreviewRow = cellGroup.appendCell(new ConfigCellCustom("AvatarCorners", ConfigCellCustom.CUSTOM_ITEM_AvatarCorners, false));
     private final AbstractConfigCell singleCornerRadiusRow = cellGroup.appendCell(
@@ -157,6 +178,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.TabTitleTypeIcon),
             getString(R.string.TabTitleTypeMix)
     }, null));
+    private final AbstractConfigCell tabsTitleTypeConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup(null, NekoConfig.tabsTitleType, new String[]{
+            getString(R.string.TabTitleTypeText),
+            getString(R.string.TabTitleTypeIcon),
+            getString(R.string.TabTitleTypeMix)
+    }));
     private final AbstractConfigCell ignoreUnreadCountRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getIgnoreUnreadCount()));
     private final AbstractConfigCell dividerNavigationTop = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerNavigation = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AppNavigation)));
@@ -226,6 +252,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     public NekoAppearanceSettingsActivity() {
         cellGroup.rows.remove(headerAppearance);
         cellGroup.rows.remove(uiStyleRow);
+        cellGroup.rows.remove(uiStyleConnectedGroupRow);
+        cellGroup.rows.remove(switchStyleConnectedGroupRow);
+        cellGroup.rows.remove(sliderStyleConnectedGroupRow);
+        cellGroup.rows.remove(tabletModeConnectedGroupRow);
+        cellGroup.rows.remove(tabsTitleTypeConnectedGroupRow);
         cellGroup.rows.remove(fabShapePreviewRow);
         cellGroup.rows.remove(typefaceRow);
         cellGroup.rows.remove(avatarCornersPreviewRow);
@@ -235,9 +266,14 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         cellGroup.rows.add(1, singleCornerRadiusRow);
         cellGroup.rows.add(2, avatarCornersInfoRow);
         cellGroup.rows.add(3, headerAppearance);
-        cellGroup.rows.add(4, uiStyleRow);
+        cellGroup.rows.add(4, getUiStyleModeRow());
         cellGroup.rows.add(5, fabShapePreviewRow);
         cellGroup.rows.add(6, typefaceRow);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            replaceRow(switchStyleRow, switchStyleConnectedGroupRow);
+            replaceRow(sliderStyleRow, sliderStyleConnectedGroupRow);
+            replaceRow(tabletModeRow, tabletModeConnectedGroupRow);
+        }
         // Hoist the entire "Chat List" (Dialogs) section in front of the Appearance subheader.
         List<AbstractConfigCell> dialogsBlock = Arrays.asList(
                 headerDialogs,
@@ -263,10 +299,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         // the destructive "Hide All Chats" row.
         cellGroup.rows.remove(ignoreUnreadCountRow);
         cellGroup.rows.remove(tabsTitleTypeRow);
+        cellGroup.rows.remove(tabsTitleTypeConnectedGroupRow);
         int hideAllTabIdx = cellGroup.rows.indexOf(hideAllTabRow);
         if (hideAllTabIdx >= 0) {
             cellGroup.rows.add(hideAllTabIdx, ignoreUnreadCountRow);
-            cellGroup.rows.add(hideAllTabIdx, tabsTitleTypeRow);
+            cellGroup.rows.add(hideAllTabIdx, getTabsTitleTypeModeRow());
         }
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
@@ -274,6 +311,22 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         checkCustomTitleRows();
 
         addRowsToMap(cellGroup);
+    }
+
+    private AbstractConfigCell getUiStyleModeRow() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? uiStyleConnectedGroupRow : uiStyleRow;
+    }
+
+    private AbstractConfigCell getTabsTitleTypeModeRow() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? tabsTitleTypeConnectedGroupRow : tabsTitleTypeRow;
+    }
+
+    private void replaceRow(AbstractConfigCell oldRow, AbstractConfigCell newRow) {
+        int index = cellGroup.rows.indexOf(oldRow);
+        if (index >= 0) {
+            cellGroup.rows.remove(index);
+            cellGroup.rows.add(index, newRow);
+        }
     }
 
     private void updateSliderEnabledState(AbstractConfigCell row) {

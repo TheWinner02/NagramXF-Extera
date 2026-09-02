@@ -32,6 +32,7 @@ import java.util.Locale;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
+import tw.nekomimi.nekogram.config.cell.ConfigCellConnectedButtonGroup;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.config.cell.ConfigCellSelectBox;
@@ -76,10 +77,19 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
             "Telegram API",
             "Bot API"
     }, null));
+    private final AbstractConfigCell showIdAndDcConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup("ShowIdAndDc", NaConfig.INSTANCE.getIdDcType(), new String[]{
+            getString(R.string.Disable),
+            "Telegram API",
+            "Bot API"
+    }));
     private final AbstractConfigCell nameOrderRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NekoConfig.nameOrder, new String[]{
             getString(R.string.LastFirst),
             getString(R.string.FirstLast)
     }, null));
+    private final AbstractConfigCell nameOrderConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup(null, NekoConfig.nameOrder, new String[]{
+            getString(R.string.LastFirst),
+            getString(R.string.FirstLast)
+    }));
     private final AbstractConfigCell dividerGeneral = cellGroup.appendCell(new ConfigCellDivider());
 
     // Storage
@@ -155,6 +165,13 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell dividerAutoDownload = cellGroup.appendCell(new ConfigCellDivider());
 
     public NekoGeneralSettingsActivity() {
+        cellGroup.rows.remove(showIdAndDcConnectedGroupRow);
+        cellGroup.rows.remove(nameOrderConnectedGroupRow);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            replaceRow(showIdAndDcRow, showIdAndDcConnectedGroupRow);
+            replaceRow(nameOrderRow, nameOrderConnectedGroupRow);
+        }
+
         if (!shouldShowPersian()) {
             cellGroup.rows.remove(usePersianCalendarRow);
             cellGroup.rows.remove(displayPersianCalendarByLatinRow);
@@ -163,6 +180,14 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
         checkCustomDoHRows();
         checkPushServiceTypeRows();
         addRowsToMap(cellGroup);
+    }
+
+    private void replaceRow(AbstractConfigCell oldRow, AbstractConfigCell newRow) {
+        int index = cellGroup.rows.indexOf(oldRow);
+        if (index >= 0) {
+            cellGroup.rows.remove(index);
+            cellGroup.rows.add(index, newRow);
+        }
     }
 
     @SuppressLint({"NewApi", "NotifyDataSetChanged", "UseCompatLoadingForDrawables"})

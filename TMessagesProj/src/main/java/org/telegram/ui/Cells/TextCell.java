@@ -75,6 +75,18 @@ public class TextCell extends FrameLayout {
 
     private int lastWidth;
 
+    private int getSwitchWidth() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 52 : 38;
+    }
+
+    private int getSwitchHeight() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 48 : 22;
+    }
+
+    private int getTextEndInset() {
+        return checkBox != null && checkBox.getVisibility() == VISIBLE && xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 104 : 71;
+    }
+
     public TextCell(Context context) {
         this(context, 23, false, false, null);
     }
@@ -137,7 +149,7 @@ public class TextCell extends FrameLayout {
         if (needCheck) {
             checkBox = new Switch(context, resourcesProvider);
             checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
-            addView(checkBox, LayoutHelper.createFrame(38, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+            addView(checkBox, LayoutHelper.createFrame(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 52 : 38, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 48 : 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
         }
 
         setFocusable(true);
@@ -190,16 +202,18 @@ public class TextCell extends FrameLayout {
 
         int valueWidth;
         if (prioritizeTitleOverValue) {
-            textView.measure(MeasureSpec.makeMeasureSpec(width - dp(71 + leftPadding), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
-            subtitleView.measure(MeasureSpec.makeMeasureSpec(width - dp(71 + leftPadding), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
-            valueTextView.measure(MeasureSpec.makeMeasureSpec(width - dp(103 + leftPadding) - textView.getTextWidth(), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
-            valueSpoilersTextView.measure(MeasureSpec.makeMeasureSpec(width - dp(103 + leftPadding) - textView.getTextWidth(), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
+            int textEndInset = getTextEndInset();
+            textView.measure(MeasureSpec.makeMeasureSpec(Math.max(0, width - dp(textEndInset + leftPadding)), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
+            subtitleView.measure(MeasureSpec.makeMeasureSpec(Math.max(0, width - dp(textEndInset + leftPadding)), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
+            valueTextView.measure(MeasureSpec.makeMeasureSpec(Math.max(0, width - dp(textEndInset + 32 + leftPadding) - textView.getTextWidth()), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
+            valueSpoilersTextView.measure(MeasureSpec.makeMeasureSpec(Math.max(0, width - dp(textEndInset + 32 + leftPadding) - textView.getTextWidth()), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
         } else {
             valueTextView.measure(MeasureSpec.makeMeasureSpec(width - dp(leftPadding), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
             valueSpoilersTextView.measure(MeasureSpec.makeMeasureSpec(width - dp(leftPadding), LocaleController.isRTL ? MeasureSpec.AT_MOST : MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
             valueWidth = Math.max(valueTextView.width(), valueSpoilersTextView.getTextWidth());
-            textView.measure(MeasureSpec.makeMeasureSpec(Math.max(0, width - dp(71 + leftPadding) - valueWidth), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
-            subtitleView.measure(MeasureSpec.makeMeasureSpec(width - dp(71 + leftPadding) - valueWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
+            int textEndInset = getTextEndInset();
+            textView.measure(MeasureSpec.makeMeasureSpec(Math.max(0, width - dp(textEndInset + leftPadding) - valueWidth), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
+            subtitleView.measure(MeasureSpec.makeMeasureSpec(Math.max(0, width - dp(textEndInset + leftPadding) - valueWidth), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.EXACTLY));
         }
         if (imageView.getVisibility() == VISIBLE) {
             imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
@@ -208,7 +222,7 @@ public class TextCell extends FrameLayout {
             valueImageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
         }
         if (checkBox != null) {
-            checkBox.measure(MeasureSpec.makeMeasureSpec(dp(38), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY));
+            checkBox.measure(MeasureSpec.makeMeasureSpec(dp(getSwitchWidth()), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(getSwitchHeight()), MeasureSpec.EXACTLY));
         }
         setMeasuredDimension(width, height + (needDivider ? 1 : 0));
     }
@@ -513,7 +527,7 @@ public class TextCell extends FrameLayout {
         if (checkBox == null) {
             checkBox = new Switch(getContext(), resourcesProvider);
             checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
-            addView(checkBox, LayoutHelper.createFrame(37, 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+            addView(checkBox, LayoutHelper.createFrame(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 52 : 37, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 48 : 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
         }
         if (checkBox != null) {
             checkBox.setVisibility(VISIBLE);

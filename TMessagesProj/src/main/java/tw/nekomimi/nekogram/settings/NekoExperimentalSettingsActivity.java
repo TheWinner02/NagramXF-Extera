@@ -33,6 +33,7 @@ import kotlin.Unit;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
+import tw.nekomimi.nekogram.config.cell.ConfigCellConnectedButtonGroup;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
@@ -78,6 +79,15 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
                     getString(R.string.BackAnimationClassic),
                     getString(R.string.BackAnimationSpring),
             }, null));
+    private final AbstractConfigCell backAnimationStyleConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup(null, NaConfig.INSTANCE.getBackAnimationStyle(),
+            Build.VERSION.SDK_INT >= 34 ? new String[]{
+                    getString(R.string.BackAnimationClassic),
+                    getString(R.string.BackAnimationSpring),
+                    getString(R.string.BackAnimationPredictive),
+            } : new String[]{
+                    getString(R.string.BackAnimationClassic),
+                    getString(R.string.BackAnimationSpring),
+            }));
     private final AbstractConfigCell springAnimationCrossfadeRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSpringAnimationCrossfade()));
     private final AbstractConfigCell sendLockedCustomEmojiAsStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker(), getString(R.string.SendLockedCustomEmojiAsStickerInfo)));
     private final AbstractConfigCell unlimitedPinnedDialogsRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.unlimitedPinnedDialogs, getString(R.string.UnlimitedPinnedDialogsAbout)));
@@ -102,6 +112,11 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
             getString(R.string.VideoPlayerDecoderPreferHW),
             getString(R.string.VideoPlayerDecoderPreferSW),
     }, null));
+    private final AbstractConfigCell playerDecoderConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup(null, NaConfig.INSTANCE.getPlayerDecoder(), new String[]{
+            getString(R.string.VideoPlayerDecoderHardware),
+            getString(R.string.VideoPlayerDecoderPreferHW),
+            getString(R.string.VideoPlayerDecoderPreferSW),
+    }));
     private final AbstractConfigCell dividerMedia = cellGroup.appendCell(new ConfigCellDivider());
 
     // N-Config
@@ -129,11 +144,30 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
     private final AbstractConfigCell dividerPangu = cellGroup.appendCell(new ConfigCellDivider());
 
     public NekoExperimentalSettingsActivity() {
+        cellGroup.rows.remove(backAnimationStyleConnectedGroupRow);
+        cellGroup.rows.remove(playerDecoderConnectedGroupRow);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            replaceRow(backAnimationStyleRow, backAnimationStyleConnectedGroupRow);
+            replaceRow(playerDecoderRow, playerDecoderConnectedGroupRow);
+        }
+
         if (NaConfig.INSTANCE.getBackAnimationStyle().Int() != ActionBarLayout.BACK_ANIMATION_SPRING) {
             cellGroup.rows.remove(springAnimationCrossfadeRow);
         }
         checkStoriesRows();
         addRowsToMap(cellGroup);
+    }
+
+    private AbstractConfigCell getBackAnimationStyleRow() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? backAnimationStyleConnectedGroupRow : backAnimationStyleRow;
+    }
+
+    private void replaceRow(AbstractConfigCell oldRow, AbstractConfigCell newRow) {
+        int index = cellGroup.rows.indexOf(oldRow);
+        if (index >= 0) {
+            cellGroup.rows.remove(index);
+            cellGroup.rows.add(index, newRow);
+        }
     }
 
     @SuppressLint("NewApi")
@@ -162,7 +196,7 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
                     }
                 } else {
                     if (!cellGroup.rows.contains(springAnimationCrossfadeRow)) {
-                        final int index = cellGroup.rows.indexOf(backAnimationStyleRow) + 1;
+                        final int index = cellGroup.rows.indexOf(getBackAnimationStyleRow()) + 1;
                         cellGroup.rows.add(index, springAnimationCrossfadeRow);
                         listAdapter.notifyItemInserted(index);
                     }

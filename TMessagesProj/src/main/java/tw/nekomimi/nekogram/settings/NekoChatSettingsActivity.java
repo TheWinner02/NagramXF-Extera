@@ -65,6 +65,7 @@ import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCheckBox;
+import tw.nekomimi.nekogram.config.cell.ConfigCellConnectedButtonGroup;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
@@ -189,6 +190,10 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             getString(R.string.Official),
             "Nekogram",
     }, null));
+    private final AbstractConfigCell markdownParserConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup(null, NaConfig.INSTANCE.getMarkdownParser(), new String[]{
+            getString(R.string.Official),
+            "Nekogram",
+    }));
     private final AbstractConfigCell dividerChats = cellGroup.appendCell(new ConfigCellDivider());
 
     // Double Tap
@@ -223,6 +228,11 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             getString(R.string.VideoMessagesCameraRear),
             getString(R.string.VideoMessagesCameraAsk)
     }, null));
+    private final AbstractConfigCell cameraInVideoMessagesConnectedGroup = cellGroup.appendCell(new ConfigCellConnectedButtonGroup("VideoMessagesCamera", NaConfig.INSTANCE.getCameraInVideoMessages(), new String[]{
+            getString(R.string.VideoMessagesCameraFront),
+            getString(R.string.VideoMessagesCameraRear),
+            getString(R.string.VideoMessagesCameraAsk)
+    }));
     private final AbstractConfigCell moveAttachCameraToBottomRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.moveAttachCameraToBottom, getString(R.string.MoveAttachCameraToBottomNotice)));
     private final AbstractConfigCell rememberLastUsedCameraRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRememberLastUsedCamera(), getString(R.string.RememberLastUsedCameraInfo), getString(R.string.RememberLastUsedCamera)));
     private final AbstractConfigCell staticZoomRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getStaticZoom(), null, getString(R.string.StaticZoom)));
@@ -238,6 +248,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell takeGIFasVideoRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.takeGIFasVideo));
     private final AbstractConfigCell autoPauseVideoRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.autoPauseVideo, getString(R.string.AutoPauseVideoAbout)));
     private final AbstractConfigCell doubleTapSeekDurationRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getDoubleTapSeekDuration(), doubleTapSeekDurations, null));
+    private final AbstractConfigCell doubleTapSeekDurationConnectedGroupRow = cellGroup.appendCell(new ConfigCellConnectedButtonGroup(null, NaConfig.INSTANCE.getDoubleTapSeekDuration(), doubleTapSeekDurations));
     private final AbstractConfigCell disablePreviewVideoSoundShortcutRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDisablePreviewVideoSoundShortcut(), getString(R.string.DisablePreviewVideoSoundShortcutNotice)));
     private final AbstractConfigCell dontAutoPlayNextVoiceRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDontAutoPlayNextVoice()));
     private final AbstractConfigCell showSpoilersDirectlyRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.showSpoilersDirectly));
@@ -529,6 +540,15 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private MessageSettingsPreviewCell messageSettingsPreviewCell;
 
     public NekoChatSettingsActivity() {
+        cellGroup.rows.remove(markdownParserConnectedGroupRow);
+        cellGroup.rows.remove(cameraInVideoMessagesConnectedGroup);
+        cellGroup.rows.remove(doubleTapSeekDurationConnectedGroupRow);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            replaceRow(markdownParserRow, markdownParserConnectedGroupRow);
+            replaceRow(cameraInVideoMessages, cameraInVideoMessagesConnectedGroup);
+            replaceRow(doubleTapSeekDurationRow, doubleTapSeekDurationConnectedGroupRow);
+        }
+
         if (NaConfig.INSTANCE.getUseEditedIcon().Bool()) {
             cellGroup.rows.remove(customEditedMessageRow);
         }
@@ -537,6 +557,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         }
         if (!BuildVars.LOGS_ENABLED) {
             cellGroup.rows.remove(markdownParserRow);
+            cellGroup.rows.remove(markdownParserConnectedGroupRow);
         }
         checkSkipOpenLinkConfirmRows();
         checkConfirmAVRows();
@@ -567,7 +588,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             removeIfPresent(cameraExtensionsRow);
         }
         if (NaConfig.INSTANCE.getCameraInVideoMessages().Int() != 2) {
-            addAfterIfMissing(rememberLastUsedCameraRow, cameraInVideoMessages);
+            addAfterIfMissing(rememberLastUsedCameraRow, getCameraInVideoMessagesRow());
         } else {
             removeIfPresent(rememberLastUsedCameraRow);
         }
@@ -644,6 +665,18 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             syncAyuCameraRows();
             addRowsToMap(cellGroup);
             listAdapter.notifyItemChanged(cameraTypeIndex);
+        }
+    }
+
+    private AbstractConfigCell getCameraInVideoMessagesRow() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? cameraInVideoMessagesConnectedGroup : cameraInVideoMessages;
+    }
+
+    private void replaceRow(AbstractConfigCell oldRow, AbstractConfigCell newRow) {
+        int index = cellGroup.rows.indexOf(oldRow);
+        if (index >= 0) {
+            cellGroup.rows.remove(index);
+            cellGroup.rows.add(index, newRow);
         }
     }
 

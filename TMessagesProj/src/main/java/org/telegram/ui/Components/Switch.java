@@ -221,7 +221,7 @@ public class Switch extends View {
             );
             rippleDrawable = new BaseCell.RippleDrawableSafe(colorStateList, null, maskDrawable);
             if (Build.VERSION.SDK_INT >= 23) {
-                rippleDrawable.setRadius(AndroidUtilities.dp(18));
+                rippleDrawable.setRadius(AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 24 : 18));
             }
             rippleDrawable.setCallback(this);
         }
@@ -260,7 +260,8 @@ public class Switch extends View {
 
     private void animateToCheckedState(boolean newCheckedState) {
         checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
-        checkAnimator.setDuration(200);
+        checkAnimator.setDuration(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 260 : 200);
+        checkAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         checkAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -605,11 +606,15 @@ public class Switch extends View {
     }
 
     private void drawCustomSwitch(Canvas canvas, int switchStyle) {
-        int width = dp(36);
+        boolean isMd3 = switchStyle == SWITCH_STYLE_MD3;
+        boolean isModern = switchStyle == SWITCH_STYLE_MODERN;
+        boolean isM3Expressive = isMd3 && xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        int width = isM3Expressive ? Math.min(dp(52), getMeasuredWidth()) : dp(36);
         int x = (getMeasuredWidth() - width) / 2;
-        float y = (getMeasuredHeight() - dpf2(14)) / 2;
-        int tx = x + dp(7) + (int) (dp(18) * progress);
-        int thumbTx = Utilities.clamp(tx, x + width + dp(2), x + dp(10));
+        float trackHeight = isM3Expressive ? Math.min(dpf2(32), getMeasuredHeight()) : dpf2(20);
+        float y = (getMeasuredHeight() - trackHeight) / 2;
+        int tx = isM3Expressive ? x + dp(16) + (int) ((width - dp(32)) * progress) : x + dp(7) + (int) (dp(18) * progress);
+        int thumbTx = isM3Expressive ? tx : Utilities.clamp(tx, x + width + dp(2), x + dp(10));
         int ty = getMeasuredHeight() / 2;
 
         int color1;
@@ -625,8 +630,6 @@ public class Switch extends View {
                     : Theme.key_chat_outInstant; // a1_10
         }
 
-        boolean isMd3 = switchStyle == SWITCH_STYLE_MD3;
-        boolean isModern = switchStyle == SWITCH_STYLE_MODERN;
         float iconVisibilityFactor = animatorIconVisibility.getFloatValue();
         boolean hasVisibleIcon = iconDrawable != null && iconVisibilityFactor > 0;
         boolean isMd3PermissionStyle = isMd3 && trackColorKey == Theme.key_fill_RedNormal && (drawIconType == 1 || hasVisibleIcon);
@@ -640,7 +643,10 @@ public class Switch extends View {
         }
         int md3OffTrackFillColor = 0;
         if (isMd3) {
-            md3OffTrackFillColor = processColor(Theme.blendOver(
+            md3OffTrackFillColor = isM3Expressive ? processColor(Theme.blendOver(
+                    Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider),
+                    Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), Theme.isCurrentThemeDay() ? 0.16f : 0.18f)
+            )) : processColor(Theme.blendOver(
                     Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider),
                     Theme.multAlpha(Theme.getColor(trackColorKey, resourcesProvider), Theme.isCurrentThemeDay() ? 0.2f : 0.1f)
             ));
@@ -676,16 +682,21 @@ public class Switch extends View {
             paint.setColor(color);
             paint2.setColor(color);
 
-            rectF.set(x, y - dpf2(3), x + width, y + dpf2(17));
-            canvasToDraw.drawRoundRect(rectF, dpf2(15), dpf2(15), paint);
+            rectF.set(x, y, x + width, y + trackHeight);
+            canvasToDraw.drawRoundRect(rectF, trackHeight / 2, trackHeight / 2, paint);
 
             color1 = isMd3 ? (isMd3PermissionStyle ? md3PermissionTrackColor : processColor(Theme.getColor(trackColorKey, resourcesProvider))) : originalColor1;
+            if (isM3Expressive && !isMd3PermissionStyle) {
+                color1 = processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider));
+            }
             googleBorderPaint.setColor(lerpColor(color1, color2, colorProgress));
+            googleBorderPaint.setStrokeWidth(isM3Expressive ? dpf2(2) : dp(1));
 
-            canvasToDraw.drawRoundRect(rectF, dpf2(15), dpf2(15), googleBorderPaint);
+            canvasToDraw.drawRoundRect(rectF, trackHeight / 2, trackHeight / 2, googleBorderPaint);
 
             if (a == 0 && rippleDrawable != null) {
-                rippleDrawable.setBounds(thumbTx - dp(18), ty - dp(18), thumbTx + dp(18), ty + dp(18));
+                int rippleRadius = isM3Expressive ? dp(24) : dp(18);
+                rippleDrawable.setBounds(thumbTx - rippleRadius, ty - rippleRadius, thumbTx + rippleRadius, ty + rippleRadius);
                 rippleDrawable.draw(canvasToDraw);
             } else if (a == 1) {
                 canvasToDraw.drawBitmap(overlayMaskBitmap, 0, 0, overlayMaskPaint);
@@ -707,11 +718,12 @@ public class Switch extends View {
             float colorProgress = getLayerColorProgress(a);
 
             int thumbUncheckedKey = isMd3 ? (isMd3PermissionStyle ? thumbCheckedKey : trackColorKey) : trackColorKey;
-            color1 = Theme.getColor(thumbUncheckedKey, resourcesProvider);
+            color1 = isM3Expressive && !isMd3PermissionStyle ? Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider) : Theme.getColor(thumbUncheckedKey, resourcesProvider);
             color2 = processColor(Theme.getColor(thumbCheckedKey, resourcesProvider));
             paint.setColor(lerpColor(color1, color2, colorProgress));
 
-            canvasToDraw.drawCircle(thumbTx, ty, dp(isMd3 ? 8 : shouldDrawModernOffIcon ? 7 + progress : 6 + 2 * progress), paint);
+            float thumbRadius = isM3Expressive ? dpf2(8 + 4 * progress) : dp(isMd3 ? 8 : shouldDrawModernOffIcon ? 7 + progress : 6 + 2 * progress);
+            canvasToDraw.drawCircle(thumbTx, ty, thumbRadius, paint);
 
             if (isMd3 || shouldDrawModernOffIcon) {
                 if (isMd3) {
@@ -730,7 +742,7 @@ public class Switch extends View {
                             canvasToDraw.restore();
                         }
                     } else {
-                        drawCross(canvasToDraw, thumbTx, ty, iconColor, 1.0f - progress, 3);
+                        drawCross(canvasToDraw, thumbTx, ty, iconColor, 1.0f - progress, isM3Expressive ? 2.5f : 3);
                     }
                     int checkColor = Theme.getColor(trackCheckedFillKey, resourcesProvider);
                     if (lastCheckColor != checkColor) {

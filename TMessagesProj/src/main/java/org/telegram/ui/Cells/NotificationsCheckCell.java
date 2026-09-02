@@ -66,6 +66,7 @@ public class NotificationsCheckCell extends FrameLayout {
 
         setWillNotDraw(false);
         currentHeight = height;
+        int switchTextInset = getSwitchTextInset();
 
         if (withImage) {
             imageView = new ImageView(context);
@@ -82,7 +83,7 @@ public class NotificationsCheckCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : (withImage ? 64 : padding), 13 + (currentHeight - 70) / 2, LocaleController.isRTL ? (withImage ? 64 : padding) : 80, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? switchTextInset : (withImage ? 64 : padding), 13 + (currentHeight - 70) / 2, LocaleController.isRTL ? (withImage ? 64 : padding) : switchTextInset, 0));
 
         valueTextView = new AnimatedTextView(context);
         valueTextView.setAnimationProperties(.55f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -91,7 +92,7 @@ public class NotificationsCheckCell extends FrameLayout {
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         valueTextView.setPadding(0, 0, 0, 0);
         valueTextView.setEllipsizeByGradient(true);
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : (withImage ? 64 : padding), 38 - 9 - (withImage ? 2 : 0) + (currentHeight - 70) / 2, LocaleController.isRTL ? (withImage ? 64 : padding) : 80, 0));
+        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? switchTextInset : (withImage ? 64 : padding), 38 - 9 - (withImage ? 2 : 0) + (currentHeight - 70) / 2, LocaleController.isRTL ? (withImage ? 64 : padding) : switchTextInset, 0));
 
         multilineValueTextView = new TextView(context);
         multilineValueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
@@ -103,7 +104,7 @@ public class NotificationsCheckCell extends FrameLayout {
         multilineValueTextView.setEllipsize(null);
         multilineValueTextView.setPadding(0, 0, 0, 0);
         multilineValueTextView.setVisibility(View.GONE);
-        addView(multilineValueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : (withImage ? 64 : padding), 38 - (withImage ? 2 : 0) + (currentHeight - 70) / 2, LocaleController.isRTL ? (withImage ? 64 : padding) : 80, 0));
+        addView(multilineValueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? switchTextInset : (withImage ? 64 : padding), 38 - (withImage ? 2 : 0) + (currentHeight - 70) / 2, LocaleController.isRTL ? (withImage ? 64 : padding) : switchTextInset, 0));
 
         checkBox = new Switch(context, resourcesProvider) {
             @Override
@@ -112,8 +113,12 @@ public class NotificationsCheckCell extends FrameLayout {
             }
         };
         checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
-        addView(checkBox, LayoutHelper.createFrame(37, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+        addView(checkBox, LayoutHelper.createFrame(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 52 : 37, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 48 : 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
         checkBox.setFocusable(false);
+    }
+
+    private int getSwitchTextInset() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 104 : 80;
     }
 
     public Switch getCheckBox() {

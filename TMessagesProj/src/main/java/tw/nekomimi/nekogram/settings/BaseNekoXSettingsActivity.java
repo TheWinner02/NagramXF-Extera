@@ -52,6 +52,7 @@ import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCheckBox;
+import tw.nekomimi.nekogram.config.cell.ConfigCellConnectedButtonGroup;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
 import tw.nekomimi.nekogram.config.cell.ConfigCellSelectBox;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
@@ -64,6 +65,7 @@ import tw.nekomimi.nekogram.config.cell.WithBindConfig;
 import tw.nekomimi.nekogram.config.cell.WithKey;
 import tw.nekomimi.nekogram.config.cell.WithOnClick;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
+import tw.nekomimi.nekogram.ui.cells.M3ConnectedButtonGroupCell;
 
 public class BaseNekoXSettingsActivity extends BaseFragment {
     protected BlurredRecyclerView listView;
@@ -363,6 +365,7 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
             case ConfigCellTextDetail c -> c.onClick(view, actualPos);
             case ConfigCellCheckBox ignored -> onCheckBoxCellClick(view, actualPos);
             case ConfigCellCustom ignored -> onCustomCellClick(view, actualPos, x, y);
+            case ConfigCellConnectedButtonGroup ignored -> {}
             case WithOnClick withOnClick -> withOnClick.onClick();
             case null, default -> {}
         }
@@ -644,6 +647,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
                     break;
                 case CellGroup.ITEM_TYPE_TEXT_DETAIL_ICON:
                     view = new TextDetailSettingsCell(mContext);
+                    break;
+                case CellGroup.ITEM_TYPE_CONNECTED_BUTTON_GROUP:
+                    view = new M3ConnectedButtonGroupCell(mContext);
                     break;
             }
             return view;
