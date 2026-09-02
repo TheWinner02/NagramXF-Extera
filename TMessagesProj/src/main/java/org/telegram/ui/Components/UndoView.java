@@ -302,7 +302,11 @@ public class UndoView extends FrameLayout {
 
         undoButton = new LinearLayout(context);
         undoButton.setOrientation(LinearLayout.HORIZONTAL);
-        undoButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_undo_cancelColor) & 0x22ffffff, AndroidUtilities.dp(2), AndroidUtilities.dp(2)));
+        int btnRad = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 16 : 2);
+        undoButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_undo_cancelColor) & 0x22ffffff, btnRad, btnRad));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            ScaleStateListAnimator.apply(undoButton, 0.04f, 1.2f);
+        }
         addView(undoButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 11, 0));
         undoButton.setOnClickListener(v -> {
             if (!canUndo()) {
@@ -337,7 +341,8 @@ public class UndoView extends FrameLayout {
         textPaint.setColor(getThemedColor(Theme.key_undo_infoColor));
 
         setWillNotDraw(false);
-        backgroundDrawable = Theme.createRoundRectDrawable(AndroidUtilities.dp(10), getThemedColor(Theme.key_undo_background));
+        int undoRad = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 20 : 10);
+        backgroundDrawable = Theme.createRoundRectDrawable(undoRad, getThemedColor(Theme.key_undo_background));
 
         setOnTouchListener((v, event) -> true);
 
@@ -426,7 +431,11 @@ public class UndoView extends FrameLayout {
                         ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f));
                 animatorSet.setDuration(180);
             }
-            animatorSet.setInterpolator(new DecelerateInterpolator());
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                animatorSet.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getExpressiveSpringInterpolator());
+            } else {
+                animatorSet.setInterpolator(new DecelerateInterpolator());
+            }
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -1610,8 +1619,13 @@ public class UndoView extends FrameLayout {
             setEnterOffset((fromTop ? -1.0f : 1.0f) * (enterOffsetMargin + undoViewHeight));
             AnimatorSet animatorSet = new AnimatorSet();
             animatorSet.playTogether(ObjectAnimator.ofFloat(this, "enterOffset", (fromTop ? -1.0f : 1.0f) * (enterOffsetMargin + undoViewHeight), (fromTop ? 1.0f : -1.0f)));
-            animatorSet.setInterpolator(new DecelerateInterpolator());
-            animatorSet.setDuration(180);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                animatorSet.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+                animatorSet.setDuration(320);
+            } else {
+                animatorSet.setInterpolator(new DecelerateInterpolator());
+                animatorSet.setDuration(180);
+            }
             animatorSet.start();
         }
     }

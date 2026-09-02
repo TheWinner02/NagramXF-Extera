@@ -809,11 +809,14 @@ public class Bulletin {
         }
 
         protected void setBackground(int color) {
-            setBackground(color, 16);
+            setBackground(color, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 24 : 16);
         }
 
         public void setBackground(int color, int rounding) {
             if (!hasCustomBackground) {
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    rounding = Math.max(rounding, 24);
+                }
                 background = Theme.createRoundRectDrawable(dp(rounding), color);
             }
         }
@@ -1130,9 +1133,11 @@ public class Bulletin {
                 if (onUpdate != null) {
                     onUpdate.accept(layout.getTranslationY());
                 }
+                float damping = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 0.72f : DAMPING_RATIO;
+                float stiffness = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 320f : STIFFNESS;
                 final SpringAnimation springAnimation = new SpringAnimation(layout, IN_OUT_OFFSET_Y, 0);
-                springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
-                springAnimation.getSpring().setStiffness(STIFFNESS);
+                springAnimation.getSpring().setDampingRatio(damping);
+                springAnimation.getSpring().setStiffness(stiffness);
                 if (endAction != null) {
                     springAnimation.addEndListener((animation, canceled, value, velocity) -> {
                         layout.setInOutOffset(0);
@@ -1152,9 +1157,11 @@ public class Bulletin {
 
             @Override
             public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
+                float damping = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 0.72f : DAMPING_RATIO;
+                float stiffness = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 350f : STIFFNESS;
                 final SpringAnimation springAnimation = new SpringAnimation(layout, IN_OUT_OFFSET_Y, layout.getHeight());
-                springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
-                springAnimation.getSpring().setStiffness(STIFFNESS);
+                springAnimation.getSpring().setDampingRatio(damping);
+                springAnimation.getSpring().setStiffness(stiffness);
                 if (endAction != null) {
                     springAnimation.addEndListener((animation, canceled, value, velocity) -> {
                         if (!canceled) {

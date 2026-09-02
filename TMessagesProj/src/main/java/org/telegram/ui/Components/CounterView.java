@@ -106,7 +106,7 @@ public class CounterView extends View {
         public int gravity = Gravity.CENTER;
         float countLeft;
         float x;
-        public float radius = 11.5f;
+        public float radius = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 10f : 11.5f;
 
         private boolean reverseAnimation;
         public float horizontalPadding;
@@ -125,14 +125,14 @@ public class CounterView extends View {
 
         public CounterDrawable(View parent, boolean drawBackground, Theme.ResourcesProvider resourcesProvider) {
             this.parent = parent;
-            this.resourcesProvider = resourcesProvider;
             this.drawBackground = drawBackground;
+            this.resourcesProvider = resourcesProvider;
             if (drawBackground) {
                 circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 circlePaint.setColor(Color.BLACK);
             }
             textPaint.setTypeface(AndroidUtilities.bold());
-            textPaint.setTextSize(AndroidUtilities.dp(13));
+            textPaint.setTextSize(AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 12 : 13));
         }
 
         public void setSize(int h, int w) {
@@ -245,16 +245,26 @@ public class CounterView extends View {
                 });
                 if (currentCount <= 0) {
                     animationType = ANIMATION_TYPE_IN;
-                    countAnimator.setDuration(220);
-                    countAnimator.setInterpolator(new OvershootInterpolator());
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        countAnimator.setDuration(260);
+                        countAnimator.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+                    } else {
+                        countAnimator.setDuration(220);
+                        countAnimator.setInterpolator(new OvershootInterpolator());
+                    }
                 } else if (count == 0) {
                     animationType = ANIMATION_TYPE_OUT;
-                    countAnimator.setDuration(150);
-                    countAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                    countAnimator.setDuration(160);
+                    countAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT);
                 } else {
                     animationType = ANIMATION_TYPE_REPLACE;
-                    countAnimator.setDuration(430);
-                    countAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        countAnimator.setDuration(340);
+                        countAnimator.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getExpressiveSpringInterpolator());
+                    } else {
+                        countAnimator.setDuration(430);
+                        countAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                    }
                 }
                 if (countLayout != null) {
                     CharSequence oldStr = currentText; // getStringOfCCount(currentCount);
@@ -348,10 +358,14 @@ public class CounterView extends View {
 
                     float scale = 1f;
                     if (countAnimationIncrement) {
-                        if (countChangeProgress <= 0.5f) {
-                            scale += 0.1f * CubicBezierInterpolator.EASE_OUT.getInterpolation(countChangeProgress * 2);
+                        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                            scale += 0.16f * (float) Math.sin(Math.min(1f, countChangeProgress) * Math.PI);
                         } else {
-                            scale += 0.1f * CubicBezierInterpolator.EASE_IN.getInterpolation((1f - (countChangeProgress - 0.5f) * 2));
+                            if (countChangeProgress <= 0.5f) {
+                                scale += 0.1f * CubicBezierInterpolator.EASE_OUT.getInterpolation(countChangeProgress * 2);
+                            } else {
+                                scale += 0.1f * CubicBezierInterpolator.EASE_IN.getInterpolation((1f - (countChangeProgress - 0.5f) * 2));
+                            }
                         }
                     }
 
@@ -418,7 +432,7 @@ public class CounterView extends View {
                 if (animationType == ANIMATION_TYPE_IN || animationType == ANIMATION_TYPE_OUT) {
                     updateX(countWidth);
                     float countTop = (lastH - AndroidUtilities.dp(radius * 2)) / 2f;
-                    rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
+                    rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(radius - 0.5f), countTop + AndroidUtilities.dp(radius * 2));
                 } else {
                     float progressHalf = countChangeProgress * 2;
                     if (progressHalf > 1f) {
@@ -432,12 +446,12 @@ public class CounterView extends View {
                         countWidth = this.countWidth * progressHalf + this.countWidthOld * (1f - progressHalf);
                     }
                     updateX(countWidth);
-                    rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
+                    rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(radius - 0.5f), countTop + AndroidUtilities.dp(radius * 2));
                 }
             } else {
                 updateX(countWidth);
                 float countTop = (lastH - AndroidUtilities.dp(radius * 2)) / 2f;
-                rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
+                rectF.set(x, countTop, x + countWidth + AndroidUtilities.dp(radius - 0.5f), countTop + AndroidUtilities.dp(radius * 2));
             }
         }
 

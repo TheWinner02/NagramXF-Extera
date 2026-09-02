@@ -562,12 +562,26 @@ public class FilterTabsView extends FrameLayout {
                     counterWidth = animateFromCounterWidth * (1f - changeProgress) + counterWidth * changeProgress;
                 }
                 rect.set(x, countTop, x + w, countTop + dp(TAB_COUNTER_HEIGHT));
+                boolean m3Exp = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+                boolean scaled = false;
                 if (animateCounterEnter || animateCounterRemove) {
                     canvas.save();
-                    float s = animateCounterEnter ? changeProgress : 1f - changeProgress;
+                    scaled = true;
+                    float s;
+                    if (animateCounterEnter) {
+                        s = m3Exp ? xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator().getInterpolation(changeProgress) : changeProgress;
+                    } else {
+                        s = 1f - changeProgress;
+                    }
                     canvas.scale(s, s, rect.centerX(), rect.centerY());
+                } else if (animateCounterReplace && m3Exp) {
+                    float popScale = 1f + 0.14f * (float) Math.sin(Math.min(1f, changeProgress) * Math.PI);
+                    canvas.save();
+                    scaled = true;
+                    canvas.scale(popScale, popScale, rect.centerX(), rect.centerY());
                 }
-                canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, counterPaint);
+                float badgeRadius = (m3Exp ? 10f : 11.5f) * AndroidUtilities.density;
+                canvas.drawRoundRect(rect, badgeRadius, badgeRadius, counterPaint);
 
                 if (animateCounterReplace) {
                     float y = countTop;
@@ -616,7 +630,7 @@ public class FilterTabsView extends FrameLayout {
                     }
                 }
 
-                if (animateCounterEnter || animateCounterRemove) {
+                if (scaled) {
                     canvas.restore();
                 }
                 if (showRemove && (isEditing || editingStartAnimationProgress != 0)) {
