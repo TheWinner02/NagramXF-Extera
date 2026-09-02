@@ -134,7 +134,22 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         searchIcon = new ImageView(context);
         searchIcon.setScaleType(ImageView.ScaleType.CENTER);
         searchIcon.setImageResource(R.drawable.outline_search_1_24);
-        addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 12, 0, 12, 0));
+        int iconSize = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 36 : 24;
+        int iconMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 12;
+        addView(searchIcon, LayoutHelper.createFrame(iconSize, iconSize, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), iconMargin, 0, iconMargin, 0));
+        searchIcon.setOnClickListener(v -> {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && isSearchActive) {
+                if (onCloseSearch != null) {
+                    onCloseSearch.run();
+                }
+            } else {
+                editText.requestFocus();
+                AndroidUtilities.showKeyboard(editText);
+            }
+        });
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            org.telegram.ui.Components.ScaleStateListAnimator.apply(searchIcon, 0.06f, 1.2f);
+        }
 
         additionalIconsLayout = new LinearLayout(context);
         additionalIconsLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -155,13 +170,18 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
                     }
                 }
                 clearSearchFilters();
+            } else if (editText.length() > 0) {
+                editText.getText().clear();
             } else if (onCloseSearch != null) {
                 onCloseSearch.run();
-            } else {
-                editText.getText().clear();
             }
         });
-        addView(closeIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 12, 0, 12, 0));
+        int closeSize = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 36 : 24;
+        int closeMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 12;
+        addView(closeIcon, LayoutHelper.createFrame(closeSize, closeSize, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), closeMargin, 0, closeMargin, 0));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            org.telegram.ui.Components.ScaleStateListAnimator.apply(closeIcon, 0.06f, 1.2f);
+        }
 
         searchFilterLayout = new LinearLayout(getContext()) {
             @Override
@@ -205,12 +225,17 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
                     (getHeight() - getPaddingBottom()) + dp(4));
             blurredBackgroundDrawable.draw(canvas);
         }
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && isSearchActive) {
+            dividerPaint.setColor(getThemedColor(Theme.key_divider));
+            dividerPaint.setStrokeWidth(dp(1));
+            canvas.drawLine(0, getHeight() - dp(1), getWidth(), getHeight() - dp(1), dividerPaint);
+        }
         super.dispatchDraw(canvas);
         canvas.restore();
     }
 
     public void setupBlurredBackground(BlurredBackgroundDrawable drawable) {
-        drawable.setRadius(dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 28 : 20));
+        drawable.setRadius(dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 24 : 20));
         drawable.setPadding(dp(4));
         blurredBackgroundDrawable = drawable;
     }
@@ -243,8 +268,8 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
 
     private void checkUi_editTextPaddings() {
         final int filtersWidth = (int) animatorSearchFiltersWidth.getFactor() + dp(6); //searchFilterLayout.getWidth();
-        final int pStart = Math.max(filtersWidth, dp(48));
-        final int pEnd = dp(48) + additionalIconsLayout.getMeasuredWidth();
+        final int pStart = Math.max(filtersWidth, dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 52 : 48));
+        final int pEnd = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 52 : 48) + additionalIconsLayout.getMeasuredWidth();
 
         final int pLeft = LocaleController.isRTL ? pEnd : pStart;
         final int pRight = LocaleController.isRTL ? pStart : pEnd;
@@ -277,7 +302,7 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
         boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
         if (isM3) {
-            bg = Theme.createRoundRectDrawable(dp(28), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundGray));
+            bg = Theme.createRoundRectDrawable(dp(24), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundGray));
             searchIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.75f), PorterDuff.Mode.MULTIPLY);
             closeIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.75f), PorterDuff.Mode.MULTIPLY);
             closeIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(24)));
@@ -334,9 +359,32 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         this.onCloseSearch = onCloseSearch;
     }
 
+    private boolean isSearchActive;
+    private final android.graphics.Paint dividerPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+
+    public void setSearchActive(boolean active) {
+        if (isSearchActive != active) {
+            isSearchActive = active;
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                if (active) {
+                    searchIcon.setImageResource(R.drawable.ic_ab_back);
+                    searchIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(18)));
+                } else {
+                    searchIcon.setImageResource(R.drawable.outline_search_1_24);
+                    searchIcon.setBackground(null);
+                }
+                searchIcon.setAlpha(1.0f);
+                searchIcon.setVisibility(VISIBLE);
+                updateColors();
+                invalidate();
+            }
+        }
+    }
+
     public void setCloseButtonVisible(boolean visible) {
         closeButtonForcedVisible = visible;
         checkCloseButtonVisible();
+        setSearchActive(visible);
     }
 
     private void checkCloseButtonVisible() {
@@ -349,7 +397,9 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
             FragmentFloatingButton.setAnimatedVisibility(closeIcon, factor);
             closeIcon.setRotation((1 - factor) * 90);
         } else if (id == ANIMATOR_ID_SEARCH_ICON_VISIBLE) {
-            FragmentFloatingButton.setAnimatedVisibility(searchIcon, factor);
+            if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                FragmentFloatingButton.setAnimatedVisibility(searchIcon, factor);
+            }
         } else if (id == ANIMATOR_ID_SEARCH_FILTERS_WIDTH) {
             checkUi_editTextPaddings();
         }

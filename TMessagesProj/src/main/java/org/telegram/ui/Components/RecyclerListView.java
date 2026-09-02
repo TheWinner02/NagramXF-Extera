@@ -3516,12 +3516,50 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         return isViewTypeSection.run(getAdapter().getItemViewType(position));
     }
 
+    public interface SelectionChecker {
+        boolean isItemSelected(View view, int position);
+    }
+    private SelectionChecker selectionChecker;
+    public void setSelectionChecker(SelectionChecker checker) {
+        this.selectionChecker = checker;
+    }
+
+    private View findChildByAdapterPosition(int position) {
+        if (position < 0 || getAdapter() == null || position >= getAdapter().getItemCount()) {
+            return null;
+        }
+        ViewHolder holder = findViewHolderForAdapterPosition(position);
+        return holder != null ? holder.itemView : null;
+    }
+
+    public boolean isM3ExpressiveIsolatedSectionItem(View view, int position) {
+        if (view == null || position == NO_POSITION) {
+            return false;
+        }
+        if (isM3ExpressivePressedSectionPosition(position)) {
+            return true;
+        }
+        if (view.isPressed() || view.isSelected()) {
+            return true;
+        }
+        if (selectionChecker != null && selectionChecker.isItemSelected(view, position)) {
+            return true;
+        }
+        if (view instanceof org.telegram.ui.Cells.DialogCell) {
+            org.telegram.ui.Cells.DialogCell dc = (org.telegram.ui.Cells.DialogCell) view;
+            if (dc.isChecked() || dc.isDialogSelected()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private int getM3ExpressiveSegmentGap() {
         return dp(1);
     }
 
     private int getM3ExpressiveSelectorOuterRadiusDp() {
-        return 18;
+        return (int) (xyz.nextalone.nagram.ui.UIStyleEngine.getCardCornerRadius() / AndroidUtilities.density);
     }
 
     private float getM3ExpressiveInnerRadius() {
@@ -3538,11 +3576,6 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     }
 
     private void updateM3ExpressiveSelectorMask(int position) {
-        if (position == NO_POSITION || getAdapter() == null || isViewTypeSection == null) {
-            Theme.setMaskDrawableRad(selectorDrawable, getM3ExpressiveSelectorOuterRadiusDp(), getM3ExpressiveSelectorOuterRadiusDp(), getM3ExpressiveSelectorOuterRadiusDp(), getM3ExpressiveSelectorOuterRadiusDp());
-            return;
-        }
-
         float outerRadius = getM3ExpressiveSelectorOuterRadiusDp();
         Theme.setMaskDrawableRad(selectorDrawable, outerRadius, outerRadius, outerRadius, outerRadius);
     }
@@ -3681,7 +3714,6 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             return;
         }
 
-        View pressedSectionChild = null;
         for (int i = 0; i < getChildCount(); ++i) {
             final View child = getChildAt(i);
             if (
@@ -3698,31 +3730,34 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                 continue;
             }
 
-            if (isM3ExpressivePressedSectionPosition(position)) {
-                pressedSectionChild = child;
+            if (isM3ExpressiveIsolatedSectionItem(child, position)) {
+                drawM3ExpressiveSectionItemBackground(canvas, child, false, false);
                 continue;
             }
 
-            boolean hasAbove = hasM3ExpressiveSectionItem(position - 1) && !isM3ExpressivePressedSectionPosition(position - 1);
-            boolean hasBelow = hasM3ExpressiveSectionItem(position + 1) && !isM3ExpressivePressedSectionPosition(position + 1);
-            drawM3ExpressiveSectionItemBackground(canvas, child, hasAbove, hasBelow);
-        }
+            View aboveChild = findChildByAdapterPosition(position - 1);
+            boolean isAboveIsolated = aboveChild != null && isM3ExpressiveIsolatedSectionItem(aboveChild, position - 1);
+            boolean hasAbove = hasM3ExpressiveSectionItem(position - 1) && !isAboveIsolated;
 
-        if (pressedSectionChild != null) {
-            drawM3ExpressiveSectionItemBackground(canvas, pressedSectionChild, false, false);
+            View belowChild = findChildByAdapterPosition(position + 1);
+            boolean isBelowIsolated = belowChild != null && isM3ExpressiveIsolatedSectionItem(belowChild, position + 1);
+            boolean hasBelow = hasM3ExpressiveSectionItem(position + 1) && !isBelowIsolated;
+
+            drawM3ExpressiveSectionItemBackground(canvas, child, hasAbove, hasBelow);
         }
     }
 
     private void drawM3ExpressiveSectionItemBackground(Canvas canvas, View child, boolean hasAbove, boolean hasBelow) {
         float topRadius = hasAbove ? getM3ExpressiveInnerRadius() : sectionRadius;
         float bottomRadius = hasBelow ? getM3ExpressiveInnerRadius() : sectionRadius;
-        float gap = getM3ExpressiveSegmentGap();
+        boolean isIsolated = !hasAbove && !hasBelow;
+        float gap = isIsolated ? dp(2) : getM3ExpressiveSegmentGap();
 
         AndroidUtilities.rectTmp.set(
             getPaddingLeft() + sectionsItemDecoration.padding,
-            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child) + (hasAbove ? gap : 0)),
+            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child) + (hasAbove ? gap : 0) + (isIsolated ? dp(1) : 0)),
             getWidth() - getPaddingRight() - sectionsItemDecoration.padding,
-            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - (hasBelow ? gap : 0))
+            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - (hasBelow ? gap : 0) - (isIsolated ? dp(1) : 0))
         );
         if (AndroidUtilities.rectTmp.bottom >= AndroidUtilities.rectTmp.top) {
             drawSectionBackground.run(canvas, AndroidUtilities.rectTmp, topRadius, bottomRadius, child.getAlpha());

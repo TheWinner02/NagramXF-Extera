@@ -3156,6 +3156,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         isSelected = value;
     }
 
+    public boolean isChecked() {
+        return checkBox != null && (checkBox.isChecked() || checkBox.getProgress() > 0);
+    }
+
+    public boolean isDialogSelected() {
+        return isSelected;
+    }
+
     public boolean checkCurrentDialogIndex(boolean frozen) {
         return false;
     }
@@ -4099,11 +4107,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             gtx += translationX;
         }
 
-        float cornersRadius = dp(8) * cornerProgress;
-        if (isSelected) {
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        float cardRad = isM3 ? xyz.nextalone.nagram.ui.UIStyleEngine.getCardCornerRadius() : 0;
+        float cornersRadius = isM3 ? cardRad : dp(8) * cornerProgress;
+        boolean isItemChecked = isM3 && checkBox != null && (checkBox.isChecked() || checkBox.getProgress() > 0);
+        if (isSelected || isItemChecked) {
             rect.set(0, 0, getMeasuredWidth(), AndroidUtilities.lerp(getMeasuredHeight(), getCollapsedHeight(), rightFragmentOpenedProgress));
             rect.offset(0, -translateY + collapseOffset);
-            canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+            float rad = isM3 ? cardRad : cornersRadius;
+            canvas.drawRoundRect(rect, rad, rad, Theme.dialogs_tabletSeletedPaint);
         }
 
         canvas.save();
@@ -4894,10 +4906,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     Theme.dividerPaint.setAlpha((int) (alpha * (1f - rightFragmentOpenedProgress)));
                 }
                 float y = getMeasuredHeight() - 1 - rightFragmentOffset * rightFragmentOpenedProgress;
+                int rightPadding = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : 0;
                 if (LocaleController.isRTL) {
-                    canvas.drawLine(0, y, getMeasuredWidth() - left, y, Theme.dividerPaint);
+                    canvas.drawLine(rightPadding, y, getMeasuredWidth() - left, y, Theme.dividerPaint);
                 } else {
-                    canvas.drawLine(left, y, getMeasuredWidth(), y, Theme.dividerPaint);
+                    canvas.drawLine(left, y, getMeasuredWidth() - rightPadding, y, Theme.dividerPaint);
                 }
                 if (rightFragmentOpenedProgress != 0) {
                     Theme.dividerPaint.setAlpha(alpha);

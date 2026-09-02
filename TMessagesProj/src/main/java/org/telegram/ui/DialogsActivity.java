@@ -4262,7 +4262,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPage.listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
             viewPage.listView.setClipToPadding(false);
             viewPage.listView.setPivotY(0);
-            if (initialDialogsType == DIALOGS_TYPE_BOT_REQUEST_PEER) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                viewPage.listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+                viewPage.listView.setSelectionChecker((v, pos) -> {
+                    if (v instanceof org.telegram.ui.Cells.DialogCell) {
+                        return selectedDialogs.contains(((org.telegram.ui.Cells.DialogCell) v).getDialogId());
+                    }
+                    return false;
+                });
+                viewPage.listView.setSections(
+                    view -> {
+                        if (view == null || view.getParent() != viewPage.listView) {
+                            return false;
+                        }
+                        RecyclerView.ViewHolder holder = viewPage.listView.getChildViewHolder(view);
+                        return holder != null && isM3ChatSectionViewType(holder.getItemViewType());
+                    },
+                    this::isM3ChatSectionViewType,
+                    dp(12),
+                    dp(16),
+                    viewPage.listView::drawBackgroundRect,
+                    false
+                );
+            } else if (initialDialogsType == DIALOGS_TYPE_BOT_REQUEST_PEER) {
                 viewPage.listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
             }
             viewPage.dialogsItemAnimator = new DialogsItemAnimator(viewPage.listView) {
@@ -5533,8 +5555,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         if (fragmentSearchField != null) {
             float sideMargin = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 16f : 7f;
-            int searchBarHeight = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 56 : 48;
-            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, searchBarHeight, Gravity.TOP, sideMargin, -2, sideMargin, 0));
+            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, sideMargin, -2, sideMargin, 0));
         }
 
 
@@ -5844,6 +5865,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         return fragmentView;
+    }
+
+    private boolean isM3ChatSectionViewType(int viewType) {
+        return viewType == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG ||
+            viewType == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG_COMMUNITY ||
+            viewType == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_FORWARD_TO_STORIES_CELL ||
+            viewType == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_USER;
     }
 
     private void setStoriesOvercroll(ViewPage viewPage, float storiesOverscroll) {
