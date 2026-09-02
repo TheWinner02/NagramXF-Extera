@@ -80,8 +80,19 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
         ScaleStateListAnimator.apply(this);
         if (!isSubButton) {
-            setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            boolean isSquare = isM3 || xyz.nextalone.nagram.NaConfig.INSTANCE.getSquareFloatingButton().Bool();
+            if (isSquare) {
+                setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(16)));
+            } else {
+                setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
+            }
             setTranslationZ(dpf2(0.5f));
+        }
+
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            animatorButtonVisible.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+            animatorButtonVisible.setDuration(320);
         }
 
         if (isSubButton) {
@@ -167,7 +178,7 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
             iBlur3Background.updateColors();
             invalidate();
 
-            int rad = dp(18);
+            int rad = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(12) : dp(18);
             int pressedColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
             setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
         } else {
@@ -176,7 +187,7 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
             boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
             boolean isSquare = isM3 || xyz.nextalone.nagram.NaConfig.INSTANCE.getSquareFloatingButton().Bool();
             if (isSquare) {
-                int radius = isM3 ? dp(18) : dp(16);
+                int radius = dp(16);
                 setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, radius));
                 setBackground(Theme.createSimpleSelectorRoundRectDrawable(radius,
                     Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
@@ -201,9 +212,12 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     }
 
     public static FrameLayout.LayoutParams createDefaultLayoutParams() {
-        return LayoutHelper.createFrame(48, 48,
+        int size = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 56 : 48;
+        int marginH = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 16 : 20;
+        int marginB = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 16 : 14;
+        return LayoutHelper.createFrame(size, size,
                 (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
-                20, 0, 20, 14);
+                marginH, 0, marginH, marginB);
     }
 
 

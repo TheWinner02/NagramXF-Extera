@@ -29,8 +29,13 @@ public class ScaleStateListAnimator {
                 ObjectAnimator.ofFloat(view, View.SCALE_X, 1f),
                 ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f)
         );
-        defaultAnimator.setInterpolator(new OvershootInterpolator(tension));
-        defaultAnimator.setDuration(350);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            defaultAnimator.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+            defaultAnimator.setDuration(320);
+        } else {
+            defaultAnimator.setInterpolator(new OvershootInterpolator(tension));
+            defaultAnimator.setDuration(350);
+        }
 
         StateListAnimator scaleStateListAnimator = new StateListAnimator();
 

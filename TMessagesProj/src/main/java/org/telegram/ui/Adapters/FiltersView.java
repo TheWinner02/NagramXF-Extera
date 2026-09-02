@@ -205,7 +205,8 @@ public class FiltersView extends RecyclerListView {
         });
         setWillNotDraw(false);
         setHideIfEmpty(false);
-        setSelectorRadius(AndroidUtilities.dp(28));
+        int selRad = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 28);
+        setSelectorRadius(selRad);
         setSelectorDrawableColor(getThemedColor(Theme.key_listSelector));
     }
 
@@ -633,7 +634,8 @@ public class FiltersView extends RecyclerListView {
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             ViewHolder holder = new ViewHolder(new FilterView(parent.getContext(), resourcesProvider));
-            RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, AndroidUtilities.dp(30));
+            int chipH = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 32 : 30);
+            RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, chipH);
             holder.itemView.setLayoutParams(lp);
             return holder;
         }
@@ -716,7 +718,8 @@ public class FiltersView extends RecyclerListView {
         }
 
         private void updateColors() {
-            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(28), getThemedColor(Theme.key_groupcreate_spanBackground)));
+            int bgRad = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 28);
+            setBackground(Theme.createRoundRectDrawable(bgRad, getThemedColor(Theme.key_groupcreate_spanBackground)));
             titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             if (thumbDrawable != null) {
                 if (data.filterType == FILTER_TYPE_ARCHIVE) {
@@ -754,12 +757,12 @@ public class FiltersView extends RecyclerListView {
                         Theme.setCombinedDrawableColor(combinedDrawable, getThemedColor(Theme.key_featuredStickers_buttonText), true);
                         avatarImageView.setImageDrawable(combinedDrawable);
                     } else {
-                        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(16));
+                        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 16));
                         avatarImageView.getImageReceiver().setForUserOrChat(user, thumbDrawable);
                     }
                 } else if (data.chat instanceof TLRPC.Chat) {
                     TLRPC.Chat chat = (TLRPC.Chat) data.chat;
-                    avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(ChatObject.isCommunity(chat) ? 10 : 16));
+                    avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(ChatObject.isCommunity(chat) ? 10 : (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 16)));
                     avatarImageView.getImageReceiver().setForUserOrChat(chat, thumbDrawable);
                 }
             } else {

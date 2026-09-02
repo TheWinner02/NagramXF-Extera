@@ -133,10 +133,11 @@ public class FragmentUsernameBottomSheet {
         layout.addView(headerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 42, 0, 42, 0));
 
         FrameLayout chipLayout = new FrameLayout(context);
-        chipLayout.setBackground(Theme.createRoundRectDrawable(dp(28), dp(28), Theme.getColor(Theme.key_groupcreate_spanBackground, resourcesProvider)));
+        int rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 28);
+        chipLayout.setBackground(Theme.createRoundRectDrawable(rad, rad, Theme.getColor(Theme.key_groupcreate_spanBackground, resourcesProvider)));
 
         BackupImageView chipAvatar = new BackupImageView(context);
-        chipAvatar.setRoundRadius(dp(28));
+        chipAvatar.setRoundRadius(rad);
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setInfo(owner);
         chipAvatar.setForUserOrChat(owner, avatarDrawable);

@@ -173,10 +173,11 @@ public class BotVerifySheet {
 //        linearLayout.addView(topView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
 
         FrameLayout chipLayout = new FrameLayout(context);
-        chipLayout.setBackground(Theme.createRoundRectDrawable(dp(28), dp(28), Theme.getColor(Theme.key_groupcreate_spanBackground)));
+        int rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 28);
+        chipLayout.setBackground(Theme.createRoundRectDrawable(rad, rad, Theme.getColor(Theme.key_groupcreate_spanBackground)));
 
         BackupImageView chipAvatar = new BackupImageView(context);
-        chipAvatar.setRoundRadius(dp(28));
+        chipAvatar.setRoundRadius(rad);
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setInfo(dialog);
         chipAvatar.setForUserOrChat(dialog, avatarDrawable);
@@ -362,10 +363,11 @@ public class BotVerifySheet {
         FrameLayout layoutView = new FrameLayout(context);
 
         FrameLayout chipLayout = new FrameLayout(context);
-        chipLayout.setBackground(Theme.createRoundRectDrawable(dp(28), dp(28), Theme.getColor(Theme.key_groupcreate_spanBackground)));
+        int rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 8 : 28);
+        chipLayout.setBackground(Theme.createRoundRectDrawable(rad, rad, Theme.getColor(Theme.key_groupcreate_spanBackground)));
 
         BackupImageView chipAvatar = new BackupImageView(context);
-        chipAvatar.setRoundRadius(dp(28));
+        chipAvatar.setRoundRadius(rad);
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setInfo(dialog);
         chipAvatar.setForUserOrChat(dialog, avatarDrawable);

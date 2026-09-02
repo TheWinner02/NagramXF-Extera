@@ -122,7 +122,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     public void setBlurredBackgroundDrawable(BlurredBackgroundDrawable drawable) {
         backgroundDrawable = drawable;
         backgroundDrawable.setPadding(dp(CLICK_ZONE_MARGIN));
-        backgroundDrawable.setRadius(dp(BUTTON_SIZE / 2f));
+        backgroundDrawable.setRadius(dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 14 : (BUTTON_SIZE / 2f)));
     }
 
     public void showLoading(boolean loading, boolean animated) {
@@ -171,7 +171,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         button.resourcesProvider = resourcesProvider;
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
         button.setIconColor(color);
-        int rad = dp(22);
+        int rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 14 : 22);
         int pressedColor = Theme.multAlpha(color, .15f);
         button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
 
@@ -194,7 +194,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
         button.setIcon(res, iconSize);
         button.setIconColor(color);
-        int rad = dp(22);
+        int rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 14 : 22);
         int pressedColor = Theme.multAlpha(color, .15f);
         button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
 
