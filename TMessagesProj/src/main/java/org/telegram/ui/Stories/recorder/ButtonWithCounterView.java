@@ -9,8 +9,10 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -606,6 +608,34 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
                 lastWrapWidth = wrapWidth;
                 requestLayout();
             }
+        }
+    }
+
+    private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, org.telegram.ui.Components.CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final Path buttonMorphPath = new Path();
+    private final RectF buttonMorphRect = new RectF();
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        invalidate();
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+            float pillRad = getHeight() / 2f;
+            float currentRad = org.telegram.messenger.AndroidUtilities.lerp(pillRad, dp(8f), progress);
+            buttonMorphPath.rewind();
+            buttonMorphRect.set(0, 0, getWidth(), getHeight());
+            buttonMorphPath.addRoundRect(buttonMorphRect, currentRad, currentRad, Path.Direction.CW);
+            canvas.save();
+            canvas.clipPath(buttonMorphPath);
+            super.draw(canvas);
+            canvas.restore();
+        } else {
+            super.draw(canvas);
         }
     }
 

@@ -382,8 +382,9 @@ public class ItemOptions {
             return this;
         }
 
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
         subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
-        subItem.setPadding(dp(18), 0, dp(18), 0);
+        subItem.setPadding(dp(isM3 ? 14 : 18), 0, dp(isM3 ? 14 : 18), 0);
         if (iconResId != 0 || iconDrawable != null) {
             subItem.setTextAndIcon(text, iconResId, iconDrawable);
         } else {
@@ -410,9 +411,9 @@ public class ItemOptions {
         }
         if (minWidthDp > 0) {
             subItem.setMinimumWidth(dp(minWidthDp));
-            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT, 0, isM3 ? 4 : 0, isM3 ? 1 : 0, isM3 ? 4 : 0, isM3 ? 1 : 0));
         } else {
-            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, isM3 ? 4 : 0, isM3 ? 1 : 0, isM3 ? 4 : 0, isM3 ? 1 : 0));
         }
 
         return this;
@@ -426,7 +427,8 @@ public class ItemOptions {
 
     public void add(ActionBarMenuSubItem subItem) {
         AndroidUtilities.removeFromParent(subItem);
-        subItem.setPadding(dp(18), 0, dp(18), 0);
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        subItem.setPadding(dp(isM3 ? 14 : 18), 0, dp(isM3 ? 14 : 18), 0);
 
         subItem.setColors(textColor != null ? textColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
         subItem.setSelectorColor(Theme.getColor(Theme.key_groupcreate_sectionText, resourcesProvider));
@@ -434,9 +436,9 @@ public class ItemOptions {
 
         if (minWidthDp > 0) {
             subItem.setMinimumWidth(dp(minWidthDp));
-            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT, 0, isM3 ? 4 : 0, isM3 ? 1 : 0, isM3 ? 4 : 0, isM3 ? 1 : 0));
         } else {
-            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, isM3 ? 4 : 0, isM3 ? 1 : 0, isM3 ? 4 : 0, isM3 ? 1 : 0));
         }
     }
 
@@ -1219,28 +1221,27 @@ public class ItemOptions {
 
     public void setupSelectors() {
         if (layout == null) return;
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        int rad = isM3 ? 16 : 12;
 
         for (int j = 0; j < layout.getChildCount(); ++j) {
             View child = j == layout.getChildCount() - 1 ? lastLayout : layout.getChildAt(j);
             if (child instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
                 ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = (ActionBarPopupWindow.ActionBarPopupWindowLayout) child;
-                if (popupLayout.getItemsCount() <= 0)
+                int count = popupLayout.getItemsCount();
+                if (count <= 0)
                     continue;
-                final View first = popupLayout.getItemAt(0);
-                final View last = popupLayout.getItemAt(popupLayout.getItemsCount() - 1);
-                if (first instanceof ActionBarMenuSubItem) {
-                    ((ActionBarMenuSubItem) first).updateSelectorBackground(true, first == last, 12);
-                } else if (first instanceof MessagePreviewView.ToggleButton || first instanceof FrameLayout) {
-                    first.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 12, first == last ? 12 : 0));
-                } else if (first != null && first.getBackground() instanceof RippleDrawable) {
-                    first.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 12, first == last ? 12 : 0));
-                }
-                if (last instanceof ActionBarMenuSubItem) {
-                    ((ActionBarMenuSubItem) last).updateSelectorBackground(last == first, true, 12);
-                } else if (last instanceof MessagePreviewView.ToggleButton || last instanceof FrameLayout) {
-                    last.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), first == last ? 12 : 0, 12));
-                } else if (last != null && last.getBackground() instanceof RippleDrawable) {
-                    last.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), first == last ? 12 : 0, 12));
+                for (int i = 0; i < count; i++) {
+                    View item = popupLayout.getItemAt(i);
+                    boolean isFirst = (i == 0);
+                    boolean isLast = (i == count - 1);
+                    if (item instanceof ActionBarMenuSubItem) {
+                        ((ActionBarMenuSubItem) item).updateSelectorBackground(isFirst, isLast, rad);
+                    } else if (item instanceof MessagePreviewView.ToggleButton || item instanceof FrameLayout || (item != null && item.getBackground() instanceof RippleDrawable)) {
+                        int topR = isFirst ? rad : (isM3 ? 4 : 0);
+                        int bottomR = isLast ? rad : (isM3 ? 4 : 0);
+                        item.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), AndroidUtilities.dp(topR), AndroidUtilities.dp(bottomR)));
+                    }
                 }
             }
         }

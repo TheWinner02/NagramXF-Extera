@@ -4800,7 +4800,8 @@ public class Theme {
     }
 
     public static ShapeDrawable createRoundRectDrawable(int rad, int defaultColor) {
-        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
+        int r = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? (rad < dp(6) ? rad : Math.max(rad, dp(24))) : rad;
+        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{r, r, r, r, r, r, r, r}, null, null));
         defaultDrawable.getPaint().setColor(defaultColor);
         return defaultDrawable;
     }
@@ -4899,10 +4900,18 @@ public class Theme {
         return createSimpleSelectorRoundRectDrawable(rad, defaultColor, pressedColor, maskColor, 0);
     }
     private static Drawable createSimpleSelectorRoundRectDrawable(float[] rad, int defaultColor, int pressedColor, int maskColor, int inset) {
-        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(rad, null, null));
+        float[] defRad = rad;
+        float[] pressRad = rad;
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            float pill = dp(24);
+            float squarified = dp(8);
+            defRad = new float[]{pill, pill, pill, pill, pill, pill, pill, pill};
+            pressRad = new float[]{squarified, squarified, squarified, squarified, squarified, squarified, squarified, squarified};
+        }
+        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(defRad, null, null));
         defaultDrawable.setPadding(inset, inset, inset, inset);
         defaultDrawable.getPaint().setColor(defaultColor);
-        ShapeDrawable pressedDrawable = new ShapeDrawable(new RoundRectShape(rad, null, null));
+        ShapeDrawable pressedDrawable = new ShapeDrawable(new RoundRectShape(pressRad, null, null));
         pressedDrawable.getPaint().setColor(maskColor);
         pressedDrawable.setPadding(inset, inset, inset, inset);
         ColorStateList colorStateList = new ColorStateList(
@@ -4921,7 +4930,7 @@ public class Theme {
     }
 
     public static Drawable getRoundRectSelectorDrawable(int color) {
-        return getRoundRectSelectorDrawable(dp(3), color);
+        return getRoundRectSelectorDrawable(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(20) : dp(3), color);
     }
 
     public static Drawable getRoundRectSelectorDrawable(int corners, int color) {

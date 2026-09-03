@@ -2046,7 +2046,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 View clearButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
                 if (clearButton instanceof TextView) {
                     ((TextView) clearButton).setTextColor(Theme.getColor(Theme.key_text_RedRegular));
-                    clearButton.setBackground(Theme.getRoundRectSelectorDrawable(AndroidUtilities.dp(6), Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f)));
+                    if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        clearButton.setBackground(Theme.getRoundRectSelectorDrawable(AndroidUtilities.dp(6), Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f)));
+                    }
                 }
             });
         }
@@ -2149,6 +2151,44 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             super(context);
 
             button = new FrameLayout(context) {
+                private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+                private final android.graphics.Path buttonMorphPath = new android.graphics.Path();
+                private final android.graphics.RectF buttonMorphRect = new android.graphics.RectF();
+
+                @Override
+                public void setPressed(boolean pressed) {
+                    super.setPressed(pressed);
+                    invalidate();
+                }
+
+                @Override
+                public boolean onTouchEvent(MotionEvent event) {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        setPressed(true);
+                    } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                        setPressed(false);
+                    }
+                    return super.onTouchEvent(event);
+                }
+
+                @Override
+                public void draw(Canvas canvas) {
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+                        float pillRad = getHeight() / 2f;
+                        float currentRad = AndroidUtilities.lerp(pillRad, AndroidUtilities.dp(8f), progress);
+                        buttonMorphPath.rewind();
+                        buttonMorphRect.set(0, 0, getWidth(), getHeight());
+                        buttonMorphPath.addRoundRect(buttonMorphRect, currentRad, currentRad, android.graphics.Path.Direction.CW);
+                        canvas.save();
+                        canvas.clipPath(buttonMorphPath);
+                        super.draw(canvas);
+                        canvas.restore();
+                    } else {
+                        super.draw(canvas);
+                    }
+                }
+
                 @Override
                 protected void dispatchDraw(Canvas canvas) {
                     final int margin = AndroidUtilities.dp(8);

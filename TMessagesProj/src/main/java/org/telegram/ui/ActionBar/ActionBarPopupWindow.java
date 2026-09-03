@@ -141,6 +141,8 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         public int subtractBackgroundHeight;
         Rect rect;
+        private final Path m3ClipPath = new Path();
+        private final RectF m3ClipRect = new RectF();
 
         public Rect getPadding() {
             return bgPaddings;
@@ -469,10 +471,12 @@ public class ActionBarPopupWindow extends PopupWindow {
                 int start = gapStartY - (scrollView == null ? 0 : scrollView.getScrollY());
                 int end = gapEndY - (scrollView == null ? 0 : scrollView.getScrollY());
                 boolean hasGap = false;
-                for (int i = 0; i < linearLayout.getChildCount(); i++) {
-                    if (linearLayout.getChildAt(i) instanceof GapView && linearLayout.getChildAt(i).getVisibility() == View.VISIBLE) {
-                        hasGap = true;
-                        break;
+                if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    for (int i = 0; i < linearLayout.getChildCount(); i++) {
+                        if (linearLayout.getChildAt(i) instanceof GapView && linearLayout.getChildAt(i).getVisibility() == View.VISIBLE) {
+                            hasGap = true;
+                            break;
+                        }
                     }
                 }
                 for (int a = 0; a < 2; a++) {
@@ -530,7 +534,17 @@ public class ActionBarPopupWindow extends PopupWindow {
                         AndroidUtilities.lerp(rect, AndroidUtilities.rectTmp2, reactionsEnterProgress, AndroidUtilities.rectTmp2);
                     }
                     backgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
-                    backgroundDrawable.draw(canvas);
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        m3ClipPath.rewind();
+                        m3ClipRect.set(AndroidUtilities.rectTmp2.left + bgPaddings.left, AndroidUtilities.rectTmp2.top + bgPaddings.top, AndroidUtilities.rectTmp2.right - bgPaddings.right, AndroidUtilities.rectTmp2.bottom - bgPaddings.bottom);
+                        m3ClipPath.addRoundRect(m3ClipRect, dp(18), dp(18), Path.Direction.CW);
+                        canvas.save();
+                        canvas.clipPath(m3ClipPath);
+                        backgroundDrawable.draw(canvas);
+                        canvas.restore();
+                    } else {
+                        backgroundDrawable.draw(canvas);
+                    }
                     if (clipChildren) {
                         AndroidUtilities.rectTmp2.left += bgPaddings.left;
                         AndroidUtilities.rectTmp2.top += bgPaddings.top;
@@ -573,14 +587,35 @@ public class ActionBarPopupWindow extends PopupWindow {
                     canvas.restoreToCount(saveCount);
                 }
             }
+
             if (reactionsEnterProgress != 1f) {
                 canvas.saveLayerAlpha((float) AndroidUtilities.rectTmp2.left, (float) AndroidUtilities.rectTmp2.top, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.bottom, (int) (255 * reactionsEnterProgress), Canvas.ALL_SAVE_FLAG);
                 float scale = 0.5f + reactionsEnterProgress * 0.5f;
                 canvas.scale(scale, scale, AndroidUtilities.rectTmp2.right, AndroidUtilities.rectTmp2.top);
-                super.dispatchDraw(canvas);
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    m3ClipPath.rewind();
+                    m3ClipRect.set(AndroidUtilities.rectTmp2.left + bgPaddings.left, AndroidUtilities.rectTmp2.top + bgPaddings.top, AndroidUtilities.rectTmp2.right - bgPaddings.right, AndroidUtilities.rectTmp2.bottom - bgPaddings.bottom);
+                    m3ClipPath.addRoundRect(m3ClipRect, dp(18), dp(18), Path.Direction.CW);
+                    canvas.save();
+                    canvas.clipPath(m3ClipPath);
+                    super.dispatchDraw(canvas);
+                    canvas.restore();
+                } else {
+                    super.dispatchDraw(canvas);
+                }
                 canvas.restore();
             } else {
-                super.dispatchDraw(canvas);
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    m3ClipPath.rewind();
+                    m3ClipRect.set(AndroidUtilities.rectTmp2.left + bgPaddings.left, AndroidUtilities.rectTmp2.top + bgPaddings.top, AndroidUtilities.rectTmp2.right - bgPaddings.right, AndroidUtilities.rectTmp2.bottom - bgPaddings.bottom);
+                    m3ClipPath.addRoundRect(m3ClipRect, dp(18), dp(18), Path.Direction.CW);
+                    canvas.save();
+                    canvas.clipPath(m3ClipPath);
+                    super.dispatchDraw(canvas);
+                    canvas.restore();
+                } else {
+                    super.dispatchDraw(canvas);
+                }
             }
         }
 
@@ -1148,8 +1183,10 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         public GapView(Context context, int color, int shadowColor) {
             super(context);
-            this.shadowDrawable = Theme.getThemedDrawable(getContext(), R.drawable.greydivider, shadowColor);
-            setBackgroundColor(color);
+            if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                this.shadowDrawable = Theme.getThemedDrawable(getContext(), R.drawable.greydivider, shadowColor);
+                setBackgroundColor(color);
+            }
         }
 
         public GapView(Context context, Theme.ResourcesProvider resourcesProvider, int colorKey) {

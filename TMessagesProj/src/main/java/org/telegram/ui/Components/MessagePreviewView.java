@@ -2418,8 +2418,35 @@ public class MessagePreviewView extends FrameLayout {
             return who == textDrawable || super.verifyDrawable(who);
         }
 
+        private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private final android.graphics.Path buttonMorphPath = new android.graphics.Path();
+        private final android.graphics.RectF buttonMorphRect = new android.graphics.RectF();
+
+        @Override
+        public void setPressed(boolean pressed) {
+            super.setPressed(pressed);
+            invalidate();
+        }
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+                float pillRad = getMeasuredHeight() / 2f;
+                float currentRad = AndroidUtilities.lerp(pillRad, dp(8f), progress);
+                buttonMorphPath.rewind();
+                buttonMorphRect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                buttonMorphPath.addRoundRect(buttonMorphRect, currentRad, currentRad, android.graphics.Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(buttonMorphPath);
+                drawContent(canvas);
+                canvas.restore();
+            } else {
+                drawContent(canvas);
+            }
+        }
+
+        private void drawContent(Canvas canvas) {
             if (LocaleController.isRTL) {
                 iconDrawable.setBounds(
                     getMeasuredWidth() - dp(17 + 24),
@@ -2470,6 +2497,11 @@ public class MessagePreviewView extends FrameLayout {
         public boolean onTouchEvent(MotionEvent event) {
             if (getVisibility() != View.VISIBLE || getAlpha() < .5f) {
                 return false;
+            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                setPressed(true);
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                setPressed(false);
             }
             return super.onTouchEvent(event);
         }

@@ -3635,12 +3635,17 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             if (s != 1) {
                 canvas.scale(s, s, rect.centerX(), rect.centerY());
             }
-            Arrays.fill(botButtonRadii, dp(Math.min(6.75f, SharedConfig.bubbleRadius)));
-            if (button.hasPositionFlag(MessageObject.POSITION_FLAG_LEFT | MessageObject.POSITION_FLAG_BOTTOM)) {
-                botButtonRadii[6] = botButtonRadii[7] = dp(SharedConfig.bubbleRadius);
-            }
-            if (button.hasPositionFlag(MessageObject.POSITION_FLAG_RIGHT | MessageObject.POSITION_FLAG_BOTTOM)) {
-                botButtonRadii[4] = botButtonRadii[5] = dp(SharedConfig.bubbleRadius);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                float baseRad = AndroidUtilities.lerp(rect.height() / 2f, dp(8f), button.pressT);
+                Arrays.fill(botButtonRadii, baseRad);
+            } else {
+                Arrays.fill(botButtonRadii, dp(Math.min(6.75f, SharedConfig.bubbleRadius)));
+                if (button.hasPositionFlag(MessageObject.POSITION_FLAG_LEFT | MessageObject.POSITION_FLAG_BOTTOM)) {
+                    botButtonRadii[6] = botButtonRadii[7] = dp(SharedConfig.bubbleRadius);
+                }
+                if (button.hasPositionFlag(MessageObject.POSITION_FLAG_RIGHT | MessageObject.POSITION_FLAG_BOTTOM)) {
+                    botButtonRadii[4] = botButtonRadii[5] = dp(SharedConfig.bubbleRadius);
+                }
             }
 
             botButtonPath.rewind();

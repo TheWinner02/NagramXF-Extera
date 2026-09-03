@@ -84,12 +84,17 @@ class BotButton {
         if (s != 1) {
             canvas.scale(s, s, rect.centerX(), rect.centerY());
         }
-        Arrays.fill(radii, dp(Math.min(6.75f, SharedConfig.bubbleRadius)));
-        if (hasPositionFlag(MessageObject.POSITION_FLAG_LEFT | MessageObject.POSITION_FLAG_BOTTOM)) {
-            radii[6] = radii[7] = dp(SharedConfig.bubbleRadius);
-        }
-        if (hasPositionFlag(MessageObject.POSITION_FLAG_RIGHT | MessageObject.POSITION_FLAG_BOTTOM)) {
-            radii[4] = radii[5] = dp(SharedConfig.bubbleRadius);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            float baseRad = AndroidUtilities.lerp(rect.height() / 2f, dp(8f), pressT);
+            Arrays.fill(radii, baseRad);
+        } else {
+            Arrays.fill(radii, dp(Math.min(6.75f, SharedConfig.bubbleRadius)));
+            if (hasPositionFlag(MessageObject.POSITION_FLAG_LEFT | MessageObject.POSITION_FLAG_BOTTOM)) {
+                radii[6] = radii[7] = dp(SharedConfig.bubbleRadius);
+            }
+            if (hasPositionFlag(MessageObject.POSITION_FLAG_RIGHT | MessageObject.POSITION_FLAG_BOTTOM)) {
+                radii[4] = radii[5] = dp(SharedConfig.bubbleRadius);
+            }
         }
 
         path.rewind();

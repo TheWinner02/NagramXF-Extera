@@ -1,11 +1,13 @@
 package org.telegram.ui.ActionBar;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import org.telegram.messenger.AndroidUtilities;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -75,13 +77,14 @@ public class ActionBarMenuSubItem extends FrameLayout {
         this.top = top;
         this.bottom = bottom;
 
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
         textColor = getThemedColor(Theme.key_actionBarDefaultSubmenuItem);
         iconColor = getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon);
         iconColorMode = PorterDuff.Mode.MULTIPLY;
         selectorColor = getThemedColor(Theme.key_dialogButtonSelector);
 
         updateBackground();
-        setPadding(dp(18), 0, dp(18), 0);
+        setPadding(dp(isM3 ? 14 : 18), 0, dp(isM3 ? 14 : 18), 0);
 
         imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -94,7 +97,10 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setGravity(Gravity.LEFT);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setTextColor(textColor);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, isM3 ? 15 : 16);
+        if (isM3) {
+            textView.setTypeface(AndroidUtilities.bold());
+        }
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
         checkViewLeft = LocaleController.isRTL;
@@ -424,8 +430,71 @@ public class ActionBarMenuSubItem extends FrameLayout {
         updateBackground();
     }
 
+    private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final android.graphics.Path morphClipPath = new android.graphics.Path();
+    private final android.graphics.RectF morphClipRect = new android.graphics.RectF();
+    private final float[] morphRadii = new float[8];
+    private final android.graphics.Paint morphBgPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        invalidate();
+    }
+
+    @Override
+    public boolean onTouchEvent(android.view.MotionEvent event) {
+        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            setPressed(true);
+        } else if (event.getAction() == android.view.MotionEvent.ACTION_UP || event.getAction() == android.view.MotionEvent.ACTION_CANCEL) {
+            setPressed(false);
+        }
+        return super.onTouchEvent(event);
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+            float topR = AndroidUtilities.lerp(top ? dp(16) : dp(4), dp(16), progress);
+            float bottomR = AndroidUtilities.lerp(bottom ? dp(16) : dp(4), dp(16), progress);
+            float gap = AndroidUtilities.lerp(dp(1.5f), dp(3.5f), progress);
+
+            morphClipRect.set(dp(5), gap, getMeasuredWidth() - dp(5), getMeasuredHeight() - gap);
+            morphRadii[0] = morphRadii[1] = topR;
+            morphRadii[2] = morphRadii[3] = topR;
+            morphRadii[4] = morphRadii[5] = bottomR;
+            morphRadii[6] = morphRadii[7] = bottomR;
+
+            morphClipPath.rewind();
+            morphClipPath.addRoundRect(morphClipRect, morphRadii, android.graphics.Path.Direction.CW);
+
+            int cardColor = Theme.isCurrentThemeDark() ? 0x24ffffff : 0x10000000;
+            morphBgPaint.setColor(cardColor);
+            canvas.drawPath(morphClipPath, morphBgPaint);
+
+            if (progress > 0 || isPressed()) {
+                morphBgPaint.setColor(Theme.multAlpha(selectorColor, Math.max(progress * 0.35f, isPressed() ? 0.35f : 0f)));
+                canvas.drawPath(morphClipPath, morphBgPaint);
+            }
+
+            canvas.save();
+            canvas.clipPath(morphClipPath);
+            super.dispatchDraw(canvas);
+            canvas.restore();
+        } else {
+            super.dispatchDraw(canvas);
+        }
+    }
+
     public void updateBackground() {
-        setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            int topR = top ? AndroidUtilities.dp(16) : AndroidUtilities.dp(4);
+            int bottomR = bottom ? AndroidUtilities.dp(16) : AndroidUtilities.dp(4);
+            setBackground(Theme.createRadSelectorDrawable(selectorColor, topR, bottomR));
+        } else {
+            setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
+        }
     }
 
     private int getThemedColor(int key) {

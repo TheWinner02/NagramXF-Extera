@@ -43,8 +43,40 @@ public class TextViewWithLoading extends TextView {
         return loading;
     }
 
+    private final AnimatedFloat pressedMorphProgress = new AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final android.graphics.Path buttonMorphPath = new android.graphics.Path();
+    private final android.graphics.RectF buttonMorphRect = new android.graphics.RectF();
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        invalidate();
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+            float pillRad = getHeight() / 2f;
+            float currentRad = org.telegram.messenger.AndroidUtilities.lerp(pillRad, dp(8f), progress);
+            buttonMorphPath.rewind();
+            buttonMorphRect.set(0, 0, getWidth(), getHeight());
+            buttonMorphPath.addRoundRect(buttonMorphRect, currentRad, currentRad, android.graphics.Path.Direction.CW);
+            canvas.save();
+            canvas.clipPath(buttonMorphPath);
+            super.draw(canvas);
+            canvas.restore();
+        } else {
+            super.draw(canvas);
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
+        drawInternal(canvas);
+    }
+
+    private void drawInternal(Canvas canvas) {
         final float loading = animatedLoading.set(this.loading);
 
         if (loading < 1) {
@@ -69,7 +101,6 @@ public class TextViewWithLoading extends TextView {
             spinner.draw(canvas);
             invalidate();
         }
-
     }
 
 }

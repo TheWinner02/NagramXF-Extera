@@ -49,16 +49,63 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     private CircularProgressDrawable loadingIndicatorDrawable;
     private Theme.ResourcesProvider resourcesProvider;
 
+    private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        backgroundDrawable.setBounds(0, 0, w, h);
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        invalidate();
     }
 
     @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (backgroundDrawable != null) {
+            backgroundDrawable.setBounds(0, 0, w, h);
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(android.view.MotionEvent event) {
+        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            setPressed(true);
+        } else if (event.getAction() == android.view.MotionEvent.ACTION_UP || event.getAction() == android.view.MotionEvent.ACTION_CANCEL) {
+            setPressed(false);
+        }
+        return super.onTouchEvent(event);
+    }
+
+    private final android.graphics.Path morphClipPath = new android.graphics.Path();
+    private final android.graphics.RectF morphRect = new android.graphics.RectF();
+
+    @Override
     public void draw(@NonNull Canvas canvas) {
-        backgroundDrawable.draw(canvas);
-        super.draw(canvas);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+            float pillRad = (getMeasuredHeight() > 0 ? getMeasuredHeight() : dp(BUTTON_SIZE)) / 2f;
+            float currentRad = AndroidUtilities.lerp(pillRad, dp(8f), progress);
+
+            morphClipPath.rewind();
+            morphRect.set(dp(CLICK_ZONE_MARGIN), dp(CLICK_ZONE_MARGIN), getMeasuredWidth() - dp(CLICK_ZONE_MARGIN), getMeasuredHeight() - dp(CLICK_ZONE_MARGIN));
+            morphClipPath.addRoundRect(morphRect, currentRad, currentRad, android.graphics.Path.Direction.CW);
+
+            if (backgroundDrawable != null) {
+                backgroundDrawable.setRadius(currentRad);
+            }
+
+            canvas.save();
+            canvas.clipPath(morphClipPath);
+            if (backgroundDrawable != null) {
+                backgroundDrawable.draw(canvas);
+            }
+            super.draw(canvas);
+            canvas.restore();
+        } else {
+            if (backgroundDrawable != null) {
+                backgroundDrawable.draw(canvas);
+            }
+            super.draw(canvas);
+        }
     }
 
     @Override
@@ -171,7 +218,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         button.resourcesProvider = resourcesProvider;
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
         button.setIconColor(color);
-        int rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 14 : 22);
+        int rad = dp(22);
         int pressedColor = Theme.multAlpha(color, .15f);
         button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
 
@@ -194,7 +241,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
         button.setIcon(res, iconSize);
         button.setIconColor(color);
-        int rad = dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 14 : 22);
+        int rad = dp(22);
         int pressedColor = Theme.multAlpha(color, .15f);
         button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
 
