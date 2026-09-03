@@ -25,6 +25,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.blur3.utils.NinePatchBuilder;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -309,6 +310,42 @@ public class MessageDrawable extends Drawable {
         }
     }
 
+    private int getDefaultBubbleRadius() {
+        if (currentType == TYPE_PREVIEW) {
+            return dp(6);
+        }
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            return dp(20);
+        }
+        if (UIStyleEngine.isIosLiquidGlass()) {
+            return dp(18);
+        }
+        return dp(SharedConfig.bubbleRadius);
+    }
+
+    private int getNearBubbleRadius() {
+        if (currentType == TYPE_PREVIEW) {
+            return dp(6);
+        }
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            return dp(6);
+        }
+        int radiusDp = Math.round(getDefaultBubbleRadius() / AndroidUtilities.density);
+        return dp(Math.min(6, radiusDp));
+    }
+
+    private int getTailBubbleRadius() {
+        if (currentType == TYPE_PREVIEW) {
+            return dp(6);
+        }
+        return UIStyleEngine.isMaterial3Expressive() ? dp(8) : dp(6);
+    }
+
+    private int getBackgroundRadiusCacheKey() {
+        int radius = getDefaultBubbleRadius();
+        return UIStyleEngine.isMaterial3Expressive() ? -radius : radius;
+    }
+
     public Paint getPaint() {
         return paint;
     }
@@ -324,7 +361,7 @@ public class MessageDrawable extends Drawable {
         } else if (overrideRounding > 0) {
             newRad = 0;
         } else {
-            newRad = dp(SharedConfig.bubbleRadius);
+            newRad = getBackgroundRadiusCacheKey();
         }
         int idx;
         if (isTopNear && isBottomNear) {
@@ -442,7 +479,7 @@ public class MessageDrawable extends Drawable {
         if (gradientShader == null && !isSelected && crossfadeFromDrawable == null) {
             return null;
         }
-        int newRad = dp(SharedConfig.bubbleRadius);
+        int newRad = getBackgroundRadiusCacheKey();
         int idx;
         if (isTopNear && isBottomNear) {
             idx = 3;
@@ -565,17 +602,16 @@ public class MessageDrawable extends Drawable {
             rad = overrideRoundRadius;
             nearRad = overrideRoundRadius;
         } else if (overrideRounding > 0) {
-            rad = AndroidUtilities.lerp(dp(SharedConfig.bubbleRadius), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
-            nearRad = AndroidUtilities.lerp(dp(Math.min(6, SharedConfig.bubbleRadius)), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+            rad = AndroidUtilities.lerp(getDefaultBubbleRadius(), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+            nearRad = AndroidUtilities.lerp(getNearBubbleRadius(), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
         } else if (currentType == TYPE_PREVIEW) {
             rad = dp(6);
             nearRad = dp(6);
         } else {
-            int bubbleRad = (int) (xyz.nextalone.nagram.ui.UIStyleEngine.getBubbleCornerRadius() / AndroidUtilities.density);
-            rad = dp(bubbleRad);
-            nearRad = dp(Math.min(6, bubbleRad));
+            rad = getDefaultBubbleRadius();
+            nearRad = getNearBubbleRadius();
         }
-        int smallRad = dp(6);
+        int smallRad = getTailBubbleRadius();
 
         Paint p = paintToUse == null ? paint : paintToUse;
 
@@ -629,17 +665,16 @@ public class MessageDrawable extends Drawable {
             rad = overrideRoundRadius;
             nearRad = overrideRoundRadius;
         } else if (overrideRounding > 0) {
-            rad = AndroidUtilities.lerp(dp(SharedConfig.bubbleRadius), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
-            nearRad = AndroidUtilities.lerp(dp(Math.min(6, SharedConfig.bubbleRadius)), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+            rad = AndroidUtilities.lerp(getDefaultBubbleRadius(), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
+            nearRad = AndroidUtilities.lerp(getNearBubbleRadius(), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
         } else if (currentType == TYPE_PREVIEW) {
             rad = dp(6);
             nearRad = dp(6);
         } else {
-            int bubbleRad = (int) (xyz.nextalone.nagram.ui.UIStyleEngine.getBubbleCornerRadius() / AndroidUtilities.density);
-            rad = dp(bubbleRad);
-            nearRad = dp(Math.min(6, bubbleRad));
+            rad = getDefaultBubbleRadius();
+            nearRad = getNearBubbleRadius();
         }
-        int smallRad = dp(6);
+        int smallRad = getTailBubbleRadius();
         int top = Math.max(bounds.top, 0);
         boolean drawFullBottom, drawFullTop;
         if (pathDrawCacheParams != null && bounds.height() < currentBackgroundHeight) {

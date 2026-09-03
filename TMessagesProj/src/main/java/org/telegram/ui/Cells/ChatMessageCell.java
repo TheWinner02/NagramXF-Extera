@@ -248,6 +248,7 @@ import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.Stories.StoryViewer;
 import org.telegram.ui.Stories.recorder.CaptionContainerView;
 import org.telegram.ui.Stories.recorder.DominantColors;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1950,6 +1951,28 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         this(context, currentAccount, false, null, null);
     }
 
+    private int getM3BubbleOuterRadius() {
+        return UIStyleEngine.isMaterial3Expressive() ? dp(20) : dp(SharedConfig.bubbleRadius);
+    }
+
+    private int getM3BubbleMediaRadius() {
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            return dp(18);
+        }
+        return dp(SharedConfig.bubbleRadius > 2 ? SharedConfig.bubbleRadius - 2 : SharedConfig.bubbleRadius);
+    }
+
+    private int getM3BubbleInnerRadius() {
+        return UIStyleEngine.isMaterial3Expressive() ? dp(8) : dp(4);
+    }
+
+    private int getM3BubbleNearRadius() {
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            return dp(6);
+        }
+        return Math.min(dp(3), getM3BubbleMediaRadius());
+    }
+
     public ChatMessageCell(Context context, int currentAccount, boolean canDrawBackgroundInParent, ChatMessageSharedResources sharedResources, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.currentAccount = currentAccount;
@@ -1969,7 +1992,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         avatarDrawable = new AvatarDrawable();
         replyImageReceiver = new ImageReceiver(this);
         replyImageReceiver.setAllowLoadingOnAttachedOnly(true);
-        replyImageReceiver.setRoundRadius(dp(4));
+        replyImageReceiver.setRoundRadius(getM3BubbleInnerRadius());
         locationImageReceiver = new ImageReceiver(this);
         locationImageReceiver.setAllowLoadingOnAttachedOnly(true);
         locationImageReceiver.setRoundRadius(dp(26.1f));
@@ -1982,7 +2005,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 super.setRoundRadius(value);
                 pollPhotoImageRadius[0] = value[0];
                 pollPhotoImageRadius[1] = value[1];
-                pollPhotoImageRadius[2] = pollPhotoImageRadius[3] = dp(6);
+                pollPhotoImageRadius[2] = pollPhotoImageRadius[3] = UIStyleEngine.isMaterial3Expressive() ? dp(8) : dp(6);
                 if (pollContentDrawable != null) {
                     pollContentDrawable.imageReceiver.setRoundRadius(pollPhotoImageRadius);
                 }
@@ -7838,6 +7861,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
 
                 int maxChildWidth = backgroundWidth;
+                if (UIStyleEngine.isMaterial3Expressive() && hasLinkPreview && !linkPreviewAbove && !hasGamePreview && !hasInvoicePreview && !currentMessageObject.isRepostPreview) {
+                    maxChildWidth = Math.min(maxChildWidth, Math.max(messageObject.textWidth + getExtraTextX() * 2, messageObject.getLastLineWidth()));
+                }
                 maxChildWidth = Math.max(maxChildWidth, nameWidth);
                 maxChildWidth = Math.max(maxChildWidth, sideNameWidth);
                 maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
@@ -8266,6 +8292,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (smallImage && (descriptionLayout == null && titleLayout == null)) {
                         smallImage = false;
                         isSmallImage = false;
+                    }
+                    if (UIStyleEngine.isMaterial3Expressive() && !smallImage && !hasGamePreview && !hasInvoicePreview && !currentMessageObject.isRepostPreview) {
+                        linkPreviewMaxWidth = Math.min(linkPreviewMaxWidth, Math.max(dp(220), linkPreviewMaxWidth - dp(28)));
                     }
                     int maxPhotoWidth = smallImage ? smallImageSide : linkPreviewMaxWidth;
 
@@ -9017,7 +9046,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 drawName = isSavedChat && !messageObject.isOutOwner() && (messageObject.getSavedDialogId() < 0 || messageObject.getSavedDialogId() == UserObject.ANONYMOUS) || messageObject.isFromGroup() && messageObject.isSupergroup() || messageObject.isImportedForward() && messageObject.messageOwner.fwd_from.from_id == null;
                 drawForwardedName = !isRepliesChat;
                 drawPhotoImage = true;
-                photoImage.setRoundRadius(dp(22));
+                photoImage.setRoundRadius(UIStyleEngine.isMaterial3Expressive() ? dp(20) : dp(22));
                 canChangeRadius = false;
                 if (AndroidUtilities.isTablet()) {
                     backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - dp(50 + (isSideMenued ? ChatActivity.SIDE_MENU_WIDTH : drawAvatar ? 52 : 0)), dp(270));
@@ -11068,14 +11097,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             if (canChangeRadius) {
                 int tl, tr, bl, br;
-                int minRad = dp(4);
-                int rad;
-                if (SharedConfig.bubbleRadius > 2) {
-                    rad = dp(SharedConfig.bubbleRadius - 2);
-                } else {
-                    rad = dp(SharedConfig.bubbleRadius);
-                }
-                int nearRad = Math.min(dp(3), rad);
+                int minRad = getM3BubbleInnerRadius();
+                int rad = getM3BubbleMediaRadius();
+                int nearRad = getM3BubbleNearRadius();
                 tl = tr = bl = br = rad;
                 if (minRad > tl) {
                     minRad = tl;
@@ -13493,11 +13517,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         for (int a = 0; a < 4; a++) {
                             if (!instantTextNewLine) {
                                 if (a == (out ? 3 : 2)) {
-                                    radii[a * 2] = radii[a * 2 + 1] = dp(SharedConfig.bubbleRadius);
+                                    radii[a * 2] = radii[a * 2 + 1] = getM3BubbleOuterRadius();
                                     continue;
                                 }
                                 if ((mediaBackground && currentPosition == null || pinnedBottom) && (a == 2 || a == 3)) {
-                                    radii[a * 2] = radii[a * 2 + 1] = dp(pinnedBottom ? Math.min(5, SharedConfig.bubbleRadius) : SharedConfig.bubbleRadius);
+                                    radii[a * 2] = radii[a * 2 + 1] = UIStyleEngine.isMaterial3Expressive() ? (pinnedBottom ? dp(8) : getM3BubbleOuterRadius()) : dp(pinnedBottom ? Math.min(5, SharedConfig.bubbleRadius) : SharedConfig.bubbleRadius);
                                     continue;
                                 }
                             }
@@ -13522,7 +13546,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         path.close();
                     } else {
-                        final float r = selectorDrawableMaskType[num] == 0 ? dp(6) : 0;
+                        final float r = selectorDrawableMaskType[num] == 0 ? (UIStyleEngine.isMaterial3Expressive() ? dp(8) : dp(6)) : 0;
                         path.addRoundRect(rect, r, r, Path.Direction.CW);
                     }
                 }
@@ -15622,7 +15646,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             AndroidUtilities.rectTmp.set(linkX, linkPreviewY - dp(6), linkX + width, linkPreviewY + linkPreviewHeight + (drawInstantButtonInside && drawInstantView ? dp(42) : 0));
             linkLine.setLoading(loading);
-            float rad = (float) Math.floor(SharedConfig.bubbleRadius / (currentMessageObject.isSponsored() ? 2f : 3f));
+            float rad = UIStyleEngine.isMaterial3Expressive() ? 8 : (float) Math.floor(SharedConfig.bubbleRadius / (currentMessageObject.isSponsored() ? 2f : 3f));
             linkLine
                 .offsetEmoji(0, drawPhotoImageBefore ? (1f - isSmallImage()) * (dp(18) + photoImage.getImageHeight() + (siteNameLayout != null ? siteNameLayout.getLineBottom(siteNameLayout.getLineCount() - 1) : 0)) : 0)
                 .drawBackground(canvas, AndroidUtilities.rectTmp, rad, rad, rad, alpha, false, !NaConfig.INSTANCE.getMessageColoredBackground().Bool());
@@ -15809,7 +15833,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     photoImage.setImageY(linkPreviewY);
                     rect.set(x, photoImage.getImageY(), x + imageBackgroundSideWidth, photoImage.getImageY2());
                     Theme.chat_instantViewPaint.setColor(ColorUtils.setAlphaComponent(imageBackgroundSideColor, (int) (255 * alpha)));
-                    canvas.drawRoundRect(rect, dp(4), dp(4), Theme.chat_instantViewPaint);
+                    canvas.drawRoundRect(rect, getM3BubbleInnerRadius(), getM3BubbleInnerRadius(), Theme.chat_instantViewPaint);
                 } else {
                     photoImage.setImageX(tx + linkX + dp(10));
                     photoImage.setImageY(linkPreviewY);
@@ -15835,7 +15859,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                     photoImage.setGradientBitmap(motionBackgroundDrawable.getBitmap());
                                 }
                                 if (!photoImage.hasImageSet()) {
-                                    motionBackgroundDrawable.setRoundRadius(dp(4));
+                                    motionBackgroundDrawable.setRoundRadius(getM3BubbleInnerRadius());
                                 }
                             }
                         } else {
@@ -15861,7 +15885,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     } else if (imageBackgroundSideColor != 0) {
                         canvas.drawRect(photoImage.getImageX(), photoImage.getImageY(), photoImage.getImageX2(), photoImage.getImageY2(), Theme.chat_instantViewPaint);
                     } else {
-                        canvas.drawRoundRect(rect, dp(4), dp(4), Theme.chat_instantViewPaint);
+                        canvas.drawRoundRect(rect, getM3BubbleInnerRadius(), getM3BubbleInnerRadius(), Theme.chat_instantViewPaint);
                     }
                     Theme.chat_instantViewPaint.setShader(null);
                     Theme.chat_instantViewPaint.setAlpha(255);
@@ -16057,7 +16081,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             int oldAlpha = timeBackgroundPaint.getAlpha();
             timeBackgroundPaint.setAlpha((int) (oldAlpha * controlsAlpha));
             Theme.chat_durationPaint.setAlpha((int) (255 * controlsAlpha));
-            canvas.drawRoundRect(rect, dp(4), dp(4), timeBackgroundPaint);
+            canvas.drawRoundRect(rect, getM3BubbleInnerRadius(), getM3BubbleInnerRadius(), timeBackgroundPaint);
             timeBackgroundPaint.setAlpha(oldAlpha);
             canvas.save();
             canvas.translate(x, y);
@@ -16074,7 +16098,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     y = (int) (photoImage.getImageY() + dp(6));
                     int height = dp(documentAttachType == DOCUMENT_ATTACH_TYPE_WALLPAPER ? 14.5f : 16.5f);
                     rect.set(x - dp(4), y - dp(1.5f), x + durationWidth + dp(4), y + height);
-                    canvas.drawRoundRect(rect, dp(4), dp(4), timeBackgroundPaint);
+                    canvas.drawRoundRect(rect, getM3BubbleInnerRadius(), getM3BubbleInnerRadius(), timeBackgroundPaint);
                 } else {
                     x = linkX;
                     y = linkPreviewY;
@@ -16083,7 +16107,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 x = (int) (photoImage.getImageX() + photoImage.getImageWidth() - dp(8) - durationWidth);
                 y = (int) (photoImage.getImageY() + photoImage.getImageHeight() - dp(19));
                 rect.set(x - dp(4), y - dp(1.5f), x + durationWidth + dp(4), y + dp(14.5f));
-                canvas.drawRoundRect(rect, dp(4), dp(4), getThemedPaint(Theme.key_paint_chatTimeBackground));
+                canvas.drawRoundRect(rect, getM3BubbleInnerRadius(), getM3BubbleInnerRadius(), getThemedPaint(Theme.key_paint_chatTimeBackground));
             }
 
             canvas.save();
@@ -19570,7 +19594,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         if (messageObject.replyMessageObject.isRoundVideo()) {
                             replyImageReceiver.setRoundRadius(dp(32));
                         } else {
-                            replyImageReceiver.setRoundRadius(dp(4));
+                            replyImageReceiver.setRoundRadius(getM3BubbleInnerRadius());
                         }
                         currentReplyPhoto = photoSize;
                         if (photoImageLocation != null) {
@@ -23036,12 +23060,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     applyServiceShaderMatrix();
                     oldAlpha = getThemedPaint(Theme.key_paint_chatActionBackground).getAlpha();
                     getThemedPaint(Theme.key_paint_chatActionBackground).setAlpha((int) (oldAlpha * timeAlpha * replyForwardAlpha));
-                    canvas.drawRoundRect(rect, dp(4), dp(4), getThemedPaint(Theme.key_paint_chatActionBackground));
+                    canvas.drawRoundRect(rect, getM3BubbleInnerRadius(), getM3BubbleInnerRadius(), getThemedPaint(Theme.key_paint_chatActionBackground));
                     getThemedPaint(Theme.key_paint_chatActionBackground).setAlpha(oldAlpha);
                     if (hasGradientService()) {
                         oldAlpha = Theme.chat_actionBackgroundGradientDarkenPaint.getAlpha();
                         Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha((int) (oldAlpha * timeAlpha * replyForwardAlpha));
-                        canvas.drawRoundRect(rect, dp(4), dp(4), Theme.chat_actionBackgroundGradientDarkenPaint);
+                        canvas.drawRoundRect(rect, getM3BubbleInnerRadius(), getM3BubbleInnerRadius(), Theme.chat_actionBackgroundGradientDarkenPaint);
                         Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha(oldAlpha);
                     }
                     canvas.restore();
@@ -23089,7 +23113,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     restoreToCount = canvas.saveLayerAlpha(AndroidUtilities.rectTmp, (int) (0xFF * _alpha), Canvas.ALL_SAVE_FLAG);
                 }
 
-                float leftRad, rightRad, bottomRad = Math.min(4f, SharedConfig.bubbleRadius);
+                float leftRad, rightRad, bottomRad = UIStyleEngine.isMaterial3Expressive() ? 8 : Math.min(4f, SharedConfig.bubbleRadius);
                 if (currentMessageObject.shouldDrawWithoutBackground()) {
                     rightRad = bottomRad = needDrawReplyBackground ? 6 : 4;
                     replySelectorRect.set(
@@ -23105,9 +23129,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (drawTopic || drawNameLayout || (drawForwardedName && forwardedNameLayout[0] != null)) {
                         rightRad = bottomRad;
                     } else if (!currentMessageObject.isOutOwner() || !drawPinnedTop) {
-                        rightRad = SharedConfig.bubbleRadius * .6f;
+                        rightRad = UIStyleEngine.isMaterial3Expressive() ? 12 : SharedConfig.bubbleRadius * .6f;
                     } else {
-                        rightRad = SharedConfig.bubbleRadius / 3f;
+                        rightRad = UIStyleEngine.isMaterial3Expressive() ? 8 : SharedConfig.bubbleRadius / 3f;
                     }
                     float right;
                     if (currentMessagesGroup == null || currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
@@ -23365,7 +23389,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 final int textColor = summaryLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_REPLY);
                 final int rippleColor = Theme.multAlpha(textColor, 0.15f);
 
-                final float rad = Math.min(4f, SharedConfig.bubbleRadius);
+                final float rad = UIStyleEngine.isMaterial3Expressive() ? 8 : Math.min(4f, SharedConfig.bubbleRadius);
                 summaryLine.drawBackground(canvas, summarySelectorRect, rad, rad, rad, alpha * summaryAlpha, isReplyQuote, currentMessageObject.shouldDrawWithoutBackground());
 
                 if (summaryReplySelector == null) {
@@ -24692,7 +24716,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             if (videoInfoLayout != null && photoImage.getVisible() && imageBackgroundSideColor == 0) {
                 float rad;
-                if (SharedConfig.bubbleRadius > 2) {
+                if (UIStyleEngine.isMaterial3Expressive()) {
+                    rad = getM3BubbleInnerRadius();
+                    bigRadius = true;
+                } else if (SharedConfig.bubbleRadius > 2) {
                     rad = dp(SharedConfig.bubbleRadius - 2);
                     bigRadius = SharedConfig.bubbleRadius >= 10;
                 } else {

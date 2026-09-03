@@ -37,6 +37,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import java.util.ArrayList;
 
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class ReplyMessageLine {
 
@@ -627,10 +628,11 @@ public class ReplyMessageLine {
     }
 
     public void drawBackground(Canvas canvas, RectF rect, float leftRad, float rightRad, float bottomRad, float alpha, boolean hasQuote, boolean emojiOnly) {
-        radii[0] = radii[1] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(leftRad));
+        int minRadius = AndroidUtilities.dp(UIStyleEngine.isMaterial3Expressive() ? 8 : (int) Math.floor(SharedConfig.bubbleRadius / 3f));
+        radii[0] = radii[1] = Math.max(minRadius, AndroidUtilities.dp(leftRad));
         radii[2] = radii[3] = AndroidUtilities.dp(rightRad);
         radii[4] = radii[5] = AndroidUtilities.dp(bottomRad);
-        radii[6] = radii[7] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(bottomRad));
+        radii[6] = radii[7] = Math.max(minRadius, AndroidUtilities.dp(bottomRad));
         drawBackground(canvas, rect, alpha, hasQuote, emojiOnly);
     }
 
@@ -741,10 +743,11 @@ public class ReplyMessageLine {
     }
 
     public void drawLoadingBackground(Canvas canvas, RectF rect, float leftRad, float rightRad, float bottomRad, float alpha) {
-        radii[0] = radii[1] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(leftRad));
+        int minRadius = AndroidUtilities.dp(UIStyleEngine.isMaterial3Expressive() ? 8 : (int) Math.floor(SharedConfig.bubbleRadius / 3f));
+        radii[0] = radii[1] = Math.max(minRadius, AndroidUtilities.dp(leftRad));
         radii[2] = radii[3] = AndroidUtilities.dp(rightRad);
         radii[4] = radii[5] = AndroidUtilities.dp(bottomRad);
-        radii[6] = radii[7] = Math.max(AndroidUtilities.dp((int) Math.floor(SharedConfig.bubbleRadius / 3f)), AndroidUtilities.dp(bottomRad));
+        radii[6] = radii[7] = Math.max(minRadius, AndroidUtilities.dp(bottomRad));
 
         if (loading || backgroundLoadingDrawable != null && backgroundLoadingDrawable.isDisappearing()) {
             if (backgroundLoadingDrawable == null) {

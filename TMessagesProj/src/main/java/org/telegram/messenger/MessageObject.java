@@ -104,6 +104,7 @@ import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.community.CommunityUtils;
 import org.telegram.ui.web.BotWebViewContainer;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -8564,6 +8565,13 @@ public class MessageObject {
             if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) {
                 maxWidth -= dp(10);
             }
+        }
+        if (UIStyleEngine.isMaterial3Expressive()
+                && getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage
+                && getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage
+                && !isRepostPreview
+                && !isAndroidTheme()) {
+            maxWidth = Math.max(dp(220), maxWidth - dp(48));
         }
         if (emojiOnlyCount >= 1 && totalAnimatedEmojiCount <= 100 && (emojiOnlyCount - totalAnimatedEmojiCount) < (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50) && (hasValidReplyMessageObject() || isForwarded())) {
             maxWidth = Math.min(maxWidth, (int) (generatedWithMinSize * .65f));
