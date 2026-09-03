@@ -8566,12 +8566,12 @@ public class MessageObject {
                 maxWidth -= dp(10);
             }
         }
-        if (UIStyleEngine.isMaterial3Expressive()
-                && getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage
+        if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage
                 && getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage
                 && !isRepostPreview
                 && !isAndroidTheme()) {
-            maxWidth = Math.max(dp(220), maxWidth - dp(48));
+            int webMax = AndroidUtilities.isTablet() ? dp(320) : Math.min((int) (generatedWithMinSize * 0.72f), dp(265));
+            maxWidth = Math.min(maxWidth, webMax);
         }
         if (emojiOnlyCount >= 1 && totalAnimatedEmojiCount <= 100 && (emojiOnlyCount - totalAnimatedEmojiCount) < (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50) && (hasValidReplyMessageObject() || isForwarded())) {
             maxWidth = Math.min(maxWidth, (int) (generatedWithMinSize * .65f));

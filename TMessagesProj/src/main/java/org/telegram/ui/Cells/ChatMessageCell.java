@@ -7506,6 +7506,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     hasLinkPreview = true;
                     webpage = messageObject.getStoryMentionWebpage();
                 }
+                if (hasLinkPreview && !messageObject.isRepostPreview && !isArticle) {
+                    int maxCap = AndroidUtilities.isTablet() ? dp(320) : Math.min((int) (getParentWidth() * 0.72f), dp(265));
+                    maxWidth = Math.min(maxWidth, maxCap);
+                }
 
                 drawInstantView = hasLinkPreview && webpage.cached_page != null;
                 String siteName = hasLinkPreview ? webpage.site_name : null;
@@ -7861,9 +7865,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
 
                 int maxChildWidth = backgroundWidth;
-                if (UIStyleEngine.isMaterial3Expressive() && hasLinkPreview && !linkPreviewAbove && !hasGamePreview && !hasInvoicePreview && !currentMessageObject.isRepostPreview) {
-                    maxChildWidth = Math.min(maxChildWidth, Math.max(messageObject.textWidth + getExtraTextX() * 2, messageObject.getLastLineWidth()));
-                }
                 maxChildWidth = Math.max(maxChildWidth, nameWidth);
                 maxChildWidth = Math.max(maxChildWidth, sideNameWidth);
                 maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
@@ -7889,6 +7890,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     if (drawSideButton != 0) {
                         linkPreviewMaxWidth -= dp(currentMessageObject.isSaved && currentMessageObject.isOutOwner() ? 25 : 20);
+                    }
+                    if (!currentMessageObject.isRepostPreview && !hasGamePreview && !hasInvoicePreview) {
+                        int maxCap = AndroidUtilities.isTablet() ? dp(300) : Math.min((int) (getParentWidth() * 0.76f), dp(270));
+                        linkPreviewMaxWidth = Math.min(linkPreviewMaxWidth, maxCap);
                     }
                     int site_name_additionalWidth = 0;
                     CharSequence site_name;
@@ -8293,10 +8298,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         smallImage = false;
                         isSmallImage = false;
                     }
-                    if (UIStyleEngine.isMaterial3Expressive() && !smallImage && !hasGamePreview && !hasInvoicePreview && !currentMessageObject.isRepostPreview) {
-                        linkPreviewMaxWidth = Math.min(linkPreviewMaxWidth, Math.max(dp(220), linkPreviewMaxWidth - dp(28)));
+                    int maxPhotoWidth;
+                    if (smallImage) {
+                        maxPhotoWidth = smallImageSide;
+                    } else if (hasGamePreview || hasInvoicePreview || currentMessageObject.isRepostPreview) {
+                        maxPhotoWidth = linkPreviewMaxWidth;
+                    } else {
+                        int dynamicTextTarget = Math.max(maxWebWidth > 0 ? maxWebWidth - additinalWidth : 0, messageObject != null ? messageObject.textWidth : 0);
+                        int contentTarget = Math.max(dynamicTextTarget, dp(200));
+                        maxPhotoWidth = Math.min(linkPreviewMaxWidth, contentTarget);
                     }
-                    int maxPhotoWidth = smallImage ? smallImageSide : linkPreviewMaxWidth;
 
                     if (drawInstantViewType == 17) {
                         if (storyItem != null && storyItem.media != null) {
