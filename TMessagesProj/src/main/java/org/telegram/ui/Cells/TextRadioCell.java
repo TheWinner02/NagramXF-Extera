@@ -44,6 +44,10 @@ public class TextRadioCell extends FrameLayout {
     private boolean isRTL;
     private int padding;
 
+    private boolean isM3Expressive() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+    }
+
     public static final Property<TextRadioCell, Float> ANIMATION_PROGRESS = new AnimationProperties.FloatProperty<TextRadioCell>("animationProgress") {
         @Override
         public void setValue(TextRadioCell object, float value) {
@@ -92,10 +96,10 @@ public class TextRadioCell extends FrameLayout {
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? padding : 64, 36, LocaleController.isRTL ? 64 : padding, 0));
 
         radioButton = new RadioButton(context);
-        radioButton.setSize(AndroidUtilities.dp(20));
+        radioButton.setSize(AndroidUtilities.dp(isM3Expressive() ? 22 : 20));
 //        radioButton.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
         radioButton.setColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_radioBackgroundChecked));
-        addView(radioButton, LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+        addView(radioButton, LayoutHelper.createFrame(isM3Expressive() ? 24 : 20, isM3Expressive() ? 24 : 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
 
         isRTL = LocaleController.isRTL;
 
@@ -121,6 +125,8 @@ public class TextRadioCell extends FrameLayout {
         valueTextView.setLayoutParams(valueTextViewLayout);
         FrameLayout.LayoutParams radioButtonLayout = (FrameLayout.LayoutParams) radioButton.getLayoutParams();
         radioButtonLayout.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
+        radioButtonLayout.width = AndroidUtilities.dp(isM3Expressive() ? 24 : 20);
+        radioButtonLayout.height = AndroidUtilities.dp(isM3Expressive() ? 24 : 20);
         radioButton.setLayoutParams(radioButtonLayout);
     }
 

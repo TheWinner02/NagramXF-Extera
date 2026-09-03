@@ -36,6 +36,10 @@ public class RadioCell extends FrameLayout {
     private RadioButton radioButton;
     private boolean needDivider;
 
+    private boolean isM3Expressive() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+    }
+
     public RadioCell(Context context) {
         this(context, false, 21);
     }
@@ -67,13 +71,13 @@ public class RadioCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, 0, padding, 0));
 
         radioButton = new RadioButton(context);
-        radioButton.setSize(AndroidUtilities.dp(20));
+        radioButton.setSize(AndroidUtilities.dp(isM3Expressive() ? 22 : 20));
         if (dialog) {
             radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground, resourcesProvider), Theme.getColor(Theme.key_dialogRadioBackgroundChecked, resourcesProvider));
         } else {
             radioButton.setColor(Theme.getColor(Theme.key_radioBackground, resourcesProvider), Theme.getColor(Theme.key_radioBackgroundChecked, resourcesProvider));
         }
-        addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? padding + 1 : 0), 14, (LocaleController.isRTL ? 0 : padding + 1), 0));
+        addView(radioButton, LayoutHelper.createFrame(isM3Expressive() ? 24 : 22, isM3Expressive() ? 24 : 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | (isM3Expressive() ? Gravity.CENTER_VERTICAL : Gravity.TOP), (LocaleController.isRTL ? padding + 1 : 0), isM3Expressive() ? 0 : 14, (LocaleController.isRTL ? 0 : padding + 1), 0));
     }
 
     public void setRadioIcon(Drawable icon) {
@@ -82,10 +86,11 @@ public class RadioCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(isM3Expressive() ? 56 : 50) + (needDivider ? 1 : 0));
 
         int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(34);
-        radioButton.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(22), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(22), MeasureSpec.EXACTLY));
+        int radioSize = AndroidUtilities.dp(isM3Expressive() ? 24 : 22);
+        radioButton.measure(MeasureSpec.makeMeasureSpec(radioSize, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(radioSize, MeasureSpec.EXACTLY));
         textView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
     }
 
@@ -125,7 +130,13 @@ public class RadioCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (isM3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+            }
+            int inset = isM3Expressive() ? AndroidUtilities.dp(20) : 0;
+            canvas.drawLine(LocaleController.isRTL ? 0 : inset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? inset : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            Theme.dividerPaint.setAlpha(alpha);
         }
     }
 

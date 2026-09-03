@@ -14,6 +14,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -325,8 +326,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             actionBar.setTitle(LocaleController.getString(R.string.GroupSettingsTitle));
         }
 
-        linearLayoutTypeContainer = new LinearLayout(context);
+        linearLayoutTypeContainer = new SectionsScrollView.SectionsLinearLayout(context);
         linearLayoutTypeContainer.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            linearLayoutTypeContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
         linearLayout.addView(linearLayoutTypeContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         headerCell2 = new HeaderCell(context, 23);
@@ -382,8 +386,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             headerCell2.setVisibility(View.GONE);
         }
 
-        linkContainer = new LinearLayout(context);
+        linkContainer = new SectionsScrollView.SectionsLinearLayout(context);
         linkContainer.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            linkContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
         linearLayout.addView(linkContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         headerCell = new HeaderCell(context, 23);
@@ -460,8 +467,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             }
         });
 
-        privateContainer = new LinearLayout(context);
+        privateContainer = new SectionsScrollView.SectionsLinearLayout(context);
         privateContainer.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            privateContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
         linkContainer.addView(privateContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         permanentLinkView = new LinkActionView(context, this, null, chatId, true, ChatObject.isChannel(currentChat));
@@ -566,8 +576,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         loadingAdminedCell = new LoadingCell(context);
         linearLayout.addView(loadingAdminedCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        adminnedChannelsLayout = new LinearLayout(context);
+        adminnedChannelsLayout = new SectionsScrollView.SectionsLinearLayout(context);
         adminnedChannelsLayout.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            adminnedChannelsLayout.setBackgroundColor(Color.TRANSPARENT);
+        }
         linearLayout.addView(adminnedChannelsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         adminedInfoCell = new ShadowSectionCell(context);
@@ -627,8 +640,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         joinContainer.setFullInfo(this, info);
         linearLayout.addView(joinContainer);
 
-        saveContainer = new LinearLayout(context);
+        saveContainer = new SectionsScrollView.SectionsLinearLayout(context);
         saveContainer.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            saveContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
         linearLayout.addView(saveContainer);
 
         saveHeaderCell = new HeaderCell(context, 23);
@@ -1612,8 +1628,10 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         themeDescriptions.add(new ThemeDescription(usernameTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(usernameTextView, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
 
-        themeDescriptions.add(new ThemeDescription(linearLayoutTypeContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(linkContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            themeDescriptions.add(new ThemeDescription(linearLayoutTypeContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            themeDescriptions.add(new ThemeDescription(linkContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        }
         themeDescriptions.add(new ThemeDescription(headerCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
         themeDescriptions.add(new ThemeDescription(headerCell2, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
         themeDescriptions.add(new ThemeDescription(saveHeaderCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));

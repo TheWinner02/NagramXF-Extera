@@ -189,6 +189,7 @@ public class CountrySelectActivity extends BaseFragment {
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView = new RecyclerListView(context);
+        actionBar.setAdaptiveBackground(listView);
         listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_FAST_SCROLL_ONLY);
         listView.setEmptyView(emptyView);
         listView.setVerticalScrollBarEnabled(false);

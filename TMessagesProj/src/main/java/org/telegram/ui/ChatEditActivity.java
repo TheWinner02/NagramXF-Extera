@@ -22,6 +22,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
@@ -693,7 +694,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
         avatarContainer = new LinearLayout(context);
         avatarContainer.setOrientation(LinearLayout.VERTICAL);
-        avatarContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        avatarContainer.setBackgroundColor(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? Color.TRANSPARENT : Theme.getColor(Theme.key_windowBackgroundWhite));
         linearLayout1.addView(avatarContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         FrameLayout frameLayout = new FrameLayout(context);
@@ -813,8 +814,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         nameTextView.setFilters(inputFilters);
         frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 5 : 96, 0, LocaleController.isRTL ? 96 : 5, 0));
 
-        settingsContainer = new LinearLayout(context);
+        settingsContainer = new SectionsScrollView.SectionsLinearLayout(context);
         settingsContainer.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            settingsContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
         linearLayout1.addView(settingsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         if (canEditBotInfo() || currentUser == null && ChatObject.canChangeChatInfo(currentChat)) {
@@ -882,8 +886,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         settingsTopSectionCell = new ShadowSectionCell(context);
         linearLayout1.addView(settingsTopSectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        typeEditContainer = new LinearLayout(context);
+        typeEditContainer = new SectionsScrollView.SectionsLinearLayout(context);
         typeEditContainer.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            typeEditContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
         linearLayout1.addView(typeEditContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         if (currentChat != null) {
@@ -1211,8 +1218,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             linearLayout1.addView(settingsSectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
-        infoContainer = new LinearLayout(context);
+        infoContainer = new SectionsScrollView.SectionsLinearLayout(context);
         infoContainer.setOrientation(LinearLayout.VERTICAL);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            infoContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
         linearLayout1.addView(infoContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         if (currentChat != null) {
@@ -1465,8 +1475,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
             if (currentUser.bot && currentUser.bot_can_edit) {
 
-                balanceContainer = new LinearLayout(context);
+                balanceContainer = new SectionsScrollView.SectionsLinearLayout(context);
                 balanceContainer.setOrientation(LinearLayout.VERTICAL);
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    balanceContainer.setBackgroundColor(Color.TRANSPARENT);
+                }
                 linearLayout1.addView(balanceContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 HeaderCell headerCell = new HeaderCell(context);
@@ -2767,12 +2780,14 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         themeDescriptions.add(new ThemeDescription(descriptionTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(descriptionTextView, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
 
-        themeDescriptions.add(new ThemeDescription(avatarContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(settingsContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(typeEditContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(deleteContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            themeDescriptions.add(new ThemeDescription(avatarContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            themeDescriptions.add(new ThemeDescription(settingsContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            themeDescriptions.add(new ThemeDescription(typeEditContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            themeDescriptions.add(new ThemeDescription(deleteContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            themeDescriptions.add(new ThemeDescription(infoContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        }
         themeDescriptions.add(new ThemeDescription(stickersContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(infoContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
         themeDescriptions.add(new ThemeDescription(settingsTopSectionCell, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
         themeDescriptions.add(new ThemeDescription(settingsSectionCell, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));

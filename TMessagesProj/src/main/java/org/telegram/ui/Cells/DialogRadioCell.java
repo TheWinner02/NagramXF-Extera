@@ -38,6 +38,10 @@ public class DialogRadioCell extends FrameLayout {
     private RadioButton radioButton;
     private boolean needDivider;
 
+    private boolean isM3Expressive() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+    }
+
     public DialogRadioCell(Context context) {
         this(context, false);
     }
@@ -75,13 +79,13 @@ public class DialogRadioCell extends FrameLayout {
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 23, 0, 23, 0));
 
         radioButton = new RadioButton(context);
-        radioButton.setSize(dp(20));
+        radioButton.setSize(dp(isM3Expressive() ? 22 : 20));
         if (dialog) {
             radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
         } else {
             radioButton.setColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_radioBackgroundChecked));
         }
-        addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 20, 15, 20, 0));
+        addView(radioButton, LayoutHelper.createFrame(isM3Expressive() ? 24 : 22, isM3Expressive() ? 24 : 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | (isM3Expressive() ? Gravity.CENTER_VERTICAL : Gravity.TOP), 20, isM3Expressive() ? 0 : 15, 20, 0));
 
         updateLayout();
     }
@@ -94,17 +98,18 @@ public class DialogRadioCell extends FrameLayout {
         );
         radioButton.setLayoutParams(
             valueTextView.getVisibility() == View.VISIBLE ?
-                LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 20, 15, 20, 0) :
-                LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 20, 15, 20, 0)
+                LayoutHelper.createFrame(isM3Expressive() ? 24 : 22, isM3Expressive() ? 24 : 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | (isM3Expressive() ? Gravity.CENTER_VERTICAL : Gravity.TOP), 20, isM3Expressive() ? 0 : 15, 20, 0) :
+                LayoutHelper.createFrame(isM3Expressive() ? 24 : 22, isM3Expressive() ? 24 : 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | (isM3Expressive() ? Gravity.CENTER_VERTICAL : Gravity.TOP), 20, isM3Expressive() ? 0 : 15, 20, 0)
         );
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(50) + (needDivider ? 1 : 0));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(isM3Expressive() ? 56 : 50) + (needDivider ? 1 : 0));
 
         int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - dp(61 + 23 + (valueTextView.getVisibility() == View.VISIBLE ? 12 : 0));
-        radioButton.measure(MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY));
+        int radioSize = dp(isM3Expressive() ? 24 : 22);
+        radioButton.measure(MeasureSpec.makeMeasureSpec(radioSize, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(radioSize, MeasureSpec.EXACTLY));
         if (valueTextView.getVisibility() == View.VISIBLE) {
             valueTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
             availableWidth -= valueTextView.getMeasuredWidth() + dp(12);
@@ -171,7 +176,12 @@ public class DialogRadioCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (isM3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+            }
             canvas.drawLine(dp(LocaleController.isRTL ? 0 : 23), getHeight() - 1, getMeasuredWidth() - dp(LocaleController.isRTL ? 23 : 0), getHeight() - 1, Theme.dividerPaint);
+            Theme.dividerPaint.setAlpha(alpha);
         }
     }
 }

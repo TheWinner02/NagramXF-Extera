@@ -194,6 +194,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
+        actionBar.setAdaptiveBackground(listView);
         DefaultItemAnimator defaultItemAnimator = new DefaultItemAnimator();
         defaultItemAnimator.setDurations(200);
         defaultItemAnimator.setSupportsChangeAnimations(true);

@@ -2303,7 +2303,8 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(50) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+            int height = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 56 : 50;
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(height) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
         }
 
         private int rtl(int x) {
@@ -2365,7 +2366,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 if (paint == null) {
                     paint = Theme.dividerPaint;
                 }
+                int alpha = paint.getAlpha();
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    paint.setAlpha((int) (alpha * 0.38f));
+                }
                 canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(58), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(58) : 0), getMeasuredHeight() - 1, paint);
+                paint.setAlpha(alpha);
             }
         }
     }

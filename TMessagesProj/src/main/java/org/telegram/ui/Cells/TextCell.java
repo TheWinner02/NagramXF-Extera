@@ -87,6 +87,14 @@ public class TextCell extends FrameLayout {
         return checkBox != null && checkBox.getVisibility() == VISIBLE && xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 104 : 71;
     }
 
+    private boolean isM3Expressive() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+    }
+
+    private int getEffectiveHeightDp() {
+        return isM3Expressive() ? Math.max(heightDp, 56) : heightDp;
+    }
+
     public TextCell(Context context) {
         this(context, 23, false, false, null);
     }
@@ -193,7 +201,7 @@ public class TextCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = dp(heightDp);
+        int height = dp(getEffectiveHeightDp());
 
         if (lastWidth != 0 && lastWidth != width && valueText != null) {
             valueTextView.setText(TextUtils.ellipsize(valueText, valueTextView.getPaint(), AndroidUtilities.displaySize.x / 2.5f, TextUtils.TruncateAt.END), false);
@@ -280,7 +288,7 @@ public class TextCell extends FrameLayout {
             viewLeft = dp(imageView.getVisibility() == VISIBLE ? offsetFromImage : leftPadding);
         }
         if (subtitleView.getVisibility() == View.VISIBLE) {
-            int margin = heightDp > 50 ? 4 : 2;
+            int margin = getEffectiveHeightDp() > 50 ? 4 : 2;
             viewTop = (height - textView.getTextHeight() - subtitleView.getTextHeight() - dp(margin)) / 2 + dp(1);
             textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
             viewTop = viewTop + textView.getTextHeight() + dp(margin);
@@ -290,7 +298,7 @@ public class TextCell extends FrameLayout {
             textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
         }
         if (imageView.getVisibility() == VISIBLE) {
-            viewTop = dp(heightDp > 50 ? 0 : 2) + (height - imageView.getMeasuredHeight()) / 2 - imageView.getPaddingTop() + dp(1);
+            viewTop = dp(getEffectiveHeightDp() > 50 ? 0 : 2) + (height - imageView.getMeasuredHeight()) / 2 - imageView.getPaddingTop() + dp(1);
             viewLeft = !LocaleController.isRTL ? dp(imageLeft) : width - imageView.getMeasuredWidth() - dp(imageLeft);
             imageView.layout(viewLeft, viewTop, viewLeft + imageView.getMeasuredWidth(), viewTop + imageView.getMeasuredHeight());
         }
@@ -851,7 +859,12 @@ public class TextCell extends FrameLayout {
             if (paint == null) {
                 paint = Theme.dividerPaint;
             }
+            int alpha = paint.getAlpha();
+            if (isM3Expressive()) {
+                paint.setAlpha((int) (alpha * 0.38f));
+            }
             canvas.drawLine(LocaleController.isRTL ? 0 : dp(imageView.getVisibility() == VISIBLE ? (inDialogs ? 72 : 58) : 20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(imageView.getVisibility() == VISIBLE ? (inDialogs ? 72 : 58) : 20) : 0), getMeasuredHeight() - 1, paint);
+            paint.setAlpha(alpha);
         }
     }
 
