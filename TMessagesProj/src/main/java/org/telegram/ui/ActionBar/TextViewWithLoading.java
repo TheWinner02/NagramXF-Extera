@@ -9,6 +9,7 @@ import android.widget.TextView;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.M3PressMorphHelper;
 
 public class TextViewWithLoading extends TextView {
 
@@ -43,20 +44,21 @@ public class TextViewWithLoading extends TextView {
         return loading;
     }
 
-    private final AnimatedFloat pressedMorphProgress = new AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final M3PressMorphHelper pressedMorphProgress = new M3PressMorphHelper(this);
     private final android.graphics.Path buttonMorphPath = new android.graphics.Path();
     private final android.graphics.RectF buttonMorphRect = new android.graphics.RectF();
 
     @Override
     public void setPressed(boolean pressed) {
         super.setPressed(pressed);
+        pressedMorphProgress.setPressed(pressed);
         invalidate();
     }
 
     @Override
     public void draw(Canvas canvas) {
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+            float progress = pressedMorphProgress.getProgress();
             float pillRad = getHeight() / 2f;
             float currentRad = org.telegram.messenger.AndroidUtilities.lerp(pillRad, dp(8f), progress);
             buttonMorphPath.rewind();

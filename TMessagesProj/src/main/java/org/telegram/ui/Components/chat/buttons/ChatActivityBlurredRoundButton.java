@@ -23,6 +23,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
@@ -48,12 +49,15 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     private @Nullable ImageView loadingIndicatorView;
     private CircularProgressDrawable loadingIndicatorDrawable;
     private Theme.ResourcesProvider resourcesProvider;
+    private boolean m3ExpressiveTextButton;
+    private M3ExpressiveButtonDrawable m3ExpressivePressedBackground;
 
-    private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final org.telegram.ui.Components.M3PressMorphHelper pressedMorphProgress = new org.telegram.ui.Components.M3PressMorphHelper(this);
 
     @Override
     public void setPressed(boolean pressed) {
         super.setPressed(pressed);
+        pressedMorphProgress.setPressed(pressed);
         invalidate();
     }
 
@@ -81,16 +85,19 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     @Override
     public void draw(@NonNull Canvas canvas) {
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
-            float pillRad = (getMeasuredHeight() > 0 ? getMeasuredHeight() : dp(BUTTON_SIZE)) / 2f;
-            float currentRad = AndroidUtilities.lerp(pillRad, dp(8f), progress);
+            float progress = pressedMorphProgress.getProgress();
+            int innerPadding = getM3ExpressiveInnerPadding();
 
             morphClipPath.rewind();
-            morphRect.set(dp(CLICK_ZONE_MARGIN), dp(CLICK_ZONE_MARGIN), getMeasuredWidth() - dp(CLICK_ZONE_MARGIN), getMeasuredHeight() - dp(CLICK_ZONE_MARGIN));
+            morphRect.set(innerPadding, innerPadding, getMeasuredWidth() - innerPadding, getMeasuredHeight() - innerPadding);
+            float currentRad = AndroidUtilities.lerp(morphRect.height() / 2f, dp(8f), progress);
             morphClipPath.addRoundRect(morphRect, currentRad, currentRad, android.graphics.Path.Direction.CW);
 
             if (backgroundDrawable != null) {
                 backgroundDrawable.setRadius(currentRad);
+            }
+            if (m3ExpressivePressedBackground != null) {
+                m3ExpressivePressedBackground.setMorphProgress(progress);
             }
 
             canvas.save();
@@ -168,8 +175,45 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     private BlurredBackgroundDrawable backgroundDrawable;
     public void setBlurredBackgroundDrawable(BlurredBackgroundDrawable drawable) {
         backgroundDrawable = drawable;
-        backgroundDrawable.setPadding(dp(CLICK_ZONE_MARGIN));
-        backgroundDrawable.setRadius(dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 14 : (BUTTON_SIZE / 2f)));
+        backgroundDrawable.setPadding(getM3ExpressiveInnerPadding());
+        backgroundDrawable.setRadius(getM3ExpressiveRestRadius());
+    }
+
+    public ChatActivityBlurredRoundButton setM3ExpressiveTextButton(boolean value) {
+        m3ExpressiveTextButton = value;
+        if (backgroundDrawable != null) {
+            backgroundDrawable.setPadding(getM3ExpressiveInnerPadding());
+            backgroundDrawable.setRadius(getM3ExpressiveRestRadius());
+        }
+        updatePressedBackground();
+        invalidate();
+        return this;
+    }
+
+    private int getM3ExpressiveInnerPadding() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && m3ExpressiveTextButton) {
+            return dp(4);
+        }
+        return dp(CLICK_ZONE_MARGIN);
+    }
+
+    private int getM3ExpressiveRestRadius() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return dp(m3ExpressiveTextButton ? 24 : 22);
+        }
+        return dp(BUTTON_SIZE / 2f);
+    }
+
+    private void updatePressedBackground() {
+        final int color = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
+        int pressedColor = Theme.multAlpha(color, m3ExpressiveTextButton ? .18f : .15f);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            m3ExpressivePressedBackground = new M3ExpressiveButtonDrawable(0, pressedColor, getM3ExpressiveRestRadius(), getM3ExpressiveInnerPadding());
+            setBackground(m3ExpressivePressedBackground);
+        } else {
+            m3ExpressivePressedBackground = null;
+            setBackground(Theme.createInsetRoundRectDrawable(pressedColor, getM3ExpressiveRestRadius(), getM3ExpressiveInnerPadding()));
+        }
     }
 
     public void showLoading(boolean loading, boolean animated) {
@@ -218,9 +262,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         button.resourcesProvider = resourcesProvider;
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
         button.setIconColor(color);
-        int rad = dp(22);
-        int pressedColor = Theme.multAlpha(color, .15f);
-        button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+        button.setM3ExpressiveTextButton(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive());
 
         return button;
     }
@@ -241,9 +283,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
         button.setIcon(res, iconSize);
         button.setIconColor(color);
-        int rad = dp(22);
-        int pressedColor = Theme.multAlpha(color, .15f);
-        button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+        button.updatePressedBackground();
 
         return button;
     }
@@ -256,9 +296,7 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
 
         final int color = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
         setIconColor(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider));
-        int rad = dp(22);
-        int pressedColor = Theme.multAlpha(color, .15f);
-        setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+        updatePressedBackground();
     }
 
     private void checkUi_IconViewVisibility() {

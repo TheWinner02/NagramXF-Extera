@@ -17,6 +17,11 @@ public class ScaleStateListAnimator {
             return;
         }
 
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            scale = 0.04f;
+            tension = 2.0f;
+        }
+
         AnimatorSet pressedAnimator = new AnimatorSet();
         pressedAnimator.playTogether(
                 ObjectAnimator.ofFloat(view, View.SCALE_X, 1f - scale),
@@ -30,8 +35,8 @@ public class ScaleStateListAnimator {
                 ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f)
         );
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            defaultAnimator.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
-            defaultAnimator.setDuration(320);
+            defaultAnimator.setInterpolator(new OvershootInterpolator(tension));
+            defaultAnimator.setDuration(350);
         } else {
             defaultAnimator.setInterpolator(new OvershootInterpolator(tension));
             defaultAnimator.setDuration(350);

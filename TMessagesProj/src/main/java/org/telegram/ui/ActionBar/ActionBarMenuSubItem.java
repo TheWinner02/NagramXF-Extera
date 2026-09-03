@@ -430,7 +430,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         updateBackground();
     }
 
-    private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final org.telegram.ui.Components.M3PressMorphHelper pressedMorphProgress = new org.telegram.ui.Components.M3PressMorphHelper(this);
     private final android.graphics.Path morphClipPath = new android.graphics.Path();
     private final android.graphics.RectF morphClipRect = new android.graphics.RectF();
     private final float[] morphRadii = new float[8];
@@ -439,6 +439,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     @Override
     public void setPressed(boolean pressed) {
         super.setPressed(pressed);
+        pressedMorphProgress.setPressed(pressed);
         invalidate();
     }
 
@@ -455,7 +456,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+            float progress = pressedMorphProgress.getProgress();
             float topR = AndroidUtilities.lerp(top ? dp(16) : dp(4), dp(16), progress);
             float bottomR = AndroidUtilities.lerp(bottom ? dp(16) : dp(4), dp(16), progress);
             float gap = AndroidUtilities.lerp(dp(1.5f), dp(3.5f), progress);

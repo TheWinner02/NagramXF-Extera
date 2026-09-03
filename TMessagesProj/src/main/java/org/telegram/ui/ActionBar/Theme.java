@@ -114,6 +114,7 @@ import org.telegram.ui.Components.ChoosingStickerStatusDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.FragmentContextViewWavesDrawable;
 import org.telegram.ui.Components.LinkPath;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.MsgClockDrawable;
 import org.telegram.ui.Components.PathAnimator;
@@ -4800,8 +4801,7 @@ public class Theme {
     }
 
     public static ShapeDrawable createRoundRectDrawable(int rad, int defaultColor) {
-        int r = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? (rad < dp(6) ? rad : Math.max(rad, dp(24))) : rad;
-        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{r, r, r, r, r, r, r, r}, null, null));
+        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
         defaultDrawable.getPaint().setColor(defaultColor);
         return defaultDrawable;
     }
@@ -5120,6 +5120,21 @@ public class Theme {
         return new BaseCell.RippleDrawableSafe(colorStateList, null, maskDrawable);
     }
 
+    public static Drawable createM3ExpressiveButtonDrawable(int backgroundColor, int pressedOverlayColor) {
+        return new M3ExpressiveButtonDrawable(backgroundColor, pressedOverlayColor);
+    }
+
+    public static Drawable createM3ExpressiveButtonDrawable(int backgroundColor, int pressedOverlayColor, float restRadius, int inset) {
+        return new M3ExpressiveButtonDrawable(backgroundColor, pressedOverlayColor, restRadius, inset);
+    }
+
+    public static Drawable createM3ExpressiveButtonDrawableByKey(int backgroundColorKey, int textColorKey) {
+        return createM3ExpressiveButtonDrawable(
+                getColor(backgroundColorKey),
+                multAlpha(getColor(textColorKey), .16f)
+        );
+    }
+
     public static Drawable createCircleSelectorDrawable(int color, int leftInset, int rightInset) {
         maskPaint.setColor(0xffffffff);
         Drawable maskDrawable = new Drawable() {
@@ -5263,6 +5278,11 @@ public class Theme {
             return filledRect(background, Theme.getColor(backgroundColorKey));
         }
         public static Drawable filledRectByKey(int backgroundColorKey, float ...radii) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()
+                    && backgroundColorKey == Theme.key_featuredStickers_addButton
+                    && hasNonzeroRadii(radii)) {
+                return Theme.createM3ExpressiveButtonDrawableByKey(backgroundColorKey, Theme.key_featuredStickers_buttonText);
+            }
             return filledRect(Theme.getColor(backgroundColorKey), radii);
         }
         public static Drawable filledRectByKey(Drawable background, int backgroundColorKey, float ...radii) {

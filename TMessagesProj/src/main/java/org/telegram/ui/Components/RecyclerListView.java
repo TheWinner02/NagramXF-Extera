@@ -3903,21 +3903,43 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         if (position == RecyclerView.NO_POSITION) {
             prev = next = false;
         } else if (m3Expressive) {
-            boolean isPressedSection = isM3ExpressivePressedSectionPosition(position);
-            prev = hasM3ExpressiveSectionItem(position - 1) && !isPressedSection && !isM3ExpressivePressedSectionPosition(position - 1);
-            next = hasM3ExpressiveSectionItem(position + 1) && !isPressedSection && !isM3ExpressivePressedSectionPosition(position + 1);
+            boolean isCurrentIsolated = isM3ExpressiveIsolatedSectionItem(child, position);
+            if (isCurrentIsolated) {
+                prev = next = false;
+            } else {
+                View aboveChild = findChildByAdapterPosition(position - 1);
+                boolean isAboveIsolated = aboveChild != null && isM3ExpressiveIsolatedSectionItem(aboveChild, position - 1);
+                boolean canConnectAbove = sectionGroupingChecker == null || sectionGroupingChecker.canConnect(child, position, aboveChild, position - 1);
+                prev = hasM3ExpressiveSectionItem(position - 1) && !isAboveIsolated && canConnectAbove;
+
+                View belowChild = findChildByAdapterPosition(position + 1);
+                boolean isBelowIsolated = belowChild != null && isM3ExpressiveIsolatedSectionItem(belowChild, position + 1);
+                boolean canConnectBelow = sectionGroupingChecker == null || sectionGroupingChecker.canConnect(child, position, belowChild, position + 1);
+                next = hasM3ExpressiveSectionItem(position + 1) && !isBelowIsolated && canConnectBelow;
+            }
         } else {
             final View prevChild = findViewByPosition(position - 1);
             final View nextChild = findViewByPosition(position + 1);
             prev = prevChild != null && sectionsItemDecoration.isSectionItem.run(prevChild);
             next = nextChild != null && sectionsItemDecoration.isSectionItem.run(nextChild);
         }
-        float segmentGap = m3Expressive ? getM3ExpressiveSegmentGap() : 0;
+        float topInset = 0;
+        float bottomInset = 0;
+        if (m3Expressive) {
+            M3ItemCornerState state = getM3CornerState(child);
+            float topP = state.topProgress.getValue();
+            float bottomP = state.bottomProgress.getValue();
+            float isolatedP = state.isolatedProgress.getValue();
+            float gap = AndroidUtilities.lerp(getM3ExpressiveSegmentGap(), dp(2), isolatedP);
+            float extraPad = AndroidUtilities.lerp(0, dp(1), isolatedP);
+            topInset = AndroidUtilities.lerp(0, gap, topP) + extraPad;
+            bottomInset = AndroidUtilities.lerp(0, gap, bottomP) + extraPad;
+        }
         AndroidUtilities.rectTmp.set(
             child.getX(),
-            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child) + (m3Expressive && prev ? segmentGap : 0)),
+            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child) + topInset),
             child.getX() + child.getWidth(),
-            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - (m3Expressive && next ? segmentGap : 0))
+            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - bottomInset)
         );
         if (prev && next && !m3Expressive) {
             prev = top(child) >= AndroidUtilities.rectTmp.top;

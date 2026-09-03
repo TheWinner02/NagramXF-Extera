@@ -44,9 +44,10 @@ public class GradientButtonWithCounterView extends ButtonWithCounterView {
 
         rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
         PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, getMeasuredWidth(), getMeasuredHeight(), -getMeasuredWidth() * 0.1f * progress, 0);
-        canvas.drawRoundRect(rect, dp(8), dp(8), PremiumGradient.getInstance().getMainGradientPaint());
+        float radius = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? getM3ExpressiveButtonRadius() : dp(8);
+        canvas.drawRoundRect(rect, radius, radius, PremiumGradient.getInstance().getMainGradientPaint());
         flickerDrawable.setParentWidth(getMeasuredWidth());
-        flickerDrawable.draw(canvas, rect, dp(8), null);
+        flickerDrawable.draw(canvas, rect, radius, null);
         super.onDraw(canvas);
         invalidate();
     }

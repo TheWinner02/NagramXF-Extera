@@ -1240,7 +1240,7 @@ public class ItemOptions {
                     } else if (item instanceof MessagePreviewView.ToggleButton || item instanceof FrameLayout || (item != null && item.getBackground() instanceof RippleDrawable)) {
                         int topR = isFirst ? rad : (isM3 ? 4 : 0);
                         int bottomR = isLast ? rad : (isM3 ? 4 : 0);
-                        item.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), AndroidUtilities.dp(topR), AndroidUtilities.dp(bottomR)));
+                        item.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), topR, bottomR));
                     }
                 }
             }

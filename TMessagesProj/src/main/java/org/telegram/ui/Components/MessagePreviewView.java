@@ -2418,20 +2418,21 @@ public class MessagePreviewView extends FrameLayout {
             return who == textDrawable || super.verifyDrawable(who);
         }
 
-        private final org.telegram.ui.Components.AnimatedFloat pressedMorphProgress = new org.telegram.ui.Components.AnimatedFloat(this, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private final org.telegram.ui.Components.M3PressMorphHelper pressedMorphProgress = new org.telegram.ui.Components.M3PressMorphHelper(this);
         private final android.graphics.Path buttonMorphPath = new android.graphics.Path();
         private final android.graphics.RectF buttonMorphRect = new android.graphics.RectF();
 
         @Override
         public void setPressed(boolean pressed) {
             super.setPressed(pressed);
+            pressedMorphProgress.setPressed(pressed);
             invalidate();
         }
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                float progress = pressedMorphProgress.set(isPressed() ? 1f : 0f);
+                float progress = pressedMorphProgress.getProgress();
                 float pillRad = getMeasuredHeight() / 2f;
                 float currentRad = AndroidUtilities.lerp(pillRad, dp(8f), progress);
                 buttonMorphPath.rewind();
