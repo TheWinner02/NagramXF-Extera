@@ -37,7 +37,9 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Loadable;
 import org.telegram.ui.Components.LoadingDrawable;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.ScaleStateListAnimator;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
@@ -57,6 +59,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     private boolean neutral;
     private boolean customBackgroundColor;
     private int backgroundColor;
+    private M3ExpressiveButtonDrawable m3ExpressiveBackground;
 
     public ButtonWithCounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, true, resourcesProvider);
@@ -81,22 +84,17 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
     public void setRoundRadius(int radiusDp) {
         this.radiusDp = radiusDp;
-        if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor));
-        } else {
-            setBackground(null);
-        }
+        updateFilledBackground();
         updateColors();
     }
 
     public void setFilled(boolean filled) {
         if (this.filled == filled) return;
         this.filled = filled;
+        updateFilledBackground();
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor));
             text.setTypeface(AndroidUtilities.bold());
         } else {
-            setBackground(null);
             text.setTypeface(null);
         }
         updateColors();
@@ -114,7 +112,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         addView(rippleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(8), backgroundColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            backgroundColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
         }
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -166,10 +164,27 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void setColor(int color) {
         if (filled) {
             customBackgroundColor = true;
-            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor = color));
+            backgroundColor = color;
+            updateFilledBackground();
         } else {
             text.setTextColor(color);
             rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(color, .10f), radiusDp, radiusDp));
+        }
+    }
+
+    private void updateFilledBackground() {
+        if (!filled) {
+            m3ExpressiveBackground = null;
+            setBackground(null);
+            return;
+        }
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            int textColor = Theme.getColor(neutral ? Theme.key_buttonNeutralText : Theme.key_featuredStickers_buttonText, resourcesProvider);
+            m3ExpressiveBackground = new M3ExpressiveButtonDrawable(backgroundColor, Theme.multAlpha(textColor, .16f), dp(radiusDp), 0);
+            setBackground(m3ExpressiveBackground);
+        } else {
+            m3ExpressiveBackground = null;
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor));
         }
     }
 
@@ -183,8 +198,9 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
             backgroundColor = Theme.getColor(neutral ? Theme.key_buttonNeutral : Theme.key_featuredStickers_addButton, resourcesProvider);
         }
         text.setTextColor(Theme.getColor(filled ? (neutral ? Theme.key_buttonNeutralText : Theme.key_featuredStickers_buttonText) : Theme.key_featuredStickers_addButton, resourcesProvider));
+        updateFilledBackground();
         if (filled) {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), radiusDp, radiusDp));
+            rippleView.setBackground(UIStyleEngine.isMaterial3Expressive() ? null : Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), radiusDp, radiusDp));
         } else {
             rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), radiusDp, radiusDp));
         }
@@ -619,6 +635,9 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void setPressed(boolean pressed) {
         super.setPressed(pressed);
         pressedMorphProgress.setPressed(pressed);
+        if (m3ExpressiveBackground != null) {
+            m3ExpressiveBackground.setMorphProgress(pressedMorphProgress.getProgress());
+        }
         invalidate();
     }
 
@@ -631,6 +650,9 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void draw(Canvas canvas) {
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
             float progress = pressedMorphProgress.getProgress();
+            if (m3ExpressiveBackground != null) {
+                m3ExpressiveBackground.setMorphProgress(progress);
+            }
             float currentRad = org.telegram.messenger.AndroidUtilities.lerp(getHeight() / 2f, dp(8f), progress);
             buttonMorphPath.rewind();
             buttonMorphRect.set(0, 0, getWidth(), getHeight());

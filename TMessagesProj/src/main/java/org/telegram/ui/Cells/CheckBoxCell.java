@@ -13,9 +13,12 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -50,6 +53,9 @@ import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
+import org.telegram.ui.Components.M3PressMorphHelper;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class CheckBoxCell extends FrameLayout {
 
@@ -595,6 +601,10 @@ public class CheckBoxCell extends FrameLayout {
         private ImageView iconView;
         private final AnimatedTextView textView;
         private final View collapsedArrow;
+        private final M3PressMorphHelper pressedMorphProgress = new M3PressMorphHelper(this);
+        private final Path m3ClipPath = new Path();
+        private final RectF m3ClipRect = new RectF();
+        private final M3ExpressiveButtonDrawable m3BackgroundDrawable;
 
         @SuppressLint("UseCompatLoadingForDrawables")
         public CollapseButton(@NonNull Context context, int iconResId) {
@@ -633,8 +643,50 @@ public class CheckBoxCell extends FrameLayout {
                 addView(collapsedArrow, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL, 0, 0, 11, 0));
             }
 
-            setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 16, 16));
+            if (UIStyleEngine.isMaterial3Expressive()) {
+                m3BackgroundDrawable = new M3ExpressiveButtonDrawable(Color.TRANSPARENT, getThemedColor(Theme.key_listSelector), dp(16), 0);
+                setBackground(m3BackgroundDrawable);
+            } else {
+                m3BackgroundDrawable = null;
+                setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 16, 16));
+            }
             setClickable(true);
+        }
+
+        private float getCurrentRadius() {
+            if (!UIStyleEngine.isMaterial3Expressive()) {
+                return dp(16);
+            }
+            return AndroidUtilities.lerp(getHeight() / 2f, dp(8), pressedMorphProgress.getProgress());
+        }
+
+        @Override
+        public void setPressed(boolean pressed) {
+            super.setPressed(pressed);
+            pressedMorphProgress.setPressed(pressed);
+            if (m3BackgroundDrawable != null) {
+                m3BackgroundDrawable.setMorphProgress(pressedMorphProgress.getProgress());
+            }
+            invalidate();
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            if (UIStyleEngine.isMaterial3Expressive()) {
+                m3ClipPath.rewind();
+                m3ClipRect.set(0, 0, getWidth(), getHeight());
+                float radius = getCurrentRadius();
+                if (m3BackgroundDrawable != null) {
+                    m3BackgroundDrawable.setMorphProgress(pressedMorphProgress.getProgress());
+                }
+                m3ClipPath.addRoundRect(m3ClipRect, radius, radius, Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(m3ClipPath);
+                super.draw(canvas);
+                canvas.restore();
+            } else {
+                super.draw(canvas);
+            }
         }
 
         @Override

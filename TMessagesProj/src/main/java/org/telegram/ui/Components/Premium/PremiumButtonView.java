@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -21,7 +22,6 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BadWayToMakeButtonRound;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -31,9 +31,11 @@ import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Loadable;
+import org.telegram.ui.Components.M3PressMorphHelper;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class PremiumButtonView extends FrameLayout implements Loadable {
 
@@ -60,6 +62,9 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
     private boolean isFlickerDisabled;
     CounterView counterView;
     public boolean drawGradient = true;
+    private final M3PressMorphHelper pressedMorphProgress = new M3PressMorphHelper(this);
+    private final Path m3ButtonClipPath = new Path();
+    private final RectF m3ButtonClipRect = new RectF();
 
     public PremiumButtonView(@NonNull Context context, boolean createOverlayTextView, Theme.ResourcesProvider resourcesProvider) {
         this(context, AndroidUtilities.dp(8), createOverlayTextView, resourcesProvider);
@@ -114,6 +119,13 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
 
         buttonLayout = new FrameLayout(context) {
             @Override
+            public void setPressed(boolean pressed) {
+                super.setPressed(pressed);
+                pressedMorphProgress.setPressed(pressed);
+                PremiumButtonView.this.invalidate();
+            }
+
+            @Override
             public void onInitializeAccessibilityNodeInfo(@NonNull AccessibilityNodeInfo info) {
                 super.onInitializeAccessibilityNodeInfo(info);
                 info.setClassName("android.widget.Button");
@@ -138,7 +150,11 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
         linearLayout.addView(iconView, LayoutHelper.createLinear(24, 24, 0, Gravity.CENTER_VERTICAL, 4, 0, 0, 0));
         addView(buttonLayout);
-        BadWayToMakeButtonRound.round(this);
+        if (!UIStyleEngine.isMaterial3Expressive()) {
+            BadWayToMakeButtonRound.round(this);
+        } else {
+            setClipToOutline(false);
+        }
         ScaleStateListAnimator.apply(this, 0.02f, 1.2f);
 
         if (createOverlayTextView) {
@@ -218,6 +234,13 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
     private boolean loading;
     private ValueAnimator loadingAnimator;
 
+    private float getCurrentButtonRadius() {
+        if (!UIStyleEngine.isMaterial3Expressive()) {
+            return radius;
+        }
+        return AndroidUtilities.lerp(getHeight() / 2f, dp(8), pressedMorphProgress.getProgress());
+    }
+
     public void setLoading(boolean loading) {
         if (this.loading != loading) {
             if (loadingAnimator != null) {
@@ -265,6 +288,7 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
             }
         }
         AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+        float buttonRadius = getCurrentButtonRadius();
         if (overlayProgress != 1f || !drawOverlayColor) {
             if (inc) {
                 progress += 16f / 1000f;
@@ -279,17 +303,17 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
             }
             if (drawGradient) {
                 PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, getMeasuredWidth(), getMeasuredHeight(), -getMeasuredWidth() * 0.1f * progress, 0);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, PremiumGradient.getInstance().getMainGradientPaint());
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, buttonRadius, buttonRadius, PremiumGradient.getInstance().getMainGradientPaint());
             } else {
                 paintOverlayPaint.setAlpha(255);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paintOverlayPaint);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, buttonRadius, buttonRadius, paintOverlayPaint);
             }
             invalidate();
         }
 
         if (!BuildVars.IS_BILLING_UNAVAILABLE && !isFlickerDisabled) {
             flickerDrawable.setParentWidth(getMeasuredWidth());
-            flickerDrawable.draw(canvas, AndroidUtilities.rectTmp, radius, null);
+            flickerDrawable.draw(canvas, AndroidUtilities.rectTmp, buttonRadius, null);
         }
 
         if (overlayProgress != 0 && drawOverlayColor) {
@@ -299,10 +323,10 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
                 path.addCircle(getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, Math.max(getMeasuredWidth(), getMeasuredHeight()) * 1.4f * overlayProgress, Path.Direction.CW);
                 canvas.save();
                 canvas.clipPath(path);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paintOverlayPaint);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, buttonRadius, buttonRadius, paintOverlayPaint);
                 canvas.restore();
             } else {
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paintOverlayPaint);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, buttonRadius, buttonRadius, paintOverlayPaint);
             }
 
         }
@@ -388,6 +412,22 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
         buttonLayout.setEnabled(enabled);
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            m3ButtonClipPath.rewind();
+            m3ButtonClipRect.set(0, 0, getWidth(), getHeight());
+            float buttonRadius = getCurrentButtonRadius();
+            m3ButtonClipPath.addRoundRect(m3ButtonClipRect, buttonRadius, buttonRadius, Path.Direction.CW);
+            canvas.save();
+            canvas.clipPath(m3ButtonClipPath);
+            super.draw(canvas);
+            canvas.restore();
+        } else {
+            super.draw(canvas);
+        }
     }
 
     @Override

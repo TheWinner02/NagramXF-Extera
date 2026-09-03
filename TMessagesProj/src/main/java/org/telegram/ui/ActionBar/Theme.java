@@ -5277,9 +5277,13 @@ public class Theme {
         public static Drawable filledRectByKey(Drawable background, int backgroundColorKey) {
             return filledRect(background, Theme.getColor(backgroundColorKey));
         }
+        private static boolean isM3ExpressiveButtonBackgroundKey(int backgroundColorKey) {
+            return backgroundColorKey == Theme.key_featuredStickers_addButton
+                    || backgroundColorKey == Theme.key_text_RedRegular;
+        }
         public static Drawable filledRectByKey(int backgroundColorKey, float ...radii) {
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()
-                    && backgroundColorKey == Theme.key_featuredStickers_addButton
+                    && isM3ExpressiveButtonBackgroundKey(backgroundColorKey)
                     && hasNonzeroRadii(radii)) {
                 return Theme.createM3ExpressiveButtonDrawableByKey(backgroundColorKey, Theme.key_featuredStickers_buttonText);
             }
