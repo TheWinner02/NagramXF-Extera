@@ -180,13 +180,26 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
             int rad = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(12) : dp(18);
             int pressedColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
-            setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                setBackground(new M3ExpressiveButtonDrawable(0, pressedColor, rad, dp(6)));
+            } else {
+                setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+            }
         } else {
             imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
             progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
             boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
             boolean isSquare = isM3 || xyz.nextalone.nagram.NaConfig.INSTANCE.getSquareFloatingButton().Bool();
-            if (isSquare) {
+            if (isM3) {
+                int radius = dp(16);
+                setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, radius));
+                setBackground(new M3ExpressiveButtonDrawable(
+                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
+                    Theme.multAlpha(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), 0.20f),
+                    radius,
+                    0
+                ));
+            } else if (isSquare) {
                 int radius = dp(16);
                 setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, radius));
                 setBackground(Theme.createSimpleSelectorRoundRectDrawable(radius,

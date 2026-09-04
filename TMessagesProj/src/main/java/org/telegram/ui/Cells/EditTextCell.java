@@ -301,6 +301,10 @@ public class EditTextCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (needDivider) {
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+            }
             canvas.drawLine(
                     LocaleController.isRTL ? 0 : dp(22),
                     getMeasuredHeight() - 1,
@@ -308,6 +312,9 @@ public class EditTextCell extends FrameLayout {
                     getMeasuredHeight() - 1,
                     Theme.dividerPaint
             );
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                Theme.dividerPaint.setAlpha(alpha);
+            }
         }
     }
 }

@@ -356,7 +356,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
             @Override
             public void draw(@NonNull Canvas canvas) {
-                startMessagingButtonBackground.draw(canvas);
+                if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    startMessagingButtonBackground.draw(canvas);
+                }
                 super.draw(canvas);
             }
 
@@ -1015,7 +1017,11 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         switchLanguageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         startMessagingButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            startMessagingButton.setBackground(Theme.createM3ExpressiveButtonDrawableByKey(Theme.key_featuredStickers_addButton, Theme.key_featuredStickers_buttonText));
+        } else {
+            startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        }
         darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
         bottomPages.invalidate();
         if (fromTheme) {

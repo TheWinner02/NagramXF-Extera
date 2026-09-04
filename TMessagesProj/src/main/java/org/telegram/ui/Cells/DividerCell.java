@@ -42,6 +42,9 @@ public class DividerCell extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && java.util.Objects.equals(getTag(), org.telegram.ui.Components.RecyclerListView.TAG_NOT_SECTION)) {
+            return;
+        }
         if (forceDarkTheme) {
             paint.setColor(ColorUtils.blendARGB(Color.BLACK, Theme.getColor(Theme.key_voipgroup_dialogBackground, resourcesProvider),  0.2f));
         } else {

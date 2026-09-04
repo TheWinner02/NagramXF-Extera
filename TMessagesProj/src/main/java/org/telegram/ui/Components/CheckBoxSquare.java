@@ -93,7 +93,10 @@ public class CheckBoxSquare extends View {
 
     private void animateToCheckedState(boolean newCheckedState) {
         checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
-        checkAnimator.setDuration(300);
+        checkAnimator.setDuration(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 250 : 300);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            checkAnimator.setInterpolator(xyz.nextalone.nagram.ui.UIStyleEngine.getBouncyInterpolator());
+        }
         checkAnimator.start();
     }
 
@@ -164,13 +167,15 @@ public class CheckBoxSquare extends View {
         float bounce = AndroidUtilities.dp(1) * bounceProgress;
         rectF.set(bounce, bounce, AndroidUtilities.dp(18) - bounce, AndroidUtilities.dp(18) - bounce);
 
+        float cornerRad = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 5.5f : 4);
         drawBitmap.eraseColor(0);
-        drawCanvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), Theme.checkboxSquare_backgroundPaint);
+        drawCanvas.drawRoundRect(rectF, cornerRad, cornerRad, Theme.checkboxSquare_backgroundPaint);
 
         if (checkProgress != 1) {
             float rad = Math.min(AndroidUtilities.dp(7), AndroidUtilities.dp(7) * checkProgress + bounce);
             rectF.set(AndroidUtilities.dp(1.33f) + rad, AndroidUtilities.dp(1.33f) + rad, AndroidUtilities.dp(16.66f) - rad, AndroidUtilities.dp(16.66f) - rad);
-            drawCanvas.drawRoundRect(rectF, AndroidUtilities.dp(3), AndroidUtilities.dp(3), Theme.checkboxSquare_eraserPaint);
+            float innerCornerRad = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 4f : 3);
+            drawCanvas.drawRoundRect(rectF, innerCornerRad, innerCornerRad, Theme.checkboxSquare_eraserPaint);
         }
 
         if (progress > 0.5f) {

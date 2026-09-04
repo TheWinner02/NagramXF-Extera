@@ -68,7 +68,9 @@ public class TextCheckBoxCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        int minH = m3Expressive ? 56 : 50;
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(minH) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setTextAndCheck(String text, boolean checked, boolean divider) {
@@ -89,7 +91,15 @@ public class TextCheckBoxCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+                int inset = AndroidUtilities.dp(20);
+                canvas.drawLine(inset, getMeasuredHeight() - 1, getMeasuredWidth() - inset, getMeasuredHeight() - 1, Theme.dividerPaint);
+                Theme.dividerPaint.setAlpha(alpha);
+            } else {
+                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            }
         }
     }
 

@@ -497,7 +497,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
             @Override
             public void draw(@NonNull Canvas canvas) {
-                startMessagingButtonBackground.draw(canvas);
+                if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    startMessagingButtonBackground.draw(canvas);
+                }
                 super.draw(canvas);
             }
 
@@ -657,7 +659,11 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     private void updateColors() {
         startMessagingButtonBackground.setColors(new int[]{getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButton2)});
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            buttonTextView.setBackground(Theme.createM3ExpressiveButtonDrawableByKey(Theme.key_featuredStickers_addButton, Theme.key_featuredStickers_buttonText));
+        } else {
+            buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        }
 
 
         if (colors == null || imageView == null) {

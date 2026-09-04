@@ -110,7 +110,7 @@ public class CountrySelectActivity extends BaseFragment {
 
     @Override
     public boolean isLightStatusBar() {
-        int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
+        int color = Theme.getColor(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? Theme.key_windowBackgroundGray : Theme.key_windowBackgroundWhite, null, true);
         return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 
@@ -120,7 +120,11 @@ public class CountrySelectActivity extends BaseFragment {
         actionBar.setAllowOverlayTitle(false);
         actionBar.setTitle(LocaleController.getString(R.string.ChooseCountry));
 
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        } else {
+            actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        }
         actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
         actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -181,6 +185,7 @@ public class CountrySelectActivity extends BaseFragment {
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
+        frameLayout.setBackgroundColor(Theme.getColor(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? Theme.key_windowBackgroundGray : Theme.key_windowBackgroundWhite));
 
         emptyView = new EmptyTextProgressView(context);
         emptyView.showTextView();
@@ -195,6 +200,9 @@ public class CountrySelectActivity extends BaseFragment {
         listView.setVerticalScrollBarEnabled(false);
         listView.setFastScrollEnabled(RecyclerListView.FastScroll.LETTER_TYPE);
         listView.setFastScrollVisible(true);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            listView.setSections(true);
+        }
         listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setAdapter(listViewAdapter);
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
@@ -381,7 +389,12 @@ public class CountrySelectActivity extends BaseFragment {
                 case TYPE_DIVIDER:
                 default:
                     view = new DividerCell(mContext);
-                    view.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(8), AndroidUtilities.dp(24), AndroidUtilities.dp(8));
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        view.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
+                    } else {
+                        view.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(8), AndroidUtilities.dp(24), AndroidUtilities.dp(8));
+                    }
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -393,7 +406,8 @@ public class CountrySelectActivity extends BaseFragment {
                 ArrayList<Country> arr = countries.get(sortedCountries.get(section));
                 Country c = arr.get(position);
                 TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
-                settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), false), needPhoneCode ? "+" + c.code : null, false);
+                boolean needDivider = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && position < arr.size() - 1;
+                settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), false), needPhoneCode ? "+" + c.code : null, needDivider);
             }
         }
 
@@ -536,7 +550,8 @@ public class CountrySelectActivity extends BaseFragment {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             Country c = searchResult.get(position);
             TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
-            settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), false), needPhoneCode ? "+" + c.code : null, false);
+            boolean needDivider = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && position < searchResult.size() - 1;
+            settingsCell.setTextAndValue(Emoji.replaceEmoji(getCountryNameWithFlag(c), settingsCell.getTextView().getPaint().getFontMetricsInt(), false), needPhoneCode ? "+" + c.code : null, needDivider);
         }
 
         @Override
@@ -591,7 +606,8 @@ public class CountrySelectActivity extends BaseFragment {
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        int bgKey = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? Theme.key_windowBackgroundGray : Theme.key_windowBackgroundWhite;
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, bgKey));
 
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));

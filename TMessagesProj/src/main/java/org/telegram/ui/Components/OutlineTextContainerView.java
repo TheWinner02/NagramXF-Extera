@@ -208,7 +208,8 @@ public class OutlineTextContainerView extends FrameLayout {
         rect.set(getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT - PADDING_TEXT), getPaddingTop(), getWidth() - AndroidUtilities.dp(PADDING_LEFT + PADDING_TEXT) - getPaddingRight(), getPaddingTop() + stroke * 2);
         canvas.clipRect(rect, Region.Op.DIFFERENCE);
         rect.set(getPaddingLeft() + stroke, getPaddingTop() + stroke, getWidth() - stroke - getPaddingRight(), getHeight() - stroke - getPaddingBottom());
-        canvas.drawRoundRect(rect, AndroidUtilities.dp(8), AndroidUtilities.dp(8), outlinePaint);
+        float cornerRadius = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 12 : 8);
+        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, outlinePaint);
         canvas.restore();
 
         float left = getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT - PADDING_TEXT), lineY = getPaddingTop() + stroke,

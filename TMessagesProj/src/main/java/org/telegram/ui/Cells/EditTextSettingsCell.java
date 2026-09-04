@@ -51,7 +51,9 @@ public class EditTextSettingsCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
+        boolean m3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        int minH = m3Expressive ? 56 : 50;
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(minH) + (needDivider ? 1 : 0));
 
         int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(42);
         textView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
@@ -97,7 +99,15 @@ public class EditTextSettingsCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int alpha = Theme.dividerPaint.getAlpha();
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.38f));
+                int inset = AndroidUtilities.dp(20);
+                canvas.drawLine(inset, getMeasuredHeight() - 1, getMeasuredWidth() - inset, getMeasuredHeight() - 1, Theme.dividerPaint);
+                Theme.dividerPaint.setAlpha(alpha);
+            } else {
+                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            }
         }
     }
 }

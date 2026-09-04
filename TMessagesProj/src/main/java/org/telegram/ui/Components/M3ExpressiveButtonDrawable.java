@@ -27,6 +27,7 @@ public class M3ExpressiveButtonDrawable extends Drawable {
     private final int backgroundColor;
     private final int pressedOverlayColor;
     private final float restRadius;
+    private final float pressedRadius;
     private final int inset;
     private int alpha = 255;
     private boolean pressed;
@@ -36,13 +37,18 @@ public class M3ExpressiveButtonDrawable extends Drawable {
     private ColorFilter colorFilter;
 
     public M3ExpressiveButtonDrawable(int backgroundColor, int pressedOverlayColor) {
-        this(backgroundColor, pressedOverlayColor, 0, 0);
+        this(backgroundColor, pressedOverlayColor, 0, -1, 0);
     }
 
     public M3ExpressiveButtonDrawable(int backgroundColor, int pressedOverlayColor, float restRadius, int inset) {
+        this(backgroundColor, pressedOverlayColor, restRadius, -1, inset);
+    }
+
+    public M3ExpressiveButtonDrawable(int backgroundColor, int pressedOverlayColor, float restRadius, float pressedRadius, int inset) {
         this.backgroundColor = backgroundColor;
         this.pressedOverlayColor = pressedOverlayColor;
         this.restRadius = restRadius;
+        this.pressedRadius = pressedRadius;
         this.inset = inset;
     }
 
@@ -122,7 +128,16 @@ public class M3ExpressiveButtonDrawable extends Drawable {
         }
 
         float safeProgress = Utilities.clamp(progress, 1f, 0f);
-        float radius = AndroidUtilities.lerp(restRadius > 0 ? restRadius : rect.height() / 2f, dp(8), safeProgress);
+        float fromRadius = restRadius > 0 ? restRadius : rect.height() / 2f;
+        float toRadius;
+        if (pressedRadius >= 0) {
+            toRadius = pressedRadius;
+        } else if (fromRadius < rect.height() / 2f - dp(2)) {
+            toRadius = rect.height() / 2f;
+        } else {
+            toRadius = dp(8);
+        }
+        float radius = AndroidUtilities.lerp(fromRadius, toRadius, safeProgress);
 
         paint.setColor(applyAlpha(backgroundColor, alpha));
         paint.setColorFilter(colorFilter);
