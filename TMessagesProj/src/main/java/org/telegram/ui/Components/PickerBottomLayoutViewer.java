@@ -20,12 +20,15 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
+import xyz.nextalone.nagram.ui.UIStyleEngine;
+
 public class PickerBottomLayoutViewer extends FrameLayout {
 
     public TextView cancelButton;
     public TextView doneButton;
     public TextView doneButtonBadgeTextView;
     public TextView originalButton;
+    public M3ExpressiveButtonGroup buttonGroup;
 
     private boolean isDarkTheme;
 
@@ -41,39 +44,32 @@ public class PickerBottomLayoutViewer extends FrameLayout {
         super(context);
         isDarkTheme = darkTheme;
 
-        setBackgroundColor(isDarkTheme ? 0xff1a1a1a : 0xffffffff);
+        boolean isM3 = UIStyleEngine.isMaterial3Expressive();
+
+        setBackgroundColor(isM3 ? (isDarkTheme ? 0x00000000 : 0x00000000) : (isDarkTheme ? 0xff1a1a1a : 0xffffffff));
 
         cancelButton = new TextView(context);
         cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         cancelButton.setTextColor(isDarkTheme ? 0xffffffff : 0xff19a7e8);
         cancelButton.setGravity(Gravity.CENTER);
-        cancelButton.setBackground(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
-        cancelButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         cancelButton.setText(LocaleController.getString(R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.bold());
-        addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         if (needOriginal) {
             originalButton = new TextView(context);
             originalButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             originalButton.setTextColor(isDarkTheme ? 0xffffffff : 0xff19a7e8);
             originalButton.setGravity(Gravity.CENTER);
-            originalButton.setBackground(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
-            originalButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
             originalButton.setText(LocaleController.getString(R.string.QualityOriginal).toUpperCase());
             originalButton.setTypeface(AndroidUtilities.bold());
-            addView(originalButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
         }
 
         doneButton = new TextView(context);
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         doneButton.setTextColor(isDarkTheme ? 0xffffffff : 0xff19a7e8);
         doneButton.setGravity(Gravity.CENTER);
-        doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
-        doneButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         doneButton.setText(LocaleController.getString(R.string.Send).toUpperCase());
         doneButton.setTypeface(AndroidUtilities.bold());
-        addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
         doneButtonBadgeTextView = new TextView(context);
         doneButtonBadgeTextView.setTypeface(AndroidUtilities.bold());
@@ -83,7 +79,55 @@ public class PickerBottomLayoutViewer extends FrameLayout {
         doneButtonBadgeTextView.setBackgroundResource(isDarkTheme ? R.drawable.photobadge : R.drawable.bluecounter);
         doneButtonBadgeTextView.setMinWidth(AndroidUtilities.dp(23));
         doneButtonBadgeTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(1));
-        addView(doneButtonBadgeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 23, Gravity.TOP | Gravity.RIGHT, 0, 0, 7, 0));
+
+        if (isM3) {
+            buttonGroup = new M3ExpressiveButtonGroup(context);
+            buttonGroup.setSpacing(AndroidUtilities.dp(6));
+            buttonGroup.setOuterCornerRadius(AndroidUtilities.dp(22));
+            buttonGroup.setInnerCornerRadius(AndroidUtilities.dp(8));
+            buttonGroup.setPressedCornerRadius(AndroidUtilities.dp(16));
+            buttonGroup.setChildSizeChange(0.18f);
+
+            int btnBg = isDarkTheme ? 0x24FFFFFF : 0x18000000;
+            int strokeColor = isDarkTheme ? 0x30FFFFFF : 0x24000000;
+            int pressedOverlay = isDarkTheme ? 0x28FFFFFF : 0x1A000000;
+
+            cancelButton.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
+            M3ExpressiveButtonDrawable cancelDrawable = M3ExpressiveButtonDrawable.createOutlined(btnBg, strokeColor, pressedOverlay, AndroidUtilities.dp(22));
+            buttonGroup.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+            buttonGroup.setChildDrawable(cancelButton, cancelDrawable);
+
+            if (needOriginal && originalButton != null) {
+                originalButton.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
+                M3ExpressiveButtonDrawable origDrawable = M3ExpressiveButtonDrawable.createOutlined(btnBg, strokeColor, pressedOverlay, AndroidUtilities.dp(22));
+                buttonGroup.addView(originalButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+                buttonGroup.setChildDrawable(originalButton, origDrawable);
+            }
+
+            doneButton.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
+            M3ExpressiveButtonDrawable doneDrawable = M3ExpressiveButtonDrawable.createOutlined(btnBg, strokeColor, pressedOverlay, AndroidUtilities.dp(22));
+            buttonGroup.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+            buttonGroup.setChildDrawable(doneButton, doneDrawable);
+
+            addView(buttonGroup, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.CENTER, 12, 2, 12, 2));
+            addView(doneButtonBadgeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 23, Gravity.TOP | Gravity.RIGHT, 0, 0, 16, 0));
+        } else {
+            cancelButton.setBackground(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
+            cancelButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
+            addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+
+            if (needOriginal && originalButton != null) {
+                originalButton.setBackground(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
+                originalButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
+                addView(originalButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+            }
+
+            doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
+            doneButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
+            addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
+
+            addView(doneButtonBadgeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 23, Gravity.TOP | Gravity.RIGHT, 0, 0, 7, 0));
+        }
     }
 
     public void updateSelectedCount(int count, boolean disable) {

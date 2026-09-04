@@ -354,9 +354,10 @@ public class VideoPlayerSeekBar {
     public void draw(Canvas canvas, View view) {
         int effectiveLineHeight = UIStyleEngine.isMaterial3Expressive() ? Math.max(lineHeight, AndroidUtilities.dp(6)) : lineHeight;
         int effectiveSmallLineHeight = UIStyleEngine.isMaterial3Expressive() ? Math.max(smallLineHeight, AndroidUtilities.dp(3)) : smallLineHeight;
+        float yShift = UIStyleEngine.isMaterial3Expressive() ? AndroidUtilities.dp(8) : 0;
         rect.left = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f, 0, transitionProgress);
-        rect.top = AndroidUtilities.lerp((height - effectiveLineHeight) / 2f, height - AndroidUtilities.dp(3) - effectiveSmallLineHeight, transitionProgress);
-        rect.bottom = AndroidUtilities.lerp((height + effectiveLineHeight) / 2f, height - AndroidUtilities.dp(3), transitionProgress);
+        rect.top = AndroidUtilities.lerp((height - effectiveLineHeight) / 2f - yShift, height - AndroidUtilities.dp(3) - effectiveSmallLineHeight, transitionProgress);
+        rect.bottom = AndroidUtilities.lerp((height + effectiveLineHeight) / 2f - yShift, height - AndroidUtilities.dp(3), transitionProgress);
 
         float thumbX = this.thumbX;
         animatedThumbX = Math.min(animatedThumbX, thumbX);

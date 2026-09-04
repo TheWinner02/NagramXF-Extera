@@ -19,8 +19,11 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.PopupSwipeBackLayout;
 import org.telegram.ui.Components.SpeedIconDrawable;
+
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class SpeedButtonsLayout extends LinearLayout {
 
@@ -29,12 +32,17 @@ public class SpeedButtonsLayout extends LinearLayout {
         super(context);
         setOrientation(VERTICAL);
 
+        boolean isM3 = UIStyleEngine.isMaterial3Expressive();
+
         ActionBarMenuSubItem item = ActionBarMenuItem.addItem(this, R.drawable.msg_speed_0_2, LocaleController.getString(R.string.SpeedVerySlow), false, null);
         item.setColors(0xfffafafa, 0xfffafafa);
         item.setOnClickListener((view) -> {
             callback.onSpeedSelected(0.2f, true, true);
         });
         item.setSelectorColor(0x0fffffff);
+        if (isM3) {
+            item.setBackground(Theme.createRadSelectorDrawable(0x0fffffff, AndroidUtilities.dp(16), AndroidUtilities.dp(16)));
+        }
         speedItems[0] = item;
 
         item = ActionBarMenuItem.addItem(this, R.drawable.msg_speed_slow, LocaleController.getString(R.string.SpeedSlow), false, null);
@@ -43,6 +51,9 @@ public class SpeedButtonsLayout extends LinearLayout {
             callback.onSpeedSelected(0.5f, true, true);
         });
         item.setSelectorColor(0x0fffffff);
+        if (isM3) {
+            item.setBackground(Theme.createRadSelectorDrawable(0x0fffffff, AndroidUtilities.dp(16), AndroidUtilities.dp(16)));
+        }
         speedItems[1] = item;
 
         item = ActionBarMenuItem.addItem(this, R.drawable.msg_speed_normal, LocaleController.getString(R.string.SpeedNormal), false, null);
@@ -51,6 +62,9 @@ public class SpeedButtonsLayout extends LinearLayout {
             callback.onSpeedSelected(1f, true, true);
         });
         item.setSelectorColor(0x0fffffff);
+        if (isM3) {
+            item.setBackground(Theme.createRadSelectorDrawable(0x0fffffff, AndroidUtilities.dp(16), AndroidUtilities.dp(16)));
+        }
         speedItems[2] = item;
 
         item = ActionBarMenuItem.addItem(this, R.drawable.msg_speed_fast, LocaleController.getString(R.string.SpeedFast), false, null);
@@ -59,6 +73,9 @@ public class SpeedButtonsLayout extends LinearLayout {
             callback.onSpeedSelected(1.5f, true, true);
         });
         item.setSelectorColor(0x0fffffff);
+        if (isM3) {
+            item.setBackground(Theme.createRadSelectorDrawable(0x0fffffff, AndroidUtilities.dp(16), AndroidUtilities.dp(16)));
+        }
         speedItems[3] = item;
 
         item = ActionBarMenuItem.addItem(this, R.drawable.msg_speed_superfast, LocaleController.getString(R.string.SpeedVeryFast), false, null);
@@ -67,6 +84,9 @@ public class SpeedButtonsLayout extends LinearLayout {
             callback.onSpeedSelected(2f, true, true);
         });
         item.setSelectorColor(0x0fffffff);
+        if (isM3) {
+            item.setBackground(Theme.createRadSelectorDrawable(0x0fffffff, AndroidUtilities.dp(16), AndroidUtilities.dp(16)));
+        }
         speedItems[4] = item;
 
         FrameLayout gap = new FrameLayout(context) {
@@ -88,17 +108,26 @@ public class SpeedButtonsLayout extends LinearLayout {
     }
 
     public void update(float currentVideoSpeed, boolean isFinal) {
+        boolean isM3 = UIStyleEngine.isMaterial3Expressive();
         for (int a = 0; a < speedItems.length; a++) {
-            if (isFinal && (
+            boolean isSelected = isFinal && (
                     a == 0 && Math.abs(currentVideoSpeed - 0.2f) < 0.01f ||
                             a == 1 && Math.abs(currentVideoSpeed - 0.5f) < 0.1f ||
                             a == 2 && Math.abs(currentVideoSpeed - 1.0f) < 0.1f ||
                             a == 3 && Math.abs(currentVideoSpeed - 1.5f) < 0.1f ||
                             a == 4 && Math.abs(currentVideoSpeed - 2.0f) < 0.1f
-            )) {
+            );
+            if (isSelected) {
                 speedItems[a].setColors(0xff6BB6F9, 0xff6BB6F9);
+                if (isM3) {
+                    M3ExpressiveButtonDrawable d = M3ExpressiveButtonDrawable.createOutlined(0x286BB6F9, 0x506BB6F9, 0x386BB6F9, AndroidUtilities.dp(16));
+                    speedItems[a].setBackground(d);
+                }
             } else {
                 speedItems[a].setColors(0xfffafafa, 0xfffafafa);
+                if (isM3) {
+                    speedItems[a].setBackground(Theme.createRadSelectorDrawable(0x0fffffff, AndroidUtilities.dp(16), AndroidUtilities.dp(16)));
+                }
             }
         }
     }

@@ -264,8 +264,10 @@ import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LivePhotoButton;
 import org.telegram.ui.Components.LoadingDrawable;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.MediaActivity;
 import org.telegram.ui.Components.MuteDrawable;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 import org.telegram.ui.Components.OtherDocumentPlaceholderDrawable;
 import org.telegram.ui.Components.Paint.Views.LPhotoPaintView;
 import org.telegram.ui.Components.Paint.Views.MaskPaintView;
@@ -2536,6 +2538,35 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         private final CombinedDrawable playDrawable;
         private final PlayPauseDrawable playPauseDrawable;
 
+        private M3ExpressiveButtonDrawable m3Background;
+        private boolean isPressed;
+        private SpringAnimation pressSpring;
+        private float pressProgress;
+
+        public void setPressed(boolean pressed) {
+            if (isPressed == pressed) return;
+            isPressed = pressed;
+            if (m3Background != null) {
+                if (pressSpring == null) {
+                    pressSpring = new SpringAnimation(new FloatValueHolder(0f));
+                    SpringForce force = new SpringForce(0f);
+                    force.setStiffness(500f);
+                    force.setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+                    pressSpring.setSpring(force);
+                    pressSpring.addUpdateListener((animation, value, velocity) -> {
+                        pressProgress = value;
+                        if (m3Background != null) {
+                            m3Background.setMorphProgress(value);
+                        }
+                        if (parent != null) {
+                            parent.invalidate();
+                        }
+                    });
+                }
+                pressSpring.animateToFinalPosition(pressed ? 1f : 0f);
+            }
+        }
+
         public PhotoProgressView(View parentView) {
             if (decelerateInterpolator == null) {
                 decelerateInterpolator = new DecelerateInterpolator(1.5f);
@@ -2551,8 +2582,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             playPauseDrawable = new PlayPauseDrawable(28);
             playPauseDrawable.setDuration(200);
 
-            Drawable circleDrawable = ContextCompat.getDrawable(parentActivity, R.drawable.circle_big);
-            playDrawable = new CombinedDrawable(circleDrawable.mutate(), playPauseDrawable);
+            Drawable circleDrawable;
+            if (UIStyleEngine.isMaterial3Expressive()) {
+                m3Background = M3ExpressiveButtonDrawable.createOutlined(0x38000000, 0x45FFFFFF, 0x28FFFFFF, dp(32), dp(18), 0);
+                circleDrawable = m3Background;
+            } else {
+                circleDrawable = ContextCompat.getDrawable(parentActivity, R.drawable.circle_big).mutate();
+            }
+            playDrawable = new CombinedDrawable(circleDrawable, playPauseDrawable);
         }
 
         private void updateAnimation(boolean withProgressAnimation) {
@@ -2720,8 +2757,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         public void onDraw(Canvas canvas) {
-            int sizeScaled = (int) (size * scale);
-            int x = getX();
+            float effectiveScale = scale * (1.0f - 0.06f * pressProgress);
+            int sizeScaled = (int) (size * effectiveScale);
+            int x = (containerView.getWidth() - sizeScaled) / 2;
             int y = getY();
 
             final float alpha = calculateAlpha();
@@ -3578,8 +3616,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     } else {
                         extraWidth = 0;
                     }
-
-                    videoPlayerSeekbar.setSize((int) (getMeasuredWidth() - dp(2 + 14) - value - extraWidth), getMeasuredHeight());
+                    if (UIStyleEngine.isMaterial3Expressive()) {
+                        videoPlayerSeekbar.setSize(getMeasuredWidth() - dp(2 + 14) - extraWidth, getMeasuredHeight());
+                    } else {
+                        videoPlayerSeekbar.setSize((int) (getMeasuredWidth() - dp(2 + 14) - value - extraWidth), getMeasuredHeight());
+                    }
                 });
 
         public VideoPlayerControlFrameLayout(@NonNull Context context) {
@@ -3656,13 +3697,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 durationStr = String.format(Locale.ROOT, "%02d:%02d", duration / 60, duration % 60);
             }
 
-            int size = (int) Math.ceil(videoPlayerTime.getPaint().measureText(String.format(Locale.ROOT, "%1$s / %1$s", durationStr)));
+            int textWidth = (int) Math.ceil(videoPlayerTime.getPaint().measureText(String.format(Locale.ROOT, "%1$s / %1$s", durationStr)));
+            int size = textWidth;
             timeSpring.cancel();
             if (lastTimeWidth != 0 && timeValue.getValue() != size) {
                 timeSpring.getSpring().setFinalPosition(size);
                 timeSpring.start();
             } else {
-                videoPlayerSeekbar.setSize(getMeasuredWidth() - dp(2 + 14) - size - extraWidth, getMeasuredHeight());
+                if (UIStyleEngine.isMaterial3Expressive()) {
+                    videoPlayerSeekbar.setSize(getMeasuredWidth() - dp(2 + 14) - extraWidth, getMeasuredHeight());
+                } else {
+                    videoPlayerSeekbar.setSize(getMeasuredWidth() - dp(2 + 14) - size - extraWidth, getMeasuredHeight());
+                }
                 timeValue.setValue(size);
             }
             lastTimeWidth = size;
@@ -4803,7 +4849,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         touchSlop = ViewConfiguration.get(parentActivity).getScaledTouchSlop();
 
         if (progressDrawables == null) {
-            Drawable circleDrawable = ContextCompat.getDrawable(parentActivity, R.drawable.circle_big);
+            Drawable circleDrawable;
+            if (UIStyleEngine.isMaterial3Expressive()) {
+                circleDrawable = M3ExpressiveButtonDrawable.createOutlined(0x38000000, 0x45FFFFFF, 0x28FFFFFF, dp(32));
+            } else {
+                circleDrawable = ContextCompat.getDrawable(parentActivity, R.drawable.circle_big);
+            }
             progressDrawables = new Drawable[]{
                     circleDrawable, // PROGRESS_EMPTY
                     ContextCompat.getDrawable(parentActivity, R.drawable.cancel_big), // PROGRESS_CANCEL
@@ -4944,6 +4995,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         actionBar.setItemsColor(Color.WHITE, false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBarBackButton = actionBar.getBackButton();
+        if (UIStyleEngine.isMaterial3Expressive() && actionBarBackButton != null) {
+            actionBarBackButton.setBackground(M3ExpressiveButtonDrawable.createOutlined(0x20FFFFFF, 0x2EFFFFFF, 0x28FFFFFF, dp(20), dp(4)));
+            ScaleStateListAnimator.apply(actionBarBackButton);
+        }
         actionBarBackButtonDrawableDeafult = actionBarBackButton.getBackground();
         actionBarBackButtonDrawableGlass = null;
         actionBarContainer = new PhotoViewerActionBarContainer(activity);
@@ -5943,6 +5998,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         menu = actionBar.createMenu();
         menu.setOnLayoutListener(this::updateActionBarTitlePadding);
 
+        boolean isM3 = UIStyleEngine.isMaterial3Expressive();
+
         deleteItem = menu.addItem(gallery_menu_delete2, R.drawable.menu_delete_old);
         deleteItem.setContentDescription(getString(R.string.Delete));
         ScaleStateListAnimator.apply(deleteItem);
@@ -5960,6 +6017,24 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoItem.getPopupLayout().swipeBackGravityRight = true;
         videoItem.getPopupLayout().setFitItems(true);
         videoItem.setMenuXOffset(dp(3));
+
+        if (isM3) {
+            int m3Bg = 0x20FFFFFF;
+            int m3Stroke = 0x2EFFFFFF;
+            int m3Press = 0x28FFFFFF;
+            int inset = dp(4);
+            deleteItem.setBackground(M3ExpressiveButtonDrawable.createOutlined(m3Bg, m3Stroke, m3Press, dp(20), inset));
+            masksItem.setBackground(M3ExpressiveButtonDrawable.createOutlined(m3Bg, m3Stroke, m3Press, dp(20), inset));
+            editItem.setBackground(M3ExpressiveButtonDrawable.createOutlined(m3Bg, m3Stroke, m3Press, dp(20), inset));
+            sendItem.setBackground(M3ExpressiveButtonDrawable.createOutlined(m3Bg, m3Stroke, m3Press, dp(20), inset));
+            videoItem.setBackground(M3ExpressiveButtonDrawable.createOutlined(m3Bg, m3Stroke, m3Press, dp(20), inset));
+
+            ScaleStateListAnimator.apply(deleteItem);
+            ScaleStateListAnimator.apply(masksItem);
+            ScaleStateListAnimator.apply(editItem);
+            ScaleStateListAnimator.apply(sendItem);
+            ScaleStateListAnimator.apply(videoItem);
+        }
 
         speedItem = new ActionBarMenuSlider.SpeedSlider(activityContext, resourcesProvider);
         speedItem.setStops(new float[]{0.5f, 1.0f, 1.5f, 2.0f, 2.5f});
@@ -6016,6 +6091,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         menuItem = menu.addItem(0, R.drawable.media_more);
         menuItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
+        if (isM3) {
+            menuItem.setBackground(M3ExpressiveButtonDrawable.createOutlined(0x20FFFFFF, 0x2EFFFFFF, 0x28FFFFFF, dp(20), dp(4)));
+            ScaleStateListAnimator.apply(menuItem);
+        }
         menuItem.setOnClickListener(v -> {
             if (currentMessageObject != null && currentMessageObject.isSponsored()) {
                 openAdsMenu();
@@ -6222,7 +6301,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             fullscreenButton[a].setImageResource(R.drawable.msg_maxvideo);
             fullscreenButton[a].setContentDescription(getString("AccSwitchToFullscreen", R.string.AccSwitchToFullscreen));
             fullscreenButton[a].setScaleType(ImageView.ScaleType.CENTER);
-            fullscreenButton[a].setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+            if (isM3) {
+                fullscreenButton[a].setBackground(M3ExpressiveButtonDrawable.createOutlined(0x24000000, 0x30FFFFFF, 0x28FFFFFF, dp(20), dp(4)));
+                ScaleStateListAnimator.apply(fullscreenButton[a]);
+            } else {
+                fullscreenButton[a].setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+            }
             fullscreenButton[a].setVisibility(View.INVISIBLE);
             fullscreenButton[a].setAlpha(1.0f);
             containerView.addView(fullscreenButton[a], LayoutHelper.createFrame(48, 48));
@@ -10039,16 +10123,29 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         videoPlayerTime = new SimpleTextView(containerView.getContext());
         videoPlayerTime.setTextColor(0xffffffff);
-        videoPlayerTime.setGravity(Gravity.RIGHT | Gravity.TOP);
-        videoPlayerTime.setTextSize(14);
         videoPlayerTime.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        videoPlayerControlFrameLayout.addView(videoPlayerTime, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 0, 15, 12, 0));
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            videoPlayerTime.setTextSize(12);
+            videoPlayerTime.setBackground(M3ExpressiveButtonDrawable.createOutlined(0x28000000, 0x30FFFFFF, 0x20FFFFFF, dp(10)));
+            videoPlayerTime.setPadding(dp(7), dp(2), dp(7), dp(2));
+            videoPlayerTime.setGravity(Gravity.CENTER);
+            videoPlayerControlFrameLayout.addView(videoPlayerTime, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 4));
+        } else {
+            videoPlayerTime.setTextSize(14);
+            videoPlayerTime.setGravity(Gravity.RIGHT | Gravity.TOP);
+            videoPlayerControlFrameLayout.addView(videoPlayerTime, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 0, 15, 12, 0));
+        }
 
         exitFullscreenButton = new ImageView(containerView.getContext());
         exitFullscreenButton.setImageResource(R.drawable.msg_minvideo);
         exitFullscreenButton.setContentDescription(getString("AccExitFullscreen", R.string.AccExitFullscreen));
         exitFullscreenButton.setScaleType(ImageView.ScaleType.CENTER);
-        exitFullscreenButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            exitFullscreenButton.setBackground(M3ExpressiveButtonDrawable.createOutlined(0x28000000, 0x30FFFFFF, 0x30FFFFFF, dp(20), dp(4)));
+            ScaleStateListAnimator.apply(exitFullscreenButton);
+        } else {
+            exitFullscreenButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        }
         exitFullscreenButton.setVisibility(View.INVISIBLE);
         videoPlayerControlFrameLayout.addView(exitFullscreenButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT));
         exitFullscreenButton.setOnClickListener(v -> {
@@ -19451,6 +19548,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private boolean onTouchEvent(MotionEvent ev) {
         lastX = ev.getX();
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN || ev.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
+            if (photoProgressViews[0] != null && photoProgressViews[0].isVisible() && photoProgressViews[0].backgroundState != PROGRESS_NONE && Math.sqrt(Math.pow(AndroidUtilities.displaySize.x / 2f - ev.getX(), 2) + Math.pow((AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight) / 2f - ev.getY(), 2)) < dp(44)) {
+                photoProgressViews[0].setPressed(true);
+            }
+        } else if (ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+            if (photoProgressViews[0] != null) {
+                photoProgressViews[0].setPressed(false);
+            }
+        }
         if (currentEditMode == EDIT_MODE_PAINT && animationStartTime != 0 && (ev.getActionMasked() == MotionEvent.ACTION_DOWN || ev.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN)) {
             if (ev.getPointerCount() >= 2) {
                 cancelMoveZoomAnimation();

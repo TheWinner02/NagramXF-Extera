@@ -20,17 +20,23 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
+import androidx.dynamicanimation.animation.FloatValueHolder;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import me.vkryl.android.animator.FactorAnimator;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class ActionBarMenu extends LinearLayout {
 
@@ -692,11 +698,207 @@ public class ActionBarMenu extends LinearLayout {
         return found ? (int)(mRight - mLeft) : 0;
     }
 
+    private final ArrayList<View> m3VisibleChildren = new ArrayList<>();
+    private final Map<View, M3ChildState> m3ChildStates = new HashMap<>();
+    private float m3ChildSizeChange = 0.18f;
+    private float m3OuterCornerRadius = dp(20);
+    private float m3InnerCornerRadius = dp(8);
+    private float m3PressedCornerRadius = dp(16);
+    private boolean m3IsConnected = true;
+
+    public static class M3ChildState {
+        public final View view;
+        public final SpringAnimation springAnimation;
+        public float progress = 0f;
+        public boolean pressed = false;
+        public float baseWeight = 1.0f;
+
+        public M3ChildState(View view, Runnable onUpdate) {
+            this.view = view;
+            springAnimation = new SpringAnimation(new FloatValueHolder(0f));
+            SpringForce force = new SpringForce(0f);
+            force.setStiffness(500f);
+            force.setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+            springAnimation.setSpring(force);
+            springAnimation.addUpdateListener((animation, value, velocity) -> {
+                progress = value;
+                if (view.getBackground() instanceof M3ExpressiveButtonDrawable) {
+                    ((M3ExpressiveButtonDrawable) view.getBackground()).setMorphProgress(progress);
+                }
+                onUpdate.run();
+            });
+        }
+    }
+
+    public void updateChildShapes() {
+        if (!UIStyleEngine.isMaterial3Expressive()) return;
+        m3VisibleChildren.clear();
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = getChildAt(i);
+            if (child.getVisibility() != GONE && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField()) {
+                m3VisibleChildren.add(child);
+            }
+        }
+        int totalVisible = m3VisibleChildren.size();
+        if (totalVisible == 0) return;
+
+        float outer = m3OuterCornerRadius;
+        float inner = m3IsConnected && totalVisible > 1 ? m3InnerCornerRadius : m3OuterCornerRadius;
+        float morph = m3PressedCornerRadius;
+
+        for (int i = 0; i < totalVisible; i++) {
+            View child = m3VisibleChildren.get(i);
+            Drawable bg = child.getBackground();
+            if (bg instanceof M3ExpressiveButtonDrawable) {
+                M3ExpressiveButtonDrawable drawable = (M3ExpressiveButtonDrawable) bg;
+                float[] restRadii;
+                float[] pressedRadii = new float[]{morph, morph, morph, morph, morph, morph, morph, morph};
+
+                if (totalVisible == 1 || !m3IsConnected) {
+                    restRadii = new float[]{outer, outer, outer, outer, outer, outer, outer, outer};
+                } else if (i == 0) {
+                    // Start child (leftmost)
+                    restRadii = new float[]{outer, outer, inner, inner, inner, inner, outer, outer};
+                } else if (i == totalVisible - 1) {
+                    // End child (rightmost)
+                    restRadii = new float[]{inner, inner, outer, outer, outer, outer, inner, inner};
+                } else {
+                    // Middle child
+                    restRadii = new float[]{inner, inner, inner, inner, inner, inner, inner, inner};
+                }
+                drawable.setRadii(restRadii, pressedRadii);
+            }
+        }
+    }
+
+    @Override
+    public void onViewAdded(View child) {
+        super.onViewAdded(child);
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            if (!m3ChildStates.containsKey(child)) {
+                M3ChildState state = new M3ChildState(child, this::applyM3ChildLayouts);
+                m3ChildStates.put(child, state);
+            }
+            updateChildShapes();
+        }
+    }
+
+    @Override
+    public void onViewRemoved(View child) {
+        super.onViewRemoved(child);
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            M3ChildState state = m3ChildStates.remove(child);
+            if (state != null) {
+                state.springAnimation.cancel();
+            }
+            updateChildShapes();
+        }
+    }
+
+    @Override
+    public void childDrawableStateChanged(View child) {
+        super.childDrawableStateChanged(child);
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            M3ChildState state = m3ChildStates.get(child);
+            if (state != null) {
+                boolean isPressed = child.isPressed() || child.isSelected();
+                if (state.pressed != isPressed) {
+                    state.pressed = isPressed;
+                    state.springAnimation.animateToFinalPosition(isPressed ? 1f : 0f);
+                }
+            }
+        }
+    }
+
+    private void applyM3ChildLayouts() {
+        if (!UIStyleEngine.isMaterial3Expressive()) return;
+        m3VisibleChildren.clear();
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            View child = getChildAt(i);
+            if (child.getVisibility() != GONE && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField()) {
+                m3VisibleChildren.add(child);
+                if (!m3ChildStates.containsKey(child)) {
+                    m3ChildStates.put(child, new M3ChildState(child, this::applyM3ChildLayouts));
+                }
+            }
+        }
+        int visibleCount = m3VisibleChildren.size();
+        if (visibleCount <= 1) {
+            invalidate();
+            return;
+        }
+
+        int totalW = getWidth() - getPaddingLeft() - getPaddingRight();
+        int totalH = getHeight() - getPaddingTop() - getPaddingBottom();
+        if (totalW <= 0 || totalH <= 0) {
+            invalidate();
+            return;
+        }
+
+        float[] weights = new float[visibleCount];
+        float totalWeight = 0f;
+        float totalExpansion = 0f;
+        int pressedCount = 0;
+
+        for (int i = 0; i < visibleCount; i++) {
+            View child = m3VisibleChildren.get(i);
+            M3ChildState state = m3ChildStates.get(child);
+            float progress = state != null ? state.progress : 0f;
+            if (progress > 0.001f) {
+                totalExpansion += m3ChildSizeChange * progress;
+                pressedCount++;
+            }
+        }
+
+        for (int i = 0; i < visibleCount; i++) {
+            View child = m3VisibleChildren.get(i);
+            M3ChildState state = m3ChildStates.get(child);
+            float base = state != null ? state.baseWeight : 1.0f;
+            float progress = state != null ? state.progress : 0f;
+            if (progress > 0.001f) {
+                weights[i] = base * (1f + m3ChildSizeChange * progress);
+            } else if (visibleCount > pressedCount && totalExpansion > 0f) {
+                float shrink = totalExpansion / (float) (visibleCount - pressedCount);
+                weights[i] = Math.max(0.5f * base, base * (1f - shrink));
+            } else {
+                weights[i] = base;
+            }
+            totalWeight += weights[i];
+        }
+
+        int curX = getPaddingLeft();
+        int topY = getPaddingTop();
+
+        for (int i = 0; i < visibleCount; i++) {
+            View child = m3VisibleChildren.get(i);
+            int childW;
+            if (i == visibleCount - 1) {
+                childW = (getPaddingLeft() + totalW) - curX;
+            } else {
+                childW = Math.round((weights[i] / totalWeight) * totalW);
+            }
+            childW = Math.max(dp(28), childW);
+
+            child.measure(
+                MeasureSpec.makeMeasureSpec(childW, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(totalH, MeasureSpec.EXACTLY)
+            );
+            child.layout(curX, topY, curX + childW, topY + totalH);
+            curX += childW;
+        }
+        invalidate();
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
-        if (onLayoutListener != null) {
-            onLayoutListener.run();
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            updateChildShapes();
+            if (m3VisibleChildren.size() > 1) {
+                applyM3ChildLayouts();
+            }
         }
         if (parentActionBar != null) {
             parentActionBar.checkMenuItemsWidth();
