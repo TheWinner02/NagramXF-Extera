@@ -133,6 +133,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private TextView forwardButton;
     private TextView backwardButton;
+    private FrameLayout bottomView;
+    private M3ExpressiveButtonGroup m3ButtonGroup;
 
     public static AudioPlayerAlert instance;
 
@@ -180,7 +182,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private ActionBarMenuSubItem repeatListItem;
     private ActionBarMenuSubItem shuffleListItem;
     private ActionBarMenuSubItem reverseOrderItem;
-    private ImageView playButton;
+    private View playButton;
+    private ImageView playIconView;
+    private TextView playButtonTextView;
     private PlayPauseDrawable playPauseDrawable;
     private FrameLayout blurredView;
     private BackupImageView bigAlbumConver;
@@ -642,7 +646,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         };
         seekBarView.setLineWidth(4);
-        seekBarView.setSliderStyleOverride(SeekBarView.SLIDER_STYLE_DEFAULT);
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            seekBarView.setSliderStyleOverride(SeekBarView.SLIDER_STYLE_DEFAULT);
+        }
         seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
             @Override
             public void onSeekBarDrag(boolean stop, float progress) {
@@ -759,29 +765,46 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         });
         updatePlaybackButton(false);
 
-        FrameLayout bottomView = new FrameLayout(context) {
-            @Override
-            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                int dist = ((right - left) - dp(8 + 48 * 5)) / 4;
-                for (int a = 0; a < 5; a++) {
-                    int l = dp(4 + 48 * a) + dist * a;
-                    int t = dp(9);
-                    buttons[a].layout(l, t, l + buttons[a].getMeasuredWidth(), t + buttons[a].getMeasuredHeight());
+        boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        if (isM3) {
+            bottomView = m3ButtonGroup = new M3ExpressiveButtonGroup(context);
+            m3ButtonGroup.setSpacing(dp(6));
+            m3ButtonGroup.setOuterCornerRadius(dp(26));
+            m3ButtonGroup.setInnerCornerRadius(dp(26));
+            m3ButtonGroup.setPressedCornerRadius(dp(14));
+            m3ButtonGroup.setChildSizeChange(0.18f);
+        } else {
+            m3ButtonGroup = null;
+            bottomView = new FrameLayout(context) {
+                @Override
+                protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                    int count = 5;
+                    int dist = ((right - left) - dp(8 + 48 * 5)) / 4;
+                    for (int a = 0; a < count; a++) {
+                        int l = dp(4 + 48 * a) + dist * a;
+                        int t = dp(9);
+                        buttons[a].layout(l, t, l + buttons[a].getMeasuredWidth(), t + buttons[a].getMeasuredHeight());
+                    }
                 }
-            }
-        };
+            };
+        }
 
+        int tonalBg = Theme.multAlpha(getThemedColor(Theme.key_player_button), 0.14f);
+        int tonalPressed = Theme.multAlpha(getThemedColor(Theme.key_player_button), 0.28f);
         {
             final int s = 5;
             final int color = getThemedColor(Theme.key_listSelector);
-            final FrameLayout.LayoutParams frame = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.CENTER_VERTICAL | Gravity.LEFT);
+            final FrameLayout.LayoutParams frame = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, isM3 ? 52 : 48, Gravity.CENTER_VERTICAL | Gravity.LEFT);
+            MessageObject currentMsg = MediaController.getInstance().getPlayingMessageObject();
+            boolean isVoice = currentMsg != null && currentMsg.isVoice();
 
             forwardButton = new TextView(context);
             forwardButton.setText("+" + s + "s");
             forwardButton.setGravity(Gravity.CENTER);
             forwardButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             forwardButton.setTextColor(getThemedColor(Theme.key_player_button));
-            forwardButton.setPadding(dp(8), 0, dp(8), 0);
+            forwardButton.setPadding(0, 0, 0, 0);
+            forwardButton.setVisibility(isVoice ? View.VISIBLE : View.GONE);
             bottomView.addView(forwardButton, frame);
 
             backwardButton = new TextView(context);
@@ -789,12 +812,18 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             backwardButton.setGravity(Gravity.CENTER);
             backwardButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             backwardButton.setTextColor(getThemedColor(Theme.key_player_button));
-            backwardButton.setPadding(dp(8), 0, dp(8), 0);
+            backwardButton.setPadding(0, 0, 0, 0);
+            backwardButton.setVisibility(isVoice ? View.VISIBLE : View.GONE);
             bottomView.addView(backwardButton, frame);
 
             if (Build.VERSION.SDK_INT >= 21) {
-                forwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(color, 1, AndroidUtilities.dp(24)));
-                backwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(color, 1, AndroidUtilities.dp(24)));
+                forwardButton.setBackgroundDrawable(isM3 ? new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0) : Theme.createSelectorDrawable(color, 1, AndroidUtilities.dp(24)));
+                backwardButton.setBackgroundDrawable(isM3 ? new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0) : Theme.createSelectorDrawable(color, 1, AndroidUtilities.dp(24)));
+            }
+
+            if (m3ButtonGroup != null) {
+                m3ButtonGroup.registerChild(forwardButton, 1.0f, (M3ExpressiveButtonDrawable) forwardButton.getBackground());
+                m3ButtonGroup.registerChild(backwardButton, 1.0f, (M3ExpressiveButtonDrawable) backwardButton.getBackground());
             }
 
             forwardButton.setOnClickListener(view -> {
@@ -805,14 +834,22 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             });
         }
 
-        playerLayout.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 66, Gravity.TOP | Gravity.LEFT, 0, 111, 0, 0));
+        playerLayout.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, isM3 ? 52 : 66, Gravity.TOP | Gravity.LEFT, isM3 ? 14 : 0, isM3 ? 116 : 111, isM3 ? 14 : 0, 0));
+
+        MessageObject currentMsg = MediaController.getInstance().getPlayingMessageObject();
+        boolean isVoice = currentMsg != null && currentMsg.isVoice();
 
         buttons[0] = repeatButton = new ActionBarMenuItem(context, null, 0, 0, false, resourcesProvider);
         repeatButton.setLongClickEnabled(false);
         repeatButton.setShowSubmenuByMove(false);
         repeatButton.setAdditionalYOffset(-dp(166));
-        repeatButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(18)));
-        bottomView.addView(repeatButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        M3ExpressiveButtonDrawable repeatDrawable = isM3 ? new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0) : null;
+        repeatButton.setBackgroundDrawable(isM3 ? repeatDrawable : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(18)));
+        repeatButton.setVisibility(isVoice ? View.GONE : View.VISIBLE);
+        bottomView.addView(repeatButton, LayoutHelper.createFrame(48, isM3 ? 52 : 48, Gravity.LEFT | Gravity.TOP));
+        if (m3ButtonGroup != null) {
+            m3ButtonGroup.registerChild(repeatButton, 1.0f, repeatDrawable);
+        }
         repeatButton.setOnClickListener(v -> {
             updateSubMenu();
             repeatButton.toggleSubMenu();
@@ -1006,17 +1043,55 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         prevButton.setLayerColor("Triangle 3", iconColor);
         prevButton.setLayerColor("Triangle 4", iconColor);
         prevButton.setLayerColor("Rectangle 4", iconColor);
-        prevButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(22)));
-        bottomView.addView(prevButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        M3ExpressiveButtonDrawable prevDrawable = isM3 ? new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0) : null;
+        prevButton.setBackgroundDrawable(isM3 ? prevDrawable : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(22)));
+        prevButton.setVisibility(isVoice ? View.GONE : View.VISIBLE);
+        bottomView.addView(prevButton, LayoutHelper.createFrame(48, isM3 ? 52 : 48, Gravity.LEFT | Gravity.TOP));
+        if (m3ButtonGroup != null) {
+            m3ButtonGroup.registerChild(prevButton, 1.0f, prevDrawable);
+        }
         prevButton.setContentDescription(LocaleController.getString(R.string.AccDescrPrevious));
 
-        buttons[3] = playButton = new ImageView(context);
-        playButton.setScaleType(ImageView.ScaleType.CENTER);
-        playButton.setImageDrawable(playPauseDrawable = new PlayPauseDrawable(28));
-        playPauseDrawable.setPause(!MediaController.getInstance().isMessagePaused(), false);
-        playButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
-        playButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(24)));
-        bottomView.addView(playButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        if (isM3) {
+            LinearLayout playLayout = new LinearLayout(context);
+            playLayout.setOrientation(LinearLayout.HORIZONTAL);
+            playLayout.setGravity(Gravity.CENTER);
+            playLayout.setPadding(dp(12), 0, dp(12), 0);
+
+            playIconView = new ImageView(context);
+            playIconView.setScaleType(ImageView.ScaleType.CENTER);
+            playIconView.setImageDrawable(playPauseDrawable = new PlayPauseDrawable(22));
+            playPauseDrawable.setPause(!MediaController.getInstance().isMessagePaused(), false);
+            playIconView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_buttonText), PorterDuff.Mode.MULTIPLY));
+            playLayout.addView(playIconView, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL));
+
+            playButtonTextView = new TextView(context);
+            playButtonTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+            playButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            playButtonTextView.setTypeface(AndroidUtilities.bold());
+            playButtonTextView.setPadding(dp(6), 0, 0, 0);
+            playButtonTextView.setGravity(Gravity.CENTER);
+            playButtonTextView.setSingleLine(true);
+            playButtonTextView.setText(!MediaController.getInstance().isMessagePaused() ? LocaleController.getString(R.string.AccActionPause) : LocaleController.getString(R.string.AccActionPlay));
+            playLayout.addView(playButtonTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+
+            M3ExpressiveButtonDrawable playDrawable = new M3ExpressiveButtonDrawable(getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed), dp(26), dp(14), 0);
+            playLayout.setBackground(playDrawable);
+            buttons[3] = playButton = playLayout;
+            bottomView.addView(playButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 52, Gravity.LEFT | Gravity.TOP));
+            if (m3ButtonGroup != null) {
+                m3ButtonGroup.registerChild(playButton, 2.4f, playDrawable);
+            }
+        } else {
+            playIconView = new ImageView(context);
+            playIconView.setScaleType(ImageView.ScaleType.CENTER);
+            playIconView.setImageDrawable(playPauseDrawable = new PlayPauseDrawable(28));
+            playPauseDrawable.setPause(!MediaController.getInstance().isMessagePaused(), false);
+            playIconView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
+            playIconView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(24)));
+            buttons[3] = playButton = playIconView;
+            bottomView.addView(playButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        }
         playButton.setOnClickListener(v -> {
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                 return;
@@ -1126,18 +1201,27 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         nextButton.setLayerColor("Triangle 4", iconColor);
         nextButton.setLayerColor("Rectangle 4", iconColor);
         nextButton.setRotation(180f);
-        nextButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(22)));
-        bottomView.addView(nextButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        M3ExpressiveButtonDrawable nextDrawable = isM3 ? new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0) : null;
+        nextButton.setBackground(isM3 ? nextDrawable : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(22)));
+        nextButton.setVisibility(isVoice ? View.GONE : View.VISIBLE);
+        bottomView.addView(nextButton, LayoutHelper.createFrame(48, isM3 ? 52 : 48, Gravity.LEFT | Gravity.TOP));
+        if (m3ButtonGroup != null) {
+            m3ButtonGroup.registerChild(nextButton, 1.0f, nextDrawable);
+        }
         nextButton.setContentDescription(LocaleController.getString(R.string.Next));
 
         buttons[4] = optionsButton = new ActionBarMenuItem(context, null, 0, iconColor, false, resourcesProvider);
         optionsButton.setIcon(optionsIcon = new ChooseQualityLayout.QualityIcon(context, R.drawable.ic_ab_other, resourcesProvider));
         optionsButton.setLongClickEnabled(false);
         optionsButton.setAdditionalYOffset(-dp(157 + 40));
-        optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(18)));
+        M3ExpressiveButtonDrawable optionsDrawable = isM3 ? new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0) : null;
+        optionsButton.setBackgroundDrawable(isM3 ? optionsDrawable : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(18)));
         optionsButton.setOnClickListener(this::showMenuOptions);
 
-        bottomView.addView(optionsButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        bottomView.addView(optionsButton, LayoutHelper.createFrame(48, isM3 ? 52 : 48, Gravity.LEFT | Gravity.TOP));
+        if (m3ButtonGroup != null) {
+            m3ButtonGroup.registerChild(optionsButton, 1.0f, optionsDrawable);
+        }
 
 
         castItemButton = new CastMediaRouteButton(context) {
@@ -2362,6 +2446,14 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             optionsButton.setSubItemShown(4, messageObject.getId() > 0);
             optionsButton.setSubItemShown(7, isMyList());
 
+            boolean isVoice = messageObject != null && messageObject.isVoice();
+            if (forwardButton != null) forwardButton.setVisibility(isVoice ? View.VISIBLE : View.GONE);
+            if (backwardButton != null) backwardButton.setVisibility(isVoice ? View.VISIBLE : View.GONE);
+            if (prevButton != null) prevButton.setVisibility(isVoice ? View.GONE : View.VISIBLE);
+            if (nextButton != null) nextButton.setVisibility(isVoice ? View.GONE : View.VISIBLE);
+            if (repeatButton != null) repeatButton.setVisibility(isVoice ? View.GONE : View.VISIBLE);
+            if (m3ButtonGroup != null) m3ButtonGroup.updateChildShapes();
+
             checkIfMusicDownloaded(messageObject);
             updateProgress(messageObject, !sameMessageObject);
             updateCover(messageObject, !sameMessageObject);
@@ -2369,9 +2461,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             if (MediaController.getInstance().isMessagePaused()) {
                 playPauseDrawable.setPause(false);
                 playButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
+                if (playButtonTextView != null) {
+                    playButtonTextView.setText(LocaleController.getString(R.string.AccActionPlay));
+                }
             } else {
                 playPauseDrawable.setPause(true);
                 playButton.setContentDescription(LocaleController.getString(R.string.AccActionPause));
+                if (playButtonTextView != null) {
+                    playButtonTextView.setText(LocaleController.getString(R.string.AccActionPause));
+                }
             }
             String title = messageObject.getMusicTitle();
             String author = messageObject.getMusicAuthor();
@@ -2730,25 +2828,74 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
         ThemeDescription.ThemeDescriptionDelegate delegate = () -> {
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
             EditTextBoldCursor editText = searchItem.getSearchField();
             editText.setCursorColor(getThemedColor(Theme.key_player_actionBarTitle));
 
-            repeatButton.setIconColor(getThemedColor((Integer) repeatButton.getTag()));
-            Theme.setSelectorDrawableColor(repeatButton.getBackground(), getThemedColor(Theme.key_listSelector), true);
+            if (isM3) {
+                int tonalBg = Theme.multAlpha(getThemedColor(Theme.key_player_button), 0.14f);
+                int tonalPressed = Theme.multAlpha(getThemedColor(Theme.key_player_button), 0.28f);
+                repeatButton.setIconColor(getThemedColor((Integer) repeatButton.getTag()));
+                repeatButton.setBackground(new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0));
 
-            optionsButton.setIconColor(getThemedColor(Theme.key_player_button));
-            Theme.setSelectorDrawableColor(optionsButton.getBackground(), getThemedColor(Theme.key_listSelector), true);
+                optionsButton.setIconColor(getThemedColor(Theme.key_player_button));
+                optionsButton.setBackground(new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0));
 
-            if (forwardButton != null) {
-                 forwardButton.setTextColor(getThemedColor(Theme.key_player_button));
-                 if (Build.VERSION.SDK_INT >= 21) {
-                    forwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, AndroidUtilities.dp(24)));
-                 }
+                if (prevButton != null) {
+                    prevButton.setLayerColor("Triangle 3", getThemedColor(Theme.key_player_button));
+                    prevButton.setLayerColor("Triangle 4", getThemedColor(Theme.key_player_button));
+                    prevButton.setLayerColor("Rectangle 4", getThemedColor(Theme.key_player_button));
+                    prevButton.setBackground(new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0));
+                }
+                if (nextButton != null) {
+                    nextButton.setLayerColor("Triangle 3", getThemedColor(Theme.key_player_button));
+                    nextButton.setLayerColor("Triangle 4", getThemedColor(Theme.key_player_button));
+                    nextButton.setLayerColor("Rectangle 4", getThemedColor(Theme.key_player_button));
+                    nextButton.setBackground(new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0));
+                }
+                if (forwardButton != null) {
+                    forwardButton.setTextColor(getThemedColor(Theme.key_player_button));
+                    forwardButton.setBackground(new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0));
+                }
+                if (backwardButton != null) {
+                    backwardButton.setTextColor(getThemedColor(Theme.key_player_button));
+                    backwardButton.setBackground(new M3ExpressiveButtonDrawable(tonalBg, tonalPressed, dp(26), dp(14), 0));
+                }
+                if (bottomView instanceof M3ExpressiveButtonGroup) {
+                    ((M3ExpressiveButtonGroup) bottomView).updateChildShapes();
+                }
+            } else {
+                repeatButton.setIconColor(getThemedColor((Integer) repeatButton.getTag()));
+                Theme.setSelectorDrawableColor(repeatButton.getBackground(), getThemedColor(Theme.key_listSelector), true);
+
+                optionsButton.setIconColor(getThemedColor(Theme.key_player_button));
+                Theme.setSelectorDrawableColor(optionsButton.getBackground(), getThemedColor(Theme.key_listSelector), true);
+
+                if (forwardButton != null) {
+                     forwardButton.setTextColor(getThemedColor(Theme.key_player_button));
+                     if (Build.VERSION.SDK_INT >= 21) {
+                        forwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, AndroidUtilities.dp(24)));
+                     }
+                }
+                if (backwardButton != null) {
+                    backwardButton.setTextColor(getThemedColor(Theme.key_player_button));
+                    if (Build.VERSION.SDK_INT >= 21) {
+                        backwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, AndroidUtilities.dp(24)));
+                    }
+                }
             }
-            if (backwardButton != null) {
-                backwardButton.setTextColor(getThemedColor(Theme.key_player_button));
-                if (Build.VERSION.SDK_INT >= 21) {
-                    backwardButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, AndroidUtilities.dp(24)));
+
+            if (isM3) {
+                if (playIconView != null) {
+                    playIconView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_buttonText), PorterDuff.Mode.MULTIPLY));
+                }
+                if (playButtonTextView != null) {
+                    playButtonTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+                }
+                playButton.setBackground(new M3ExpressiveButtonDrawable(getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed), dp(26), dp(14), 0));
+            } else {
+                if (playIconView != null) {
+                    playIconView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
                 }
             }
 

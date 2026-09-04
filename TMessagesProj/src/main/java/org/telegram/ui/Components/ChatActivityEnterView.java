@@ -16214,7 +16214,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             updateColors();
             checkBackgroundRect();
             if (isNewDesignSendButton) {
-                canvas.drawRoundRect(backgroundRect, dp(RADIUS), dp(RADIUS), backgroundPaint);
+                int radiusDp = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 24 : RADIUS;
+                canvas.drawRoundRect(backgroundRect, dp(radiusDp), dp(radiusDp), backgroundPaint);
             }
 
             final boolean inactive = isInactive();

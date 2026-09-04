@@ -4716,6 +4716,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 attachButton.updateCheckedState(true);
             }
         }
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            buttonsRecyclerView.requestLayout();
+        }
         int t = currentAttachLayout.getFirstOffset() - dp(11) - scrollOffsetY[0];
         nextAttachLayout = layout;
         final boolean disableFade = nextAttachLayout.disableBottomFade();

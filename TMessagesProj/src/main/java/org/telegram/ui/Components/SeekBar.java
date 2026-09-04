@@ -226,7 +226,7 @@ public class SeekBar {
         drawProgressBar(canvas, rect, paint, wavyProgressActive);
         paint.setColor(circleColor);
 
-        int newRad = AndroidUtilities.dp(pressed ? 8 : 6);
+        int newRad = UIStyleEngine.isMaterial3Expressive() ? AndroidUtilities.dp(pressed ? 9 : 7) : AndroidUtilities.dp(pressed ? 8 : 6);
         if (currentRadius != newRad) {
             long newUpdateTime = SystemClock.elapsedRealtime();
             long dt = newUpdateTime - lastUpdateTime;

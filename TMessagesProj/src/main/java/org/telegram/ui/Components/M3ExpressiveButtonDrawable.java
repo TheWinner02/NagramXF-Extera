@@ -24,17 +24,34 @@ import org.telegram.messenger.Utilities;
 public class M3ExpressiveButtonDrawable extends Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
-    private final int backgroundColor;
-    private final int pressedOverlayColor;
-    private final float restRadius;
-    private final float pressedRadius;
-    private final int inset;
+    private int backgroundColor;
+    private int pressedOverlayColor;
+    private float restRadius;
+    private float pressedRadius;
+    private int inset;
     private int alpha = 255;
     private boolean pressed;
     private boolean externalProgress;
     private float progress;
     private ValueAnimator animator;
     private ColorFilter colorFilter;
+
+    private float[] restRadii;
+    private float[] pressedRadii;
+    private final android.graphics.Path path = new android.graphics.Path();
+    private final float[] currentRadii = new float[8];
+
+    public void setColors(int backgroundColor, int pressedOverlayColor) {
+        this.backgroundColor = backgroundColor;
+        this.pressedOverlayColor = pressedOverlayColor;
+        invalidateSelf();
+    }
+
+    public void setRadii(float[] restRadii, float[] pressedRadii) {
+        this.restRadii = restRadii;
+        this.pressedRadii = pressedRadii;
+        invalidateSelf();
+    }
 
     public M3ExpressiveButtonDrawable(int backgroundColor, int pressedOverlayColor) {
         this(backgroundColor, pressedOverlayColor, 0, -1, 0);
@@ -50,6 +67,51 @@ public class M3ExpressiveButtonDrawable extends Drawable {
         this.restRadius = restRadius;
         this.pressedRadius = pressedRadius;
         this.inset = inset;
+    }
+
+    public M3ExpressiveButtonDrawable(int backgroundColor, int pressedOverlayColor, float[] restRadii, float[] pressedRadii, int inset) {
+        this.backgroundColor = backgroundColor;
+        this.pressedOverlayColor = pressedOverlayColor;
+        this.restRadius = 0;
+        this.pressedRadius = -1;
+        this.restRadii = restRadii;
+        this.pressedRadii = pressedRadii;
+        this.inset = inset;
+    }
+
+    public static M3ExpressiveButtonDrawable createConnectedLeft(int backgroundColor, int pressedOverlayColor) {
+        float outer = dp(24);
+        float inner = dp(8);
+        float pressedInner = dp(14);
+        return new M3ExpressiveButtonDrawable(
+            backgroundColor, pressedOverlayColor,
+            new float[]{outer, outer, inner, inner, inner, inner, outer, outer},
+            new float[]{pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner},
+            0
+        );
+    }
+
+    public static M3ExpressiveButtonDrawable createConnectedMiddle(int backgroundColor, int pressedOverlayColor) {
+        float inner = dp(8);
+        float pressedInner = dp(14);
+        return new M3ExpressiveButtonDrawable(
+            backgroundColor, pressedOverlayColor,
+            new float[]{inner, inner, inner, inner, inner, inner, inner, inner},
+            new float[]{pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner},
+            0
+        );
+    }
+
+    public static M3ExpressiveButtonDrawable createConnectedRight(int backgroundColor, int pressedOverlayColor) {
+        float outer = dp(24);
+        float inner = dp(8);
+        float pressedInner = dp(14);
+        return new M3ExpressiveButtonDrawable(
+            backgroundColor, pressedOverlayColor,
+            new float[]{inner, inner, outer, outer, outer, outer, inner, inner},
+            new float[]{pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner},
+            0
+        );
     }
 
     public void setMorphProgress(float progress) {
@@ -128,6 +190,29 @@ public class M3ExpressiveButtonDrawable extends Drawable {
         }
 
         float safeProgress = Utilities.clamp(progress, 1f, 0f);
+        if (restRadii != null) {
+            path.reset();
+            for (int i = 0; i < 8; i++) {
+                float from = restRadii[i];
+                float to = pressedRadii != null ? pressedRadii[i] : dp(14);
+                currentRadii[i] = AndroidUtilities.lerp(from, to, safeProgress);
+            }
+            path.addRoundRect(rect, currentRadii, android.graphics.Path.Direction.CW);
+            paint.setColor(applyAlpha(backgroundColor, alpha));
+            paint.setColorFilter(colorFilter);
+            if (Color.alpha(paint.getColor()) > 0) {
+                canvas.drawPath(path, paint);
+            }
+
+            int pressedAlpha = (int) (Color.alpha(pressedOverlayColor) * (alpha / 255f) * safeProgress);
+            if (pressedAlpha > 0) {
+                paint.setColor((pressedOverlayColor & 0x00ffffff) | (pressedAlpha << 24));
+                paint.setColorFilter(colorFilter);
+                canvas.drawPath(path, paint);
+            }
+            return;
+        }
+
         float fromRadius = restRadius > 0 ? restRadius : rect.height() / 2f;
         float toRadius;
         if (pressedRadius >= 0) {

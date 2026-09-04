@@ -305,10 +305,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     }
 
     public void setSelected(boolean selected, boolean animated) {
+        boolean changed = isSelectedAnimator.getValue() != selected;
         isSelectedAnimator.setValue(selected, animated);
         checkPlayAnimation(animated);
 
         textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && changed) {
+            requestLayout();
+        }
     }
 
     public boolean isTabSelected() {
@@ -517,7 +521,11 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         tab.resourcesProvider = resourcesProvider;
         tab.selfMeasure = true;
         tab.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-        tab.textView.setPadding(dp(8), 0, dp(8), 0);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            tab.textView.setPadding(0, 0, 0, 0);
+        } else {
+            tab.textView.setPadding(dp(8), 0, dp(8), 0);
+        }
         tab.checkPlayAnimation(false);
         tab.imageView.setLayoutParams(LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 4, 0, 0));
         tab.colorDefault = Theme.getColor(Theme.key_glass_tabUnselected, resourcesProvider);
@@ -532,7 +540,11 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         tab.resourcesProvider = resourcesProvider;
         tab.selfMeasure = true;
         tab.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-        tab.textView.setPadding(dp(8), 0, dp(8), 0);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            tab.textView.setPadding(0, 0, 0, 0);
+        } else {
+            tab.textView.setPadding(dp(8), 0, dp(8), 0);
+        }
         tab.imageView.setVisibility(GONE);
         tab.checkPlayAnimation(false);
         tab.backupImageView = new BackupImageView(context);
@@ -557,6 +569,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     }
 
     public float measureAttachTabWidth() {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            if (isTabSelected()) {
+                final float textWidth = textView.getPaint().measureText(textView.getText() != null ? textView.getText().toString() : "");
+                return dp(24) + dp(6) + textWidth + dp(28);
+            } else {
+                return dp(48);
+            }
+        }
         final float textWidth = measureTextWidth();
         final float padding = lerp(dpf2(16), dp(8), MathUtils.clamp((textWidth - dp(40)) / dp(16), 0, 1));
         return Math.min(dp(84), (int) (textWidth + padding * 2));
