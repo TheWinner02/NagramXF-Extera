@@ -350,7 +350,7 @@ public class SectionsScrollView extends ScrollView {
         return helper;
     }
 
-    private void clipChild(Canvas canvas, View child) {
+    private void clipChild(Canvas canvas, View child, ViewGroup drawingParent) {
         if (child == null || !isSectionView(child))
             return;
 
@@ -364,15 +364,10 @@ public class SectionsScrollView extends ScrollView {
         prev = prevChild != null && isSectionView(prevChild);
         next = nextChild != null && isSectionView(nextChild);
 
-        AndroidUtilities.rectTmp.set(
-            getChildX(child),
-            Math.max(getScrollY() - dp(16), contentView.getY() + getChildY(child)),
-            getChildX(child) + child.getWidth(),
-            Math.min(getHeight() + getScrollY() + dp(16), contentView.getY() + getChildY(child) + child.getHeight())
-        );
+        float left = getChildXRelativeTo(child, drawingParent);
+        float top = getChildYRelativeTo(child, drawingParent);
+        AndroidUtilities.rectTmp.set(left, top, left + child.getWidth(), top + child.getHeight());
         if (prev && next) {
-            prev = getChildY(child) >= AndroidUtilities.rectTmp.top;
-            next = getChildY(child) + child.getHeight() <= AndroidUtilities.rectTmp.bottom;
             if (prev && next && !isM3Expressive()) return;
         }
         float topRadius = sectionRadius;
@@ -404,6 +399,28 @@ public class SectionsScrollView extends ScrollView {
             clipPath.addRoundRect(AndroidUtilities.rectTmp, new float[] { topRadius, topRadius, topRadius, topRadius, bottomRadius, bottomRadius, bottomRadius, bottomRadius }, Path.Direction.CW);
             canvas.clipPath(clipPath);
         }
+    }
+
+    private float getChildXRelativeTo(View child, ViewGroup parent) {
+        float x = child.getX();
+        ViewParent currentParent = child.getParent();
+        while (currentParent instanceof View && currentParent != parent) {
+            View parentView = (View) currentParent;
+            x += parentView.getX();
+            currentParent = parentView.getParent();
+        }
+        return x;
+    }
+
+    private float getChildYRelativeTo(View child, ViewGroup parent) {
+        float y = child.getY();
+        ViewParent currentParent = child.getParent();
+        while (currentParent instanceof View && currentParent != parent) {
+            View parentView = (View) currentParent;
+            y += parentView.getY();
+            currentParent = parentView.getParent();
+        }
+        return y;
     }
 
     public static class SectionsLinearLayout extends LinearLayout {
@@ -444,9 +461,9 @@ public class SectionsScrollView extends ScrollView {
                     scrollView.invalidate();
                 }
             }
-            if (scrollView != null && getParent() instanceof SectionsScrollView) {
+            if (scrollView != null && (isM3Expressive() || getParent() instanceof SectionsScrollView)) {
                 canvas.save();
-                scrollView.clipChild(canvas, child);
+                scrollView.clipChild(canvas, child, this);
                 boolean r = super.drawChild(canvas, child, drawingTime);
                 canvas.restore();
                 return r;
