@@ -286,6 +286,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 0,
                 Theme.multAlpha(color, 0.40f),
                 dp(20),
+                dp(12),
                 dp(4)
             );
         } else {
@@ -2449,7 +2450,14 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
         final float actionModeFactor = getActionModeFactor();
         final int menuWidthA = hasForcedMenuWidth ? forcedMenuWidth : (int) animatorMenuItemsWidth.getFactor();
-        final int menuWidth = hasForcedMenuMinWidth ? Math.max((int) (forcedMenuMinWidth * (1f - searchFactor)), menuWidthA) : menuWidthA;
+        final int baseMenuWidth = hasForcedMenuMinWidth ? Math.max((int) (forcedMenuMinWidth * (1f - searchFactor)), menuWidthA) : menuWidthA;
+        final int menuWidth;
+        if (actionModeFactor > 0 && actionMode != null) {
+            int actionModeWidth = actionMode.getItemsWidth();
+            menuWidth = (int) AndroidUtilities.lerp(baseMenuWidth, actionModeWidth, actionModeFactor);
+        } else {
+            menuWidth = baseMenuWidth;
+        }
 
         final boolean hasBackButton = backButtonImageView != null && backButtonImageView.getVisibility() == View.VISIBLE;
 
@@ -2457,17 +2465,18 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         final int b = t + s + p * 2;
 
         if (glassDrawable != null && !glassOnlyBack) {
+            float morphProgress = 0f;
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                float morphProgress = chatAvatarContainer != null ? chatAvatarContainer.getMorphProgress() : 0f;
-                float rad = AndroidUtilities.lerp(dp(20), dp(12), morphProgress);
+                morphProgress = chatAvatarContainer != null ? chatAvatarContainer.getMorphProgress() : 0f;
+                float rad = AndroidUtilities.lerp(dp(20), dp(11), morphProgress);
                 if (glassModeIsForum) {
-                    float radInner = AndroidUtilities.lerp(dp(18.33f), dp(10f), morphProgress);
+                    float radInner = AndroidUtilities.lerp(dp(18.33f), dp(9f), morphProgress);
                     glassDrawable.setRadius(radInner, rad, rad, radInner);
                 } else {
                     glassDrawable.setRadius(rad);
                 }
             }
-            final int menuWidthWithPadding = menuWidth + ((hasForcedMenuWidth || hasForcedMenuMinWidth) ? (menuWidth > 0 ? p : 0) : (int) (p * animatorHasMenuItems.getFloatValue()));
+            final int menuWidthWithPadding = menuWidth + ((hasForcedMenuWidth || hasForcedMenuMinWidth) ? (menuWidth > 0 ? p : 0) : (int) (p * Math.max(animatorHasMenuItems.getFloatValue(), actionModeFactor)));
             final int rightOffset = lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());
 
             final int leftDefault = lerp(hasBackButton ? s + p : 0, s + p, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());
@@ -2490,26 +2499,35 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 right = rightDefault;
             }
 
-            glassDrawable.setBounds(left, t, right, b);
+            int insetX = (int) (morphProgress * dp(1.5f));
+            int insetY = (int) (morphProgress * dp(1.0f));
+            glassDrawable.setBounds(left + insetX, t + insetY, right - insetX, b - insetY);
             glassDrawable.draw(canvas);
         }
         if (glassDrawableBack != null && hasBackButton) {
+            float morphProgress = 0f;
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                float morphProgress = glassBackMorphHelper.getProgress();
-                float rad = AndroidUtilities.lerp(dp(20), dp(12), morphProgress);
+                morphProgress = glassBackMorphHelper.getProgress();
+                float rad = AndroidUtilities.lerp(dp(20), dp(11), morphProgress);
                 glassDrawableBack.setRadius(rad);
             }
-            glassDrawableBack.setBounds(0, t, s + p * 2, b);
+            int insetX = (int) (morphProgress * dp(1.5f));
+            int insetY = (int) (morphProgress * dp(1.0f));
+            glassDrawableBack.setBounds(0, t + insetY, s + p * 2 - insetX, b - insetY);
             glassDrawableBack.draw(canvas);
         }
         if (glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu) {
+            float morphProgress = 0f;
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                float morphProgress = glassMenuMorphHelper.getProgress();
-                float rad = AndroidUtilities.lerp(dp(20), dp(12), morphProgress);
+                morphProgress = glassMenuMorphHelper.getProgress();
+                float rad = AndroidUtilities.lerp(dp(20), dp(11), morphProgress);
                 glassDrawableMenu.setRadius(rad);
             }
-            glassDrawableMenu.setBounds(getWidth() - Math.max(s, menuWidth) - p * 2, t, getWidth(), b);
-            glassDrawableMenu.setAlpha(hasForcedMenuWidth ? 255 : (int) (255 * animatorHasMenuItems.getFloatValue()));
+            int insetX = (int) (morphProgress * dp(1.5f));
+            int insetY = (int) (morphProgress * dp(1.0f));
+            glassDrawableMenu.setBounds(getWidth() - Math.max(s, menuWidth) - p * 2 + insetX, t + insetY, getWidth(), b - insetY);
+            float alphaFactor = hasForcedMenuWidth ? 1f : Math.max(animatorHasMenuItems.getFloatValue(), actionModeFactor);
+            glassDrawableMenu.setAlpha((int) (255 * alphaFactor));
             glassDrawableMenu.draw(canvas);
         }
 

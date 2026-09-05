@@ -205,13 +205,13 @@ public class M3ExpressiveButtonDrawable extends Drawable {
             return;
         }
 
-        float safeProgress = Utilities.clamp(progress, 1f, 0f);
+        float alphaProgress = Utilities.clamp(progress, 1f, 0f);
         if (restRadii != null) {
             path.reset();
             for (int i = 0; i < 8; i++) {
                 float from = restRadii[i];
                 float to = pressedRadii != null ? pressedRadii[i] : dp(14);
-                currentRadii[i] = AndroidUtilities.lerp(from, to, safeProgress);
+                currentRadii[i] = Math.max(0, AndroidUtilities.lerp(from, to, progress));
             }
             path.addRoundRect(rect, currentRadii, android.graphics.Path.Direction.CW);
             paint.setColor(applyAlpha(backgroundColor, alpha));
@@ -220,7 +220,7 @@ public class M3ExpressiveButtonDrawable extends Drawable {
                 canvas.drawPath(path, paint);
             }
 
-            int pressedAlpha = (int) (Color.alpha(pressedOverlayColor) * (alpha / 255f) * safeProgress);
+            int pressedAlpha = (int) (Color.alpha(pressedOverlayColor) * (alpha / 255f) * alphaProgress);
             if (pressedAlpha > 0) {
                 paint.setColor((pressedOverlayColor & 0x00ffffff) | (pressedAlpha << 24));
                 paint.setColorFilter(colorFilter);
@@ -243,7 +243,7 @@ public class M3ExpressiveButtonDrawable extends Drawable {
         } else {
             toRadius = dp(14);
         }
-        float radius = AndroidUtilities.lerp(fromRadius, toRadius, safeProgress);
+        float radius = Math.max(0, AndroidUtilities.lerp(fromRadius, toRadius, progress));
 
         paint.setColor(applyAlpha(backgroundColor, alpha));
         paint.setColorFilter(colorFilter);
@@ -251,7 +251,7 @@ public class M3ExpressiveButtonDrawable extends Drawable {
             canvas.drawRoundRect(rect, radius, radius, paint);
         }
 
-        int pressedAlpha = (int) (Color.alpha(pressedOverlayColor) * (alpha / 255f) * safeProgress);
+        int pressedAlpha = (int) (Color.alpha(pressedOverlayColor) * (alpha / 255f) * alphaProgress);
         if (pressedAlpha > 0) {
             paint.setColor((pressedOverlayColor & 0x00ffffff) | (pressedAlpha << 24));
             paint.setColorFilter(colorFilter);

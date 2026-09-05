@@ -6,19 +6,21 @@ import android.animation.ValueAnimator;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Utilities;
-
 public class M3PressMorphHelper {
     private final View view;
     private boolean pressed;
     private float progress;
     private ValueAnimator animator;
-
     private Runnable onProgressUpdate;
+    private float overshoot = 2.5f;
 
     public M3PressMorphHelper(View view) {
+        this(view, 2.5f);
+    }
+
+    public M3PressMorphHelper(View view, float overshoot) {
         this.view = view;
+        this.overshoot = overshoot;
     }
 
     public M3PressMorphHelper setOnProgressUpdate(Runnable onProgressUpdate) {
@@ -31,38 +33,42 @@ public class M3PressMorphHelper {
             return;
         }
         this.pressed = pressed;
-        invalidate();
-        if (pressed) {
-            if (animator != null) {
-                animator.removeAllListeners();
-                animator.cancel();
-                animator = null;
-            }
-        } else if (progress != 0f) {
-            animator = ValueAnimator.ofFloat(progress, 0f);
-            animator.addUpdateListener(animation -> {
-                progress = (float) animation.getAnimatedValue();
-                invalidate();
-            });
-            animator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    animator = null;
-                }
-            });
-            animator.setInterpolator(new OvershootInterpolator(2.0f));
-            animator.setDuration(350);
-            animator.start();
+        if (animator != null) {
+            animator.removeAllListeners();
+            animator.cancel();
+            animator = null;
         }
+        animator = ValueAnimator.ofFloat(progress, pressed ? 1f : 0f);
+        animator.addUpdateListener(animation -> {
+            progress = (float) animation.getAnimatedValue();
+            invalidate();
+        });
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animator == animation) {
+                    animator = null;
+                    progress = pressed ? 1f : 0f;
+                    invalidate();
+                }
+            }
+        });
+        if (pressed) {
+            animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            animator.setDuration(70);
+        } else {
+            animator.setInterpolator(new OvershootInterpolator(overshoot));
+            animator.setDuration(360);
+        }
+        animator.start();
     }
 
     public float getProgress() {
-        if (pressed && progress != 1f) {
-            progress += (float) Math.min(40, 1000f / AndroidUtilities.screenRefreshRate) / 100f;
-            progress = Utilities.clamp(progress, 1f, 0f);
-            invalidate();
-        }
         return progress;
+    }
+
+    public boolean isPressed() {
+        return pressed;
     }
 
     private void invalidate() {

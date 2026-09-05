@@ -259,6 +259,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     0,
                     Theme.multAlpha(backgroundColor, 0.40f),
                     dp(20),
+                    dp(12),
                     dp(4)
                 ));
             } else {

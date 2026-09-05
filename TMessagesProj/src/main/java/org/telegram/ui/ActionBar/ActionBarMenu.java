@@ -96,6 +96,7 @@ public class ActionBarMenu extends LinearLayout {
                         0,
                         Theme.multAlpha(color, 0.40f),
                         dp(20),
+                        dp(12),
                         dp(4)
                     ));
                 } else {
@@ -767,7 +768,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void updateChildShapes() {
-        if (!UIStyleEngine.isMaterial3Expressive()) return;
+        if (!UIStyleEngine.isMaterial3Expressive() || isActionMode) return;
         m3VisibleChildren.clear();
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
@@ -811,7 +812,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     public void onViewAdded(View child) {
         super.onViewAdded(child);
-        if (UIStyleEngine.isMaterial3Expressive()) {
+        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
             if (!m3ChildStates.containsKey(child)) {
                 M3ChildState state = new M3ChildState(child, this::applyM3ChildLayouts);
                 m3ChildStates.put(child, state);
@@ -823,7 +824,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     public void onViewRemoved(View child) {
         super.onViewRemoved(child);
-        if (UIStyleEngine.isMaterial3Expressive()) {
+        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
             M3ChildState state = m3ChildStates.remove(child);
             if (state != null) {
                 state.springAnimation.cancel();
@@ -835,7 +836,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     public void childDrawableStateChanged(View child) {
         super.childDrawableStateChanged(child);
-        if (UIStyleEngine.isMaterial3Expressive()) {
+        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
             M3ChildState state = m3ChildStates.get(child);
             if (state != null) {
                 boolean isPressed = child.isPressed() || child.isSelected();
@@ -848,7 +849,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     private void applyM3ChildLayouts() {
-        if (!UIStyleEngine.isMaterial3Expressive()) return;
+        if (!UIStyleEngine.isMaterial3Expressive() || isActionMode) return;
         m3VisibleChildren.clear();
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
@@ -930,7 +931,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
-        if (UIStyleEngine.isMaterial3Expressive()) {
+        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
             updateChildShapes();
             if (m3VisibleChildren.size() > 1) {
                 applyM3ChildLayouts();
