@@ -147,11 +147,6 @@ public class LiteMode {
     }
 
     public static boolean isEnabled(int flag) {
-        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            if (flag == FLAG_LIQUID_GLASS || flag == FLAG_CHAT_BLUR) {
-                return false;
-            }
-        }
         if (flag == FLAG_CHAT_FORUM_TWOCOLUMN && AndroidUtilities.isTablet()) {
             // always enabled for tablets
             return true;

@@ -2277,6 +2277,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         selectedMenuItem.setAdditionalYOffset(dp(72));
         selectedMenuItem.setTranslationX(dp(1));
         selectedMenuItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 6));
+        ScaleStateListAnimator.apply(selectedMenuItem);
         selectedMenuItem.setOnClickListener(v -> selectedMenuItem.toggleSubMenu());
 
         motionItem = new ActionBarMenuItem(context, null, 0, getThemedColor(Theme.key_dialogTextBlack), false, resourcesProvider);
@@ -2290,6 +2291,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         motionItem.setAdditionalYOffset(dp(72));
         motionItem.setTranslationX(-dp(3));
         motionItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 6));
+        ScaleStateListAnimator.apply(motionItem);
         motionItem.setOnClickListener(v -> {
             if (photoLayout == null) return;
 
@@ -2337,6 +2339,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             searchItem.setAlpha(0.0f);
             searchItem.setTranslationX(-dp(42));
             searchItem.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 6));
+            ScaleStateListAnimator.apply(searchItem);
             searchItem.setOnClickListener(v -> {
                 if (avatarPicker != 0) {
                     delegate.openAvatarsSearch();
@@ -2413,6 +2416,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         optionsItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
         optionsItem.setVisibility(View.GONE);
         optionsItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), Theme.RIPPLE_MASK_CIRCLE_TO_BOUND_EDGE));
+        ScaleStateListAnimator.apply(optionsItem);
         optionsItem.addSubItem(1, R.drawable.msg_addbot, getString(R.string.StickerCreateEmpty)).setOnClickListener(v -> {
             optionsItem.toggleSubMenu();
             PhotoViewer.getInstance().setParentActivity(baseFragment, resourcesProvider);

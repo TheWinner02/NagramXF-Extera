@@ -81,6 +81,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
@@ -253,7 +254,16 @@ public class ActionBarMenuItem extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
         if (backgroundColor != 0) {
-            setBackgroundDrawable(Theme.createSelectorDrawable(backgroundColor, text ? 5 : 1));
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && !text) {
+                setBackgroundDrawable(new M3ExpressiveButtonDrawable(
+                    0,
+                    Theme.multAlpha(backgroundColor, 0.40f),
+                    dp(20),
+                    dp(4)
+                ));
+            } else {
+                setBackgroundDrawable(Theme.createSelectorDrawable(backgroundColor, text ? 5 : 1));
+            }
         }
         parentMenu = menu;
 
@@ -276,6 +286,17 @@ public class ActionBarMenuItem extends FrameLayout {
             if (iconColor != 0) {
                 iconView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
             }
+        }
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && !text) {
+            org.telegram.ui.Components.ScaleStateListAnimator.apply(this);
+        }
+    }
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        if (parentMenu != null) {
+            parentMenu.onItemPressed(this, pressed);
         }
     }
 

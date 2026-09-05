@@ -59,12 +59,48 @@ public class ActionBarMenu extends LinearLayout {
         super(context);
     }
 
+    private boolean isItemPressed;
+
+    public void onItemPressed(ActionBarMenuItem item, boolean pressed) {
+        if (pressed) {
+            isItemPressed = true;
+        } else {
+            boolean any = false;
+            int count = getChildCount();
+            for (int i = 0; i < count; i++) {
+                View child = getChildAt(i);
+                if (child.isPressed()) {
+                    any = true;
+                    break;
+                }
+            }
+            isItemPressed = any;
+        }
+        if (parentActionBar != null) {
+            parentActionBar.onMenuPressed(isItemPressed);
+        }
+    }
+
+    public boolean isItemPressed() {
+        return isItemPressed;
+    }
+
     protected void updateItemsBackgroundColor() {
         int count = getChildCount();
         for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
-                view.setBackgroundDrawable(Theme.createSelectorDrawable(isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor));
+                int color = isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor;
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && !((ActionBarMenuItem) view).isSearchField()) {
+                    view.setBackgroundDrawable(new M3ExpressiveButtonDrawable(
+                        0,
+                        Theme.multAlpha(color, 0.40f),
+                        dp(20),
+                        dp(4)
+                    ));
+                } else {
+                    view.setBackgroundDrawable(Theme.createSelectorDrawable(color));
+                }
             }
         }
     }

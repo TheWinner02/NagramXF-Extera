@@ -852,6 +852,7 @@ public class ReactionsLayoutInBubble {
         private final Theme.ResourcesProvider resourcesProvider;
 
         public final ButtonBounce bounce;
+        public final org.telegram.ui.Components.M3PressMorphHelper pressMorphHelper;
         private StarsReactionsSheet.Particles particles;
 
         private RLottieDrawable starDrawable;
@@ -867,6 +868,7 @@ public class ReactionsLayoutInBubble {
             this.currentAccount = currentAccount;
             this.parentView = parentView;
             this.bounce = new ButtonBounce(parentView);
+            this.pressMorphHelper = new org.telegram.ui.Components.M3PressMorphHelper(parentView);
             this.resourcesProvider = resourcesProvider;
             this.isTag = isTag;
             if (reuseFrom != null) {
@@ -1119,6 +1121,10 @@ public class ReactionsLayoutInBubble {
                 canvas.scale(bounceScale, bounceScale, x + w / 2f, y + height / 2f);
             }
             float rad = height / 2f;
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && !isTag) {
+                float morph = pressMorphHelper.getProgress();
+                rad = AndroidUtilities.lerp(height / 2f, height * 0.32f, morph);
+            }
             if (getDrawServiceShaderBackground() > 0 && !drawBgOnlyIfChosen) {
                 Paint paint1 = Theme.getThemePaint(Theme.key_paint_chatActionBackground, resourcesProvider);
                 Paint paint2 = Theme.getThemePaint(Theme.key_paint_chatActionBackgroundDarken, resourcesProvider);
@@ -1513,11 +1519,13 @@ public class ReactionsLayoutInBubble {
                         longPressRunnable = null;
                     }
                     lastSelectedButton.bounce.setPressed(true);
+                    lastSelectedButton.pressMorphHelper.setPressed(true);
 
                     final ReactionButton selectedButtonFinal = lastSelectedButton;
                     AndroidUtilities.runOnUIThread(longPressRunnable = () -> {
                         didPressReaction(selectedButtonFinal.reactionCount, true, 0, 0);
                         selectedButtonFinal.bounce.setPressed(false);
+                        selectedButtonFinal.pressMorphHelper.setPressed(false);
                         lastSelectedButton = null;
                         pressed = false;
                         longPressRunnable = null;
@@ -1532,6 +1540,7 @@ public class ReactionsLayoutInBubble {
                 pressed = false;
                 if (lastSelectedButton != null) {
                     lastSelectedButton.bounce.setPressed(false);
+                    lastSelectedButton.pressMorphHelper.setPressed(false);
                 }
                 lastSelectedButton = null;
                 if (longPressRunnable != null) {
@@ -1550,6 +1559,7 @@ public class ReactionsLayoutInBubble {
             pressed = false;
             if (lastSelectedButton != null) {
                 lastSelectedButton.bounce.setPressed(false);
+                lastSelectedButton.pressMorphHelper.setPressed(false);
             }
             lastSelectedButton = null;
         }

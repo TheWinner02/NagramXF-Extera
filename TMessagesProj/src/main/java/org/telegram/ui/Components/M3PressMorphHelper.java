@@ -15,8 +15,15 @@ public class M3PressMorphHelper {
     private float progress;
     private ValueAnimator animator;
 
+    private Runnable onProgressUpdate;
+
     public M3PressMorphHelper(View view) {
         this.view = view;
+    }
+
+    public M3PressMorphHelper setOnProgressUpdate(Runnable onProgressUpdate) {
+        this.onProgressUpdate = onProgressUpdate;
+        return this;
     }
 
     public void setPressed(boolean pressed) {
@@ -24,7 +31,7 @@ public class M3PressMorphHelper {
             return;
         }
         this.pressed = pressed;
-        view.invalidate();
+        invalidate();
         if (pressed) {
             if (animator != null) {
                 animator.removeAllListeners();
@@ -35,7 +42,7 @@ public class M3PressMorphHelper {
             animator = ValueAnimator.ofFloat(progress, 0f);
             animator.addUpdateListener(animation -> {
                 progress = (float) animation.getAnimatedValue();
-                view.invalidate();
+                invalidate();
             });
             animator.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -53,8 +60,17 @@ public class M3PressMorphHelper {
         if (pressed && progress != 1f) {
             progress += (float) Math.min(40, 1000f / AndroidUtilities.screenRefreshRate) / 100f;
             progress = Utilities.clamp(progress, 1f, 0f);
-            view.invalidate();
+            invalidate();
         }
         return progress;
+    }
+
+    private void invalidate() {
+        if (view != null) {
+            view.invalidate();
+        }
+        if (onProgressUpdate != null) {
+            onProgressUpdate.run();
+        }
     }
 }

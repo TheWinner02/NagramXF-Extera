@@ -1887,9 +1887,6 @@ public class SharedConfig {
     }
 
     public static boolean canBlurChat() {
-        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            return false;
-        }
         return tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()
             || tw.nekomimi.nekogram.NekoConfig.forceMainTabsBlur.Bool()
             || tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool();

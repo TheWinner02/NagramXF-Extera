@@ -70,6 +70,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.FireworksEffect;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SnowflakesEffect;
@@ -102,6 +103,13 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private BlurredBackgroundDrawable glassDrawable;
     private BlurredBackgroundDrawable glassDrawableBack;
     private BlurredBackgroundDrawable glassDrawableMenu;
+    private final org.telegram.ui.Components.M3PressMorphHelper glassBackMorphHelper = new org.telegram.ui.Components.M3PressMorphHelper(this);
+    private final org.telegram.ui.Components.M3PressMorphHelper glassMenuMorphHelper = new org.telegram.ui.Components.M3PressMorphHelper(this);
+
+    public void onMenuPressed(boolean pressed) {
+        glassMenuMorphHelper.setPressed(pressed);
+    }
+
     private INavigationLayout.BackButtonState backButtonState = INavigationLayout.BackButtonState.BACK;
     public UnreadImageView backButtonImageView;
     private BackupImageView avatarSearchImageView;
@@ -226,33 +234,30 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     public void setupGlass(BlurredBackgroundDrawableViewFactory factory,
                            BlurredBackgroundColorProvider colorProvider,
                            boolean isForum) {
-        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            glassMode = false;
-            return;
-        }
         setBackground(null);
         setClipChildren(false);
         glassMode = true;
         glassModeIsForum = isForum;
 
+        float rad = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(20) : dp(23);
+
         glassDrawable = factory.create(this)
             .setColorProvider(colorProvider)
             .setPadding(dp(6));
         if (isForum) {
-            glassDrawable.setRadius(dp(18.33f), dp(23), dp(23), dp(18.33f));
+            glassDrawable.setRadius(dp(18.33f), rad, rad, dp(18.33f));
         } else {
-            glassDrawable.setRadius(dp(23));
+            glassDrawable.setRadius(rad);
         }
-
 
         glassDrawableBack = factory.create(this)
             .setColorProvider(colorProvider)
-            .setRadius(dp(23))
+            .setRadius(rad)
             .setPadding(dp(6));
 
         glassDrawableMenu = factory.create(this)
             .setColorProvider(colorProvider)
-            .setRadius(dp(23))
+            .setRadius(rad)
             .setPadding(dp(6));
 
         if (menu != null) {
@@ -275,13 +280,33 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         return backButtonState;
     }
 
+    public Drawable createAdaptiveSelectorDrawable(int color) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return new org.telegram.ui.Components.M3ExpressiveButtonDrawable(
+                0,
+                Theme.multAlpha(color, 0.40f),
+                dp(20),
+                dp(4)
+            );
+        } else {
+            return Theme.createSelectorDrawable(color);
+        }
+    }
+
     private void createBackButtonImage() {
         if (backButtonImageView != null) {
             return;
         }
-        backButtonImageView = new UnreadImageView(getContext());
+        backButtonImageView = new UnreadImageView(getContext()) {
+            @Override
+            public void setPressed(boolean pressed) {
+                super.setPressed(pressed);
+                glassBackMorphHelper.setPressed(pressed);
+            }
+        };
         backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
-        backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+        backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsBackgroundColor));
+        ScaleStateListAnimator.apply(backButtonImageView);
         backButtonImageView.setPadding(dp(1), 0, 0, 0);
         addView(backButtonImageView, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
 
@@ -991,7 +1016,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 if (drawable instanceof BackDrawable) {
                     ((BackDrawable) drawable).setRotation(1, true);
                 }
-                backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsActionModeBackgroundColor));
+                backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsActionModeBackgroundColor));
             }
         } else {
             actionMode.setAlpha(1.0f);
@@ -1047,7 +1072,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 if (drawable instanceof BackDrawable) {
                     ((BackDrawable) drawable).setRotation(1, false);
                 }
-                backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsActionModeBackgroundColor));
+                backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsActionModeBackgroundColor));
             }
         }
     }
@@ -1148,7 +1173,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             if (drawable instanceof BackDrawable) {
                 ((BackDrawable) drawable).setRotation(0, true);
             }
-            backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+            backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsBackgroundColor));
         }
     }
 
@@ -1937,7 +1962,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             itemsActionModeBackgroundColor = color;
             if (actionModeVisible) {
                 if (backButtonImageView != null) {
-                    backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsActionModeBackgroundColor));
+                    backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsActionModeBackgroundColor));
                 }
             }
             if (actionMode != null) {
@@ -1946,7 +1971,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         } else {
             itemsBackgroundColor = color;
             if (backButtonImageView != null) {
-                backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+                backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsBackgroundColor));
             }
             if (menu != null) {
                 menu.updateItemsBackgroundColor();
@@ -2316,10 +2341,6 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     public void setDrawBlurBackground(SizeNotifierFrameLayout contentView) {
-        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            blurredBackground = false;
-            return;
-        }
         if (!tw.nekomimi.nekogram.NekoConfig.forceActionBarBlur.Bool() && !tw.nekomimi.nekogram.NekoConfig.forceChatBlur.Bool()) {
             return;
         }
@@ -2436,6 +2457,16 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         final int b = t + s + p * 2;
 
         if (glassDrawable != null && !glassOnlyBack) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                float morphProgress = chatAvatarContainer != null ? chatAvatarContainer.getMorphProgress() : 0f;
+                float rad = AndroidUtilities.lerp(dp(20), dp(12), morphProgress);
+                if (glassModeIsForum) {
+                    float radInner = AndroidUtilities.lerp(dp(18.33f), dp(10f), morphProgress);
+                    glassDrawable.setRadius(radInner, rad, rad, radInner);
+                } else {
+                    glassDrawable.setRadius(rad);
+                }
+            }
             final int menuWidthWithPadding = menuWidth + ((hasForcedMenuWidth || hasForcedMenuMinWidth) ? (menuWidth > 0 ? p : 0) : (int) (p * animatorHasMenuItems.getFloatValue()));
             final int rightOffset = lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());
 
@@ -2463,10 +2494,20 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             glassDrawable.draw(canvas);
         }
         if (glassDrawableBack != null && hasBackButton) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                float morphProgress = glassBackMorphHelper.getProgress();
+                float rad = AndroidUtilities.lerp(dp(20), dp(12), morphProgress);
+                glassDrawableBack.setRadius(rad);
+            }
             glassDrawableBack.setBounds(0, t, s + p * 2, b);
             glassDrawableBack.draw(canvas);
         }
         if (glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                float morphProgress = glassMenuMorphHelper.getProgress();
+                float rad = AndroidUtilities.lerp(dp(20), dp(12), morphProgress);
+                glassDrawableMenu.setRadius(rad);
+            }
             glassDrawableMenu.setBounds(getWidth() - Math.max(s, menuWidth) - p * 2, t, getWidth(), b);
             glassDrawableMenu.setAlpha(hasForcedMenuWidth ? 255 : (int) (255 * animatorHasMenuItems.getFloatValue()));
             glassDrawableMenu.draw(canvas);

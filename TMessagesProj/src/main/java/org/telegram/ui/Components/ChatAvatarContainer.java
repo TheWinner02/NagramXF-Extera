@@ -136,6 +136,11 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatusDrawable;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerificationDrawable;
+    private final org.telegram.ui.Components.M3PressMorphHelper morphHelper = new org.telegram.ui.Components.M3PressMorphHelper(this);
+
+    public float getMorphProgress() {
+        return morphHelper.getProgress();
+    }
 
     protected boolean useAnimatedSubtitle() {
         return false;
@@ -189,6 +194,11 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     public ChatAvatarContainer(Context context, BaseFragment baseFragment, boolean needTime, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        morphHelper.setOnProgressUpdate(() -> {
+            if (getParent() instanceof View) {
+                ((View) getParent()).invalidate();
+            }
+        });
         if (baseFragment instanceof ChatActivity) {
             parentFragment = (ChatActivity) baseFragment;
         }
@@ -348,7 +358,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         addView(avatarImageView);
         if (avatarClickable) {
             final TLRPC.Chat chat = parentFragment != null ? parentFragment.getCurrentChat() : null;
-            if (chat != null && chat.linked_community_id != 0) {
+            if ((chat != null && chat.linked_community_id != 0) || xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
                 ScaleStateListAnimator.apply(avatarImageView, .05f, 1.2f);
             }
             avatarImageView.setOnClickListener(v -> {
@@ -477,17 +487,29 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     private boolean pressed;
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        if (ev.getAction() == MotionEvent.ACTION_DOWN && canSearch()) {
-            pressed = true;
-            bounce.setPressed(true);
-            AndroidUtilities.cancelRunOnUIThread(this.onLongClick);
-            AndroidUtilities.runOnUIThread(this.onLongClick, ViewConfiguration.getLongPressTimeout());
-            return true;
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            if (canSearch() || isClickable()) {
+                pressed = true;
+                bounce.setPressed(true);
+                morphHelper.setPressed(true);
+                if (getParent() instanceof View) {
+                    ((View) getParent()).invalidate();
+                }
+                if (canSearch()) {
+                    AndroidUtilities.cancelRunOnUIThread(this.onLongClick);
+                    AndroidUtilities.runOnUIThread(this.onLongClick, ViewConfiguration.getLongPressTimeout());
+                }
+                return true;
+            }
         } else if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
             if (pressed) {
                 bounce.setPressed(false);
+                morphHelper.setPressed(false);
+                if (getParent() instanceof View) {
+                    ((View) getParent()).invalidate();
+                }
                 pressed = false;
-                if (isClickable()) {
+                if (isClickable() && ev.getAction() == MotionEvent.ACTION_UP) {
                     openProfile(false);
                 }
                 AndroidUtilities.cancelRunOnUIThread(this.onLongClick);
@@ -500,12 +522,16 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     public void setPressed(boolean pressed) {
         super.setPressed(pressed);
         bounce.setPressed(pressed);
+        morphHelper.setPressed(pressed);
+        if (getParent() instanceof View) {
+            ((View) getParent()).invalidate();
+        }
     }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
         canvas.save();
-        final float s = bounce.getScale(.02f);
+        final float s = bounce.getScale(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? .035f : .02f);
         canvas.scale(s, s, getPivotX(), getHeight() - ActionBar.getCurrentActionBarHeight() / 2f);
         super.dispatchDraw(canvas);
         canvas.restore();
