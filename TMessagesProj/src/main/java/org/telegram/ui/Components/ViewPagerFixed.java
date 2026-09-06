@@ -893,6 +893,7 @@ public class ViewPagerFixed extends FrameLayout {
         if (currentPosition != position) {
             int oldPosition = currentPosition;
             currentPosition = position;
+            com.exteragram.messenger.utils.system.VibratorUtils.vibrateSegment(this);
             nextPosition = 0;
             currentProgress = 1f;
             View oldView = viewPages[0];

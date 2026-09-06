@@ -28,6 +28,12 @@ public class ScaleStateListAnimator {
                 ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f - scale)
         );
         pressedAnimator.setDuration(80);
+        pressedAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(android.animation.Animator animation) {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(view);
+            }
+        });
 
         AnimatorSet defaultAnimator = new AnimatorSet();
         defaultAnimator.playTogether(

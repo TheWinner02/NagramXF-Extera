@@ -365,8 +365,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             final GlassTabView view = tabs[index];
             final int tabIndex = index;
             final int position = indexToPosition(index);
-            tabs[index].setOnLongClickListener(v -> processLongClick(v, tabIndex));
+            tabs[index].setOnLongClickListener(v -> {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateLongPress(v);
+                return processLongClick(v, tabIndex);
+            });
             tabs[index].setOnClickListener(v -> {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(v);
                 if (position < 0) {
                     return;
                 }

@@ -161,6 +161,7 @@ public class TextCell extends FrameLayout {
         }
 
         setFocusable(true);
+        org.telegram.ui.Components.ScaleStateListAnimator.apply(this);
     }
 
     public boolean isChecked() {

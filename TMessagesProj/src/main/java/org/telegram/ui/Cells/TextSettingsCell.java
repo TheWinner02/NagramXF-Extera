@@ -106,6 +106,7 @@ public class TextSettingsCell extends FrameLayout {
         valueImageView.setVisibility(INVISIBLE);
         valueImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         addView(valueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
+        org.telegram.ui.Components.ScaleStateListAnimator.apply(this);
     }
 
     private boolean isM3Expressive() {

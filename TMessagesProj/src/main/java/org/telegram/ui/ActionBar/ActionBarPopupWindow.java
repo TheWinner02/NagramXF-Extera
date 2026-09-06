@@ -888,6 +888,7 @@ public class ActionBarPopupWindow extends PopupWindow {
     }
 
     public static AnimatorSet startAnimation(ActionBarPopupWindowLayout content) {
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateGesture(content, true);
         content.startAnimationPending = true;
         content.setTranslationY(0);
         content.setAlpha(1.0f);

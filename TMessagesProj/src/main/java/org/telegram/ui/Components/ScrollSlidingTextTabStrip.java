@@ -556,10 +556,12 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
             tab.setTypeface(AndroidUtilities.bold());
             tab.setPadding(dp(16), 0, dp(16), 0);
             tab.setOnClickListener(v -> {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(v);
                 scrollTo(id, tabsContainer.indexOfChild(v), v);
             });
             tab.setOnLongClickListener(v -> {
                 if (reordering) return false;
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateLongPress(v);
                 return delegate != null && delegate.showOptions(id, v);
             });
             NotificationCenter.listenEmojiLoading(tab);

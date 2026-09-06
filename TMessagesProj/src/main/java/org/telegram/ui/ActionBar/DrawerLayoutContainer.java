@@ -141,6 +141,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (!allowOpenDrawer || drawerLayout == null) {
             return;
         }
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateGesture(this, true);
         if (AndroidUtilities.isTablet() && parentActionBarLayout != null && parentActionBarLayout.getParentActivity() != null) {
             AndroidUtilities.hideKeyboard(parentActionBarLayout.getParentActivity().getCurrentFocus());
         }

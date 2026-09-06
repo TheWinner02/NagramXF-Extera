@@ -130,6 +130,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     private FastScroll fastScroll;
     private SectionsAdapter sectionsAdapter;
     public boolean useLayoutPositionOnClick;
+    private int scrollHapticDistance;
 
     private boolean isHidden;
 
@@ -688,6 +689,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                             progress = 1;
                         }
                         getCurrentLetter(true);
+                        com.exteragram.messenger.utils.system.VibratorUtils.vibrateSegment(RecyclerListView.this);
                         invalidate();
                     }
                     return true;
@@ -1139,6 +1141,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                                 view.playSoundEffect(SoundEffectConstants.CLICK);
                             } catch (Exception ignore) {}
                             view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+                            com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(view);
                             if (onItemClickListener != null) {
                                 onItemClickListener.onItemClick(view, position);
                             } else if (onItemClickListenerExtended != null) {
@@ -1158,6 +1161,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                                             view.playSoundEffect(SoundEffectConstants.CLICK);
                                         } catch (Exception ignore) {}
                                         view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+                                        com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(view);
                                         if (position != -1) {
                                             if (onItemClickListener != null) {
                                                 onItemClickListener.onItemClick(view, position);
@@ -1540,6 +1544,13 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 if (onScrollListener != null) {
                     onScrollListener.onScrolled(recyclerView, dx, dy);
+                }
+                if (scrollingByUser && dy != 0) {
+                    scrollHapticDistance += Math.abs(dy);
+                    if (scrollHapticDistance > AndroidUtilities.dp(120)) {
+                        scrollHapticDistance = 0;
+                        com.exteragram.messenger.utils.system.VibratorUtils.vibrateSegment(RecyclerListView.this);
+                    }
                 }
                 if (selectorPosition != NO_POSITION) {
                     selectorRect.offset(-dx, -dy);

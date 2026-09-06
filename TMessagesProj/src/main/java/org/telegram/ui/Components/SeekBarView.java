@@ -241,6 +241,7 @@ public class SeekBarView extends FrameLayout {
 
     boolean captured;
     float sx, sy;
+    int lastHapticThumbX;
     boolean onTouch(MotionEvent ev) {
         if (delegate == null) {
             return false;
@@ -327,6 +328,10 @@ public class SeekBarView extends FrameLayout {
                         thumbX = minThumbX();
                     } else if (thumbX > getMeasuredWidth() - selectorWidth) {
                         thumbX = getMeasuredWidth() - selectorWidth;
+                    }
+                    if (Math.abs(thumbX - lastHapticThumbX) > AndroidUtilities.dp(16)) {
+                        lastHapticThumbX = thumbX;
+                        com.exteragram.messenger.utils.system.VibratorUtils.vibrateSegment(this);
                     }
                     if (reportChanges) {
                         if (twoSided) {

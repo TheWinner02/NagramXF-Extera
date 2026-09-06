@@ -306,6 +306,7 @@ public class Switch extends View {
     public void setChecked(boolean checked, int iconType, boolean animated) {
         if (checked != isChecked) {
             isChecked = checked;
+            com.exteragram.messenger.utils.system.VibratorUtils.vibrateToggle(this, checked);
             if (attachedToWindow && animated) {
                 animateToCheckedState(checked);
             } else {

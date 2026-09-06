@@ -149,6 +149,7 @@ public class RadioButton extends View {
             return;
         }
         isChecked = checked;
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateToggle(this, checked);
 
         if (attachedToWindow && animated) {
             animateToCheckedState(checked);

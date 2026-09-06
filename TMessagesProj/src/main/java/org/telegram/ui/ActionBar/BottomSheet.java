@@ -1788,6 +1788,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
             return;
         }
         containerView.setVisibility(View.VISIBLE);
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateGesture(containerView, true);
 
         if (!onCustomOpenAnimation()) {
             if (useHardwareLayer) {

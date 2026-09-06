@@ -32162,6 +32162,7 @@ public class ChatActivity extends BaseFragment implements
         if (chatActivityEnterView != null) {
             chatActivityEnterView.hideHints();
         }
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateLongPress(v);
 
         MessageObject message;
         MessageObject primaryMessage;

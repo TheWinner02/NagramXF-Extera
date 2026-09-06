@@ -384,6 +384,7 @@ public class CheckBoxBase {
             return;
         }
         isChecked = checked;
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateToggle(parentView, checked);
 
         if (attachedToWindow && animated) {
             animateToCheckedState(checked);

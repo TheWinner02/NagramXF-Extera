@@ -129,9 +129,17 @@ public class ActionRow extends FrameLayout {
         imageView.setImageDrawable(ContextCompat.getDrawable(context, actionItem.icon).mutate());
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         imageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 1, AndroidUtilities.dp(20)));
-        imageView.setOnClickListener(actionItem.action);
+        imageView.setOnClickListener(v -> {
+            com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(v);
+            if (actionItem.action != null) {
+                actionItem.action.onClick(v);
+            }
+        });
         if (actionItem.longAction != null) {
-            imageView.setOnLongClickListener(actionItem.longAction);
+            imageView.setOnLongClickListener(v -> {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateLongPress(v);
+                return actionItem.longAction.onLongClick(v);
+            });
         }
         imageView.setTag(actionItem);
         imageView.setAlpha(0.0f);

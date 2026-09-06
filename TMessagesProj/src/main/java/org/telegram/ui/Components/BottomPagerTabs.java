@@ -262,6 +262,7 @@ public class BottomPagerTabs extends View {
                 }
             }
             if (index >= 0 && value != index && onTabClick != null) {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(this);
                 onTabClick.run(index);
             }
             touchDown = false;

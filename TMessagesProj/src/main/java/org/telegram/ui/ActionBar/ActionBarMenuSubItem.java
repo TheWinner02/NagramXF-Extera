@@ -105,6 +105,13 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
         checkViewLeft = LocaleController.isRTL;
         makeCheckView(needCheck);
+        org.telegram.ui.Components.ScaleStateListAnimator.apply(this);
+    }
+
+    @Override
+    public boolean performClick() {
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(this);
+        return super.performClick();
     }
 
     public void makeCheckView(int needCheck) {

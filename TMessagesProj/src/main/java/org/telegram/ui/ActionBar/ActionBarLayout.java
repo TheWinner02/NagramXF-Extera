@@ -1480,6 +1480,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                         BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                         if (currentFragment.canBeginSlide() && findScrollingChild(this, ev.getX(), ev.getY()) == null) {
                             startedTrackingX = (int) ev.getX();
+                            com.exteragram.messenger.utils.system.VibratorUtils.vibrateGesture(this, true);
                             prepareForMoving();
                         } else {
                             maybeStartTracking = false;

@@ -48,6 +48,7 @@ public class ManageChatTextCell extends FrameLayout {
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
         addView(imageView);
+        org.telegram.ui.Components.ScaleStateListAnimator.apply(this);
     }
 
     public SimpleTextView getTextView() {
