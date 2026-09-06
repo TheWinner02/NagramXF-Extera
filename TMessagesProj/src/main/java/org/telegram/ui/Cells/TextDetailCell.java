@@ -273,10 +273,13 @@ public class TextDetailCell extends FrameLayout {
         if (needDivider) {
             Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(Theme.key_paint_divider) : Theme.dividerPaint;
             if (paint == null) paint = Theme.dividerPaint;
+            boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            float left = LocaleController.isRTL ? (isM3 ? dp(16) : 0) : dp(isM3 ? 16 : 20);
+            float right = getMeasuredWidth() - (LocaleController.isRTL ? dp(isM3 ? 16 : 20) : (isM3 ? dp(16) : 0));
             canvas.drawLine(
-                LocaleController.isRTL ? 0 : dp(20),
+                left,
                 getMeasuredHeight() - 1,
-                getMeasuredWidth() - (LocaleController.isRTL ? dp(20) : 0),
+                right,
                 getMeasuredHeight() - 1,
                 paint
             );

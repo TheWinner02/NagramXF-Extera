@@ -6025,7 +6025,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         writeButton.setScaleType(ImageView.ScaleType.CENTER);
 
-        frameLayout.addView(writeButton, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.TOP, 0, 0, 16, 0));
+        int writeButtonSize = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 56 : 60;
+        frameLayout.addView(writeButton, LayoutHelper.createFrame(writeButtonSize, writeButtonSize, Gravity.RIGHT | Gravity.TOP, 0, 0, 16, 0));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            ScaleStateListAnimator.apply(writeButton, 0.05f, 1.5f);
+        }
         writeButton.setOnClickListener(v -> {
             if (writeButton.getTag() != null) {
                 return;
@@ -16121,11 +16125,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 color2 = applyPeerColor2(color2);
                 iconColor = Color.WHITE;
             }
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable,
-                    Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), color1, color2),
-                    0, 0);
-            combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-            writeButton.setBackground(combinedDrawable);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                writeButton.setBackground(new org.telegram.ui.Components.M3ExpressiveButtonDrawable(
+                    AndroidUtilities.dp(16),
+                    color1,
+                    color2,
+                    0x20000000
+                ));
+            } else {
+                CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable,
+                        Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), color1, color2),
+                        0, 0);
+                combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                writeButton.setBackground(combinedDrawable);
+            }
             writeButton.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
         } catch (Exception e) {
         }

@@ -285,7 +285,11 @@ public class ProfileActionsView extends View {
                     action.rect.height() / 2.0f * (1.0f - action.getScale())
                 );
                 AndroidUtilities.rectTmp.inset(-1, -1);
-                clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CCW);
+                float actionRadius = r;
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    actionRadius = AndroidUtilities.lerp(r, dp(8), action.pressMorphHelper.getProgress());
+                }
+                clipPath.addRoundRect(AndroidUtilities.rectTmp, actionRadius, actionRadius, Path.Direction.CCW);
             }
         }
         firstAction = newFirstAction;
@@ -316,13 +320,18 @@ public class ProfileActionsView extends View {
                         paint.setShadowLayer(0, 0, 0, 0);
                     }
 
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);
+                    float actionRadius = r;
+                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                        actionRadius = AndroidUtilities.lerp(r, dp(8), action.pressMorphHelper.getProgress());
+                    }
+
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, actionRadius, actionRadius, paint);
                     if (radialGradient != null) {
                         int wasAlpha2 = shaderPaint.getAlpha();
                         shaderPaint.setAlpha((int) (action.getAlpha() * alphaFraction1 * wasAlpha2));
                         matrix.setTranslate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
                         radialGradient.setLocalMatrix(matrix);
-                        canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, shaderPaint);
+                        canvas.drawRoundRect(AndroidUtilities.rectTmp, actionRadius, actionRadius, shaderPaint);
                         shaderPaint.setAlpha(wasAlpha2);
                     }
                     paint.setAlpha(wasAlpha);
@@ -505,14 +514,18 @@ public class ProfileActionsView extends View {
 
         if (action.loadingDrawable != null) {
             action.loadingDrawable.setBounds(action.rect);
-            action.loadingDrawable.setRadii(getRoundRadius());
+            float actionRadius = getRoundRadius();
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                actionRadius = AndroidUtilities.lerp(actionRadius, dp(8), action.pressMorphHelper.getProgress());
+            }
+            action.loadingDrawable.setRadii(actionRadius);
             action.loadingDrawable.setAlpha((int) (0xFF * alpha));
             action.loadingDrawable.draw(canvas);
         }
     }
 
     public float getRoundRadius() {
-        return dp(16);
+        return dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 20 : 16);
     }
 
     private Action hit = null;
@@ -539,23 +552,20 @@ public class ProfileActionsView extends View {
                     downX = x;
                     downY = y;
                     downTime = System.currentTimeMillis();
-                    hit.bounce.setPressed(true);
-//                    try {
-//                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-//                    } catch (Exception ignore) {}
+                    hit.setPressed(true);
                     break;
                 }
             }
         } else if (eventAction == MotionEvent.ACTION_MOVE) {
             if (hit != null) {
                 if (Math.abs(x - downX) > 20 || Math.abs(y - downY) > 20) {
-                    hit.bounce.setPressed(false);
+                    hit.setPressed(false);
                     hit = null;
                 }
             }
         } else if (eventAction == MotionEvent.ACTION_UP || eventAction == MotionEvent.ACTION_CANCEL) {
             if (hit != null) {
-                hit.bounce.setPressed(false);
+                hit.setPressed(false);
                 if (eventAction == MotionEvent.ACTION_UP && hit.rect.contains(x, y)) {
                     if (System.currentTimeMillis() - downTime > 250) {
                         try {
@@ -996,9 +1006,17 @@ public class ProfileActionsView extends View {
     private class Action {
         int key;
 
-        private final ButtonBounce bounce = new ButtonBounce(ProfileActionsView.this);
+        private final ButtonBounce bounce = new ButtonBounce(ProfileActionsView.this, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 1.5f : 1.0f, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 4.5f : 2.5f);
+        public final M3PressMorphHelper pressMorphHelper = new M3PressMorphHelper(ProfileActionsView.this);
         final RectF prevRect = new RectF();
         final RectF rect = new RectF();
+
+        public void setPressed(boolean pressed) {
+            bounce.setPressed(pressed);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                pressMorphHelper.setPressed(pressed);
+            }
+        }
 
         private final AnimatedFloat positionFraction = new AnimatedFloat(ProfileActionsView.this, 0, 250, CubicBezierInterpolator.DEFAULT);
         private final RectF to = new RectF();
@@ -1189,7 +1207,7 @@ public class ProfileActionsView extends View {
         }
 
         public float getScale() {
-            return bounce.getScale(0.04f);
+            return bounce.getScale(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 0.06f : 0.04f);
         }
 
         public void update(ActionButton button) {
