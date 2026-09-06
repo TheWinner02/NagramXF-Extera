@@ -42,6 +42,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
 import org.telegram.ui.Components.Reactions.HwEmojis;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 
 import java.util.ArrayList;
@@ -259,7 +260,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 float hw = rect.width() / 2 * (1f + isMiddle * .3f);
                 float hh = rect.height() / 2 * (1f - isMiddle * .05f);
                 rect.set(rect.centerX() - hw, rect.centerY() - hh, rect.centerX() + hw, rect.centerY() + hh);
-                float r = AndroidUtilities.dp(AndroidUtilities.lerp(8f, 16f, isEmojiTabs));
+                float r = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? (rect.height() / 2f) : AndroidUtilities.dp(AndroidUtilities.lerp(8f, 16f, isEmojiTabs));
                 paint.setColor(selectorColor());
                 if (forceTabsShow) {
                     paint.setAlpha((int) (paint.getAlpha() * alpha * (1f - isEmojiTabs * .5f)));
@@ -269,8 +270,8 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
                 path.rewind();
                 path.addRoundRect(rect,
-                    isGlassDesign ? rect.height() / 2f : r,
-                    isGlassDesign ? rect.height() / 2f : r,
+                    (isGlassDesign || xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) ? rect.height() / 2f : r,
+                    (isGlassDesign || xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) ? rect.height() / 2f : r,
                     Path.Direction.CW);
                 canvas.drawPath(path, paint);
 
@@ -821,6 +822,9 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
         {
             setFocusable(true);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                ScaleStateListAnimator.apply(this, 0.08f, 1.5f);
+            }
         }
 
         @Override

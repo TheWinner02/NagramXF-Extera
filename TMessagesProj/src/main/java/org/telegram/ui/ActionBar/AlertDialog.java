@@ -1151,6 +1151,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 } else {
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
                 }
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    ScaleStateListAnimator.apply(textView);
+                }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
                     if (positiveButtonListener != null) {
@@ -1192,6 +1195,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
                 } else {
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
+                }
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    ScaleStateListAnimator.apply(textView);
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1235,6 +1241,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 } else {
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.LEFT));
                 }
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    ScaleStateListAnimator.apply(textView);
+                }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
                     if (neutralButtonListener != null) {
@@ -1270,11 +1279,15 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 textView.setSingleLine(true);
                 textView.setText(negative2ButtonText.toString());
                 textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
-                textView.setPadding(dp(12), 0, dp(12), 0);
+                int btnPad = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(16) : dp(12);
+                textView.setPadding(btnPad, 0, btnPad, 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
                 } else {
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
+                }
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    ScaleStateListAnimator.apply(textView);
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;

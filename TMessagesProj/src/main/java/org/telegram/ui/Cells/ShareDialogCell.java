@@ -63,6 +63,7 @@ import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Stars.StarsIntroActivity;
 
@@ -120,6 +121,9 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
 
         setWillNotDraw(false);
         currentType = type;
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            ScaleStateListAnimator.apply(this, 0.05f, 1.5f);
+        }
 
         imageView = new BackupImageView(context);
         imageView.setRoundRadius(dp(28));

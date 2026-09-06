@@ -1171,6 +1171,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         protected GlassTabView glassTabView;
         public AttachButtonBase(@NonNull Context context) {
             super(context);
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                ScaleStateListAnimator.apply(this, 0.05f, 1.5f);
+            }
         }
     }
 

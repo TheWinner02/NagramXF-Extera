@@ -2171,7 +2171,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         }
         pickerBottomLayout.setText(title, false);
         pickerBottomLayout.setOnClickListener(onClickListener);
-        if (enableMonetScale) {
+        if (enableMonetScale || xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
             ScaleStateListAnimator.apply(pickerBottomLayout, .02f, 1.2f);
         }
 

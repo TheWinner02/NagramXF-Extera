@@ -1766,6 +1766,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         writeButtonContainer.addView(writeButton, LayoutHelper.createFrameMatchParent());
         writeButton.setOnClickListener(v -> sendInternal(true));
         writeButton.setOnLongClickListener(v -> onSendLongClick(writeButton));
+        ScaleStateListAnimator.apply(writeButtonContainer);
 
         textPaint.setTextSize(dp(12));
         textPaint.setTypeface(AndroidUtilities.bold());
