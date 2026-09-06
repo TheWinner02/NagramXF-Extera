@@ -12315,6 +12315,7 @@ public class ChatActivity extends BaseFragment implements
 
             pinnedMessageButton[a] = new PinnedMessageButton(getContext());
             pinnedMessageView.addView(pinnedMessageButton[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 10, 14, 0));
+            ScaleStateListAnimator.apply(pinnedMessageButton[a]);
 
             pinnedMessageImageView[a] = new BackupImageView(getContext()) {
                 private SpoilerEffect spoilerEffect = new SpoilerEffect();
@@ -12371,6 +12372,7 @@ public class ChatActivity extends BaseFragment implements
         pinnedListButton.setScaleY(0.4f);
         pinnedListButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff));
         pinnedMessageView.addView(pinnedListButton, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 7, 0));
+        ScaleStateListAnimator.apply(pinnedListButton);
         pinnedListButton.setOnClickListener(v -> openPinnedMessagesList(false));
 
         closePinned = new ImageView(getContext());
@@ -12389,6 +12391,7 @@ public class ChatActivity extends BaseFragment implements
 
         closePinned.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
         pinnedMessageView.addView(closePinned, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
+        ScaleStateListAnimator.apply(closePinned);
         closePinned.setOnClickListener(v -> {
             if (getParentActivity() == null) {
                 return;

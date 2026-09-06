@@ -35,6 +35,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.FilterCreateActivity;
 
 import java.util.Set;
@@ -64,6 +65,10 @@ public class DrawerActionCell extends FrameLayout {
         int textLeft = isM3 ? 56 : 72;
         addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, iconLeft, 0, 0, 0));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, textLeft, 0, 16, 0));
+
+        if (isM3) {
+            ScaleStateListAnimator.apply(this, 0.03f, 1.2f);
+        }
 
         setWillNotDraw(false);
     }

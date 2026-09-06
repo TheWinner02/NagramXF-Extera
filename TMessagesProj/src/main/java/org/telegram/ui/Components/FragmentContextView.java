@@ -419,6 +419,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         playButton.setImageDrawable(playPauseDrawable = new PlayPauseDrawable(16));
         playButton.setBackground(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? Theme.getRoundRectSelectorDrawable(dp(12), getThemedColor(Theme.key_inappPlayerPlayPause) & 0x2affffff) : Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerPlayPause) & 0x19ffffff, 1, dp(14)));
         addView(playButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.LEFT));
+        ScaleStateListAnimator.apply(playButton);
         playButton.setOnClickListener(v -> {
             if (currentStyle == STYLE_AUDIO_PLAYER) {
                 if (MediaController.getInstance().isMessagePaused()) {
@@ -537,6 +538,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         joinButton.setGravity(Gravity.CENTER);
         joinButton.setPadding(dp(14), 0, dp(14), 0);
         addView(joinButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 10, 14, 0));
+        ScaleStateListAnimator.apply(joinButton);
         joinButton.setOnClickListener(v -> FragmentContextView.this.callOnClick());
         if (flickOnAttach) {
             startJoinFlickerAnimation();
@@ -549,6 +551,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         silentButton.addView(silentButtonImage, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
         silentButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, dp(14)));
         silentButton.setContentDescription(getString(R.string.Unmute));
+        ScaleStateListAnimator.apply(silentButton);
         silentButton.setOnClickListener(e -> {
             MediaController.getInstance().updateSilent(false);
         });
@@ -699,6 +702,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (!NekoConfig.disableVibration.Bool()) muteButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             } catch (Exception ignore) {}
         });
+        ScaleStateListAnimator.apply(muteButton);
 
         closeButton = new ImageView(context);
         closeButton.setImageResource(R.drawable.miniplayer_close);
@@ -706,6 +710,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         closeButton.setBackground(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? Theme.getRoundRectSelectorDrawable(dp(12), getThemedColor(Theme.key_inappPlayerClose) & 0x2affffff) : Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, dp(14)));
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
         addView(closeButton, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 0, 0, 4, 0));
+        ScaleStateListAnimator.apply(closeButton);
         closeButton.setOnClickListener(v -> {
             if (currentStyle == STYLE_LIVE_LOCATION) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity(), resourcesProvider);
@@ -895,6 +900,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
         playbackSpeedButton.setAdditionalXOffset(dp(8));
         addView(playbackSpeedButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.RIGHT, 0, 0, 36, 0));
+        ScaleStateListAnimator.apply(playbackSpeedButton);
         playbackSpeedButton.setOnClickListener(v -> {
             float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(isMusic);
             float newSpeed;
