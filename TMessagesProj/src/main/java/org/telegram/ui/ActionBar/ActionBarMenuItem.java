@@ -345,6 +345,9 @@ public class ActionBarMenuItem extends FrameLayout {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(this);
+            }
             if (longClickEnabled && hasSubMenu() && (popupWindow == null || !popupWindow.isShowing())) {
                 showMenuRunnable = () -> {
                     if (getParent() != null) {

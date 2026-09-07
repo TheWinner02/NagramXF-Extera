@@ -2224,9 +2224,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         backDrawable.setColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
         closeButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1));
         closeButton.setContentDescription(getString("Close", R.string.Close));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            ScaleStateListAnimator.apply(closeButton);
+        }
         actionModeLayout.addView(closeButton, new LinearLayout.LayoutParams(dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
         actionModeViews.add(closeButton);
-        closeButton.setOnClickListener(v -> closeActionMode());
+        closeButton.setOnClickListener(v -> {
+            com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(v);
+            closeActionMode();
+        });
 
         selectedMessagesCountTextView = new NumberTextView(context);
         selectedMessagesCountTextView.setTextSize(18);
@@ -2289,6 +2295,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         actionModeLayout.addView(deleteItem, new LinearLayout.LayoutParams(dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
         actionModeViews.add(deleteItem);
         deleteItem.setOnClickListener(v -> onActionBarItemClick(v, delete));
+
+        updateActionModeChildShapes();
 
         photoVideoAdapter = new SharedPhotoVideoAdapter(context) {
             @Override
@@ -3975,9 +3983,60 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (noforwards) {
             if (forwardItem.getBackground() != null) forwardItem.setBackground(null);
             if (forwardNoQuoteItem.getBackground() != null) forwardNoQuoteItem.setBackground(null);
-        } else if (forwardItem.getBackground() == null) {
-            forwardItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 5));
-            forwardNoQuoteItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 5));
+        } else {
+            updateActionModeChildShapes();
+        }
+    }
+
+    public void updateActionModeChildShapes() {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) return;
+
+        int iconColor = getThemedColor(Theme.key_actionBarActionModeDefaultIcon);
+        int btnBg = Theme.multAlpha(iconColor, 0.14f);
+        int btnStroke = Theme.multAlpha(iconColor, 0.22f);
+        int pressOverlayColor = Theme.multAlpha(iconColor, 0.32f);
+
+        if (closeButton != null) {
+            M3ExpressiveButtonDrawable closeDrawable = new M3ExpressiveButtonDrawable(btnBg, pressOverlayColor, dp(20), dp(12), dp(4));
+            closeDrawable.setStroke(btnStroke, dp(1));
+            closeButton.setBackground(closeDrawable);
+            ScaleStateListAnimator.apply(closeButton);
+        }
+
+        ArrayList<View> visibleItems = new ArrayList<>();
+        if (forwardNoQuoteItem != null && forwardNoQuoteItem.getVisibility() != GONE) visibleItems.add(forwardNoQuoteItem);
+        if (gotoItem != null && gotoItem.getVisibility() != GONE) visibleItems.add(gotoItem);
+        if (forwardItem != null && forwardItem.getVisibility() != GONE) visibleItems.add(forwardItem);
+        if (pinItem != null && pinItem.getVisibility() != GONE) visibleItems.add(pinItem);
+        if (unpinItem != null && unpinItem.getVisibility() != GONE) visibleItems.add(unpinItem);
+        if (deleteItem != null && deleteItem.getVisibility() != GONE) visibleItems.add(deleteItem);
+
+        int total = visibleItems.size();
+        if (total == 0) return;
+
+        float outer = dp(20);
+        float inner = total > 1 ? dp(8) : dp(20);
+        float morph = dp(12);
+
+        for (int i = 0; i < total; i++) {
+            View child = visibleItems.get(i);
+            float[] restRadii;
+            float[] pressedRadii = new float[]{morph, morph, morph, morph, morph, morph, morph, morph};
+
+            if (total == 1) {
+                restRadii = new float[]{outer, outer, outer, outer, outer, outer, outer, outer};
+            } else if (i == 0) {
+                restRadii = new float[]{outer, outer, inner, inner, inner, inner, outer, outer};
+            } else if (i == total - 1) {
+                restRadii = new float[]{inner, inner, outer, outer, outer, outer, inner, inner};
+            } else {
+                restRadii = new float[]{inner, inner, inner, inner, inner, inner, inner, inner};
+            }
+
+            M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(btnBg, pressOverlayColor, restRadii, pressedRadii, dp(4));
+            drawable.setStroke(btnStroke, dp(1));
+            child.setBackground(drawable);
+            ScaleStateListAnimator.apply(child);
         }
     }
     private boolean hasNoforwardsMessage() {
@@ -5260,6 +5319,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     public void onActionBarItemClick(View v, int id) {
+        com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(v);
         if (id == delete) {
             if (isAnyStoryPageType(getSelectedTab()) || getSelectedTab() == TAB_BOT_PREVIEWS) {
                 if (selectedFiles[0] != null) {
@@ -6115,6 +6175,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
         if (show) {
             actionModeLayout.setVisibility(VISIBLE);
+            updateActionModeChildShapes();
         }
         actionModeAnimation = new AnimatorSet();
         actionModeAnimation.playTogether(ObjectAnimator.ofFloat(actionModeLayout, View.ALPHA, show ? 1.0f : 0.0f));

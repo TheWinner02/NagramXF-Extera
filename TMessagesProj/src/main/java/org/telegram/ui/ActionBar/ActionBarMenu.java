@@ -30,6 +30,7 @@ import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,13 +93,19 @@ public class ActionBarMenu extends LinearLayout {
             if (view instanceof ActionBarMenuItem) {
                 int color = isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor;
                 if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && !((ActionBarMenuItem) view).isSearchField()) {
-                    view.setBackgroundDrawable(new M3ExpressiveButtonDrawable(
-                        0,
-                        Theme.multAlpha(color, 0.40f),
+                    int iconColor = isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor;
+                    int btnBg = Theme.multAlpha(iconColor, 0.14f);
+                    int btnStroke = Theme.multAlpha(iconColor, 0.22f);
+                    int pressColor = Theme.multAlpha(iconColor, 0.32f);
+                    M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(
+                        btnBg,
+                        pressColor,
                         dp(20),
                         dp(12),
                         dp(4)
-                    ));
+                    );
+                    drawable.setStroke(btnStroke, dp(1));
+                    view.setBackgroundDrawable(drawable);
                 } else {
                     view.setBackgroundDrawable(Theme.createSelectorDrawable(color));
                 }
@@ -768,7 +775,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void updateChildShapes() {
-        if (!UIStyleEngine.isMaterial3Expressive() || isActionMode) return;
+        if (!UIStyleEngine.isMaterial3Expressive()) return;
         m3VisibleChildren.clear();
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
@@ -787,32 +794,47 @@ public class ActionBarMenu extends LinearLayout {
         for (int i = 0; i < totalVisible; i++) {
             View child = m3VisibleChildren.get(i);
             Drawable bg = child.getBackground();
+            M3ExpressiveButtonDrawable drawable;
             if (bg instanceof M3ExpressiveButtonDrawable) {
-                M3ExpressiveButtonDrawable drawable = (M3ExpressiveButtonDrawable) bg;
-                float[] restRadii;
-                float[] pressedRadii = new float[]{morph, morph, morph, morph, morph, morph, morph, morph};
-
-                if (totalVisible == 1 || !m3IsConnected) {
-                    restRadii = new float[]{outer, outer, outer, outer, outer, outer, outer, outer};
-                } else if (i == 0) {
-                    // Start child (leftmost)
-                    restRadii = new float[]{outer, outer, inner, inner, inner, inner, outer, outer};
-                } else if (i == totalVisible - 1) {
-                    // End child (rightmost)
-                    restRadii = new float[]{inner, inner, outer, outer, outer, outer, inner, inner};
+                drawable = (M3ExpressiveButtonDrawable) bg;
+            } else {
+                int iconColor;
+                if (parentActionBar != null) {
+                    iconColor = isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor;
                 } else {
-                    // Middle child
-                    restRadii = new float[]{inner, inner, inner, inner, inner, inner, inner, inner};
+                    iconColor = Theme.getColor(Theme.key_actionBarDefaultIcon);
                 }
-                drawable.setRadii(restRadii, pressedRadii);
+                int btnBg = Theme.multAlpha(iconColor, 0.14f);
+                int btnStroke = Theme.multAlpha(iconColor, 0.22f);
+                int pressColor = Theme.multAlpha(iconColor, 0.32f);
+                drawable = new M3ExpressiveButtonDrawable(btnBg, pressColor, outer, morph, dp(4));
+                drawable.setStroke(btnStroke, dp(1));
+                child.setBackgroundDrawable(drawable);
+                ScaleStateListAnimator.apply(child);
             }
+            float[] restRadii;
+            float[] pressedRadii = new float[]{morph, morph, morph, morph, morph, morph, morph, morph};
+
+            if (totalVisible == 1 || !m3IsConnected) {
+                restRadii = new float[]{outer, outer, outer, outer, outer, outer, outer, outer};
+            } else if (i == 0) {
+                // Start child (leftmost)
+                restRadii = new float[]{outer, outer, inner, inner, inner, inner, outer, outer};
+            } else if (i == totalVisible - 1) {
+                // End child (rightmost)
+                restRadii = new float[]{inner, inner, outer, outer, outer, outer, inner, inner};
+            } else {
+                // Middle child
+                restRadii = new float[]{inner, inner, inner, inner, inner, inner, inner, inner};
+            }
+            drawable.setRadii(restRadii, pressedRadii);
         }
     }
 
     @Override
     public void onViewAdded(View child) {
         super.onViewAdded(child);
-        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
+        if (UIStyleEngine.isMaterial3Expressive()) {
             if (!m3ChildStates.containsKey(child)) {
                 M3ChildState state = new M3ChildState(child, this::applyM3ChildLayouts);
                 m3ChildStates.put(child, state);
@@ -824,7 +846,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     public void onViewRemoved(View child) {
         super.onViewRemoved(child);
-        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
+        if (UIStyleEngine.isMaterial3Expressive()) {
             M3ChildState state = m3ChildStates.remove(child);
             if (state != null) {
                 state.springAnimation.cancel();
@@ -836,7 +858,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     public void childDrawableStateChanged(View child) {
         super.childDrawableStateChanged(child);
-        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
+        if (UIStyleEngine.isMaterial3Expressive()) {
             M3ChildState state = m3ChildStates.get(child);
             if (state != null) {
                 boolean isPressed = child.isPressed() || child.isSelected();
@@ -849,7 +871,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     private void applyM3ChildLayouts() {
-        if (!UIStyleEngine.isMaterial3Expressive() || isActionMode) return;
+        if (!UIStyleEngine.isMaterial3Expressive()) return;
         m3VisibleChildren.clear();
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
@@ -931,7 +953,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
-        if (UIStyleEngine.isMaterial3Expressive() && !isActionMode) {
+        if (UIStyleEngine.isMaterial3Expressive()) {
             updateChildShapes();
             if (m3VisibleChildren.size() > 1) {
                 applyM3ChildLayouts();
