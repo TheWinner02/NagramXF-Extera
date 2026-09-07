@@ -4,6 +4,7 @@ import android.os.Build;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import tw.nekomimi.nekogram.NekoConfig;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public final class VibratorUtils {
     private VibratorUtils() {
@@ -14,7 +15,7 @@ public final class VibratorUtils {
     }
 
     public static void vibrateClick(View view) {
-        if (view == null || NekoConfig.disableVibration.Bool()) return;
+        if (view == null || NekoConfig.disableVibration.Bool() || !UIStyleEngine.isMaterial3Expressive()) return;
         try {
             int feedback = (Build.VERSION.SDK_INT >= 30) ? 16 /* HapticFeedbackConstants.CONFIRM */ : HapticFeedbackConstants.KEYBOARD_TAP;
             view.performHapticFeedback(feedback, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
@@ -22,7 +23,7 @@ public final class VibratorUtils {
     }
 
     public static void vibrateToggle(View view, boolean on) {
-        if (view == null || NekoConfig.disableVibration.Bool()) return;
+        if (view == null || NekoConfig.disableVibration.Bool() || !UIStyleEngine.isMaterial3Expressive()) return;
         try {
             int feedback;
             if (Build.VERSION.SDK_INT >= 34) {
@@ -37,7 +38,7 @@ public final class VibratorUtils {
     }
 
     public static void vibrateSegment(View view) {
-        if (view == null || NekoConfig.disableVibration.Bool()) return;
+        if (view == null || NekoConfig.disableVibration.Bool() || !UIStyleEngine.isMaterial3Expressive()) return;
         try {
             int feedback;
             if (Build.VERSION.SDK_INT >= 34) {
@@ -52,7 +53,7 @@ public final class VibratorUtils {
     }
 
     public static void vibrateGesture(View view, boolean start) {
-        if (view == null || NekoConfig.disableVibration.Bool()) return;
+        if (view == null || NekoConfig.disableVibration.Bool() || !UIStyleEngine.isMaterial3Expressive()) return;
         try {
             int feedback;
             if (Build.VERSION.SDK_INT >= 30) {
@@ -65,7 +66,7 @@ public final class VibratorUtils {
     }
 
     public static void vibrateLongPress(View view) {
-        if (view == null || NekoConfig.disableVibration.Bool()) return;
+        if (view == null || NekoConfig.disableVibration.Bool() || !UIStyleEngine.isMaterial3Expressive()) return;
         try {
             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
         } catch (Exception ignore) {}
