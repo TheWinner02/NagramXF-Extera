@@ -553,6 +553,7 @@ public class ProfileActionsView extends View {
                     downY = y;
                     downTime = System.currentTimeMillis();
                     hit.setPressed(true);
+                    com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(this);
                     break;
                 }
             }
@@ -568,10 +569,7 @@ public class ProfileActionsView extends View {
                 hit.setPressed(false);
                 if (eventAction == MotionEvent.ACTION_UP && hit.rect.contains(x, y)) {
                     if (System.currentTimeMillis() - downTime > 250) {
-                        try {
-                            if (!NekoConfig.disableVibration.Bool()) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                        } catch (Exception ignore) {
-                        }
+                        com.exteragram.messenger.utils.system.VibratorUtils.vibrateLongPress(this);
                     }
                     if (hit.supportsLoading && !hit.isLoading) {
                         hit.isLoading = true;
@@ -1343,6 +1341,7 @@ public class ProfileActionsView extends View {
                         sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
                         return true;
                     } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+                        com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(ProfileActionsView.this);
                         if (onActionClickListener != null) {
                             onActionClickListener.onClick(virtualViewId, 0, 0);
                         }
