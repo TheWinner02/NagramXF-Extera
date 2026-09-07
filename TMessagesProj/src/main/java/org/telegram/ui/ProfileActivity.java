@@ -14700,9 +14700,23 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     break;
                 case VIEW_TYPE_MUSIC:
                     break;
-                case VIEW_TYPE_VERSION:
-                    ((TextInfoPrivacyCell) holder.itemView).setText(AndroidUtil.getVersionText());
+                case VIEW_TYPE_VERSION: {
+                    TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
+                    cell.setText(AndroidUtil.getVersionText());
+                    int extraBottomMargin = 0;
+                    if (hasMainTabs && !xyz.nextalone.nagram.NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
+                        extraBottomMargin = AndroidUtilities.dp(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 48 : 36);
+                    }
+                    RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) cell.getLayoutParams();
+                    if (lp == null) {
+                        lp = new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                    }
+                    if (lp.bottomMargin != extraBottomMargin) {
+                        lp.bottomMargin = extraBottomMargin;
+                        cell.setLayoutParams(lp);
+                    }
                     break;
+                }
             }
         }
 

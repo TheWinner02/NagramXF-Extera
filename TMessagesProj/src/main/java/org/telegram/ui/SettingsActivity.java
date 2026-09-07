@@ -825,6 +825,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         items.add(UItem.asCustomShadow(versionView));
+        if (hasMainTabs && !xyz.nextalone.nagram.NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
+            items.add(UItem.asSpace(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 48 : 36));
+        }
     }
 
     private void presentSettingFragment(BaseFragment fragment) {
