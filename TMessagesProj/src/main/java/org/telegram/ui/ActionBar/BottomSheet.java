@@ -1096,7 +1096,12 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView.setTypeface(AndroidUtilities.bold());
                 if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                    textView.setBackground(new M3ExpressiveButtonDrawable(getThemedColor(Theme.key_featuredStickers_addButton), dp(16)));
+                    textView.setBackground(M3ExpressiveButtonDrawable.createPrimary(
+                            getThemedColor(Theme.key_featuredStickers_addButton),
+                            Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_buttonText), .16f),
+                            dp(16),
+                            0
+                    ));
                     ScaleStateListAnimator.apply(textView);
                 } else {
                     textView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));

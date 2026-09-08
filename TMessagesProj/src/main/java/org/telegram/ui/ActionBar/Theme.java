@@ -5129,9 +5129,11 @@ public class Theme {
     }
 
     public static Drawable createM3ExpressiveButtonDrawableByKey(int backgroundColorKey, int textColorKey) {
-        return createM3ExpressiveButtonDrawable(
+        return M3ExpressiveButtonDrawable.createPrimary(
                 getColor(backgroundColorKey),
-                multAlpha(getColor(textColorKey), .16f)
+                multAlpha(getColor(textColorKey), .16f),
+                0,
+                0
         );
     }
 

@@ -96,6 +96,7 @@ import java.util.List;
 import java.util.Objects;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 @SuppressWarnings("JavaReflectionMemberAccess")
 public class RecyclerListView extends RecyclerView implements IBlur3Capture {
@@ -3876,11 +3877,12 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         }
         int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-            backgroundColor = ColorUtils.blendARGB(
+            int fallbackColor = ColorUtils.blendARGB(
                 backgroundColor,
                 Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider),
                 0.18f
             );
+            backgroundColor = M3ColorRoles.surfaceContainer(fallbackColor);
         }
         sectionBackgroundPaint.setColor(multAlpha(backgroundColor, alpha));
         if (topRadius == bottomRadius) {
@@ -4062,11 +4064,12 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                 canvas.clipPath(clipPath);
                 int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
                 if (m3Expressive) {
-                    backgroundColor = ColorUtils.blendARGB(
+                    int fallbackColor = ColorUtils.blendARGB(
                         backgroundColor,
                         Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider),
                         0.18f
                     );
+                    backgroundColor = M3ColorRoles.surfaceContainer(fallbackColor);
                 }
                 paint.setColor(ColorUtils.setAlphaComponent(backgroundColor, paint.getAlpha()));
                 canvas.drawRect(rect, paint);

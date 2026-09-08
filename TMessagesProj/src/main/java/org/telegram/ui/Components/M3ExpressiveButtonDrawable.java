@@ -17,9 +17,12 @@ import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
+
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 public class M3ExpressiveButtonDrawable extends Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -28,6 +31,9 @@ public class M3ExpressiveButtonDrawable extends Drawable {
     private int backgroundColor;
     private int pressedOverlayColor;
     private int strokeColor;
+    private M3ColorRoles.Role backgroundRole;
+    private M3ColorRoles.Role pressedOverlayRole;
+    private M3ColorRoles.Role strokeRole;
     private float strokeWidth;
     private float restRadius;
     private float pressedRadius;
@@ -47,14 +53,28 @@ public class M3ExpressiveButtonDrawable extends Drawable {
     public void setColors(int backgroundColor, int pressedOverlayColor) {
         this.backgroundColor = backgroundColor;
         this.pressedOverlayColor = pressedOverlayColor;
+        this.backgroundRole = null;
+        this.pressedOverlayRole = null;
+        invalidateSelf();
+    }
+
+    public void setColorRoles(@Nullable M3ColorRoles.Role backgroundRole, @Nullable M3ColorRoles.Role pressedOverlayRole) {
+        this.backgroundRole = backgroundRole;
+        this.pressedOverlayRole = pressedOverlayRole;
         invalidateSelf();
     }
 
     public void setStroke(int strokeColor, float strokeWidth) {
         this.strokeColor = strokeColor;
+        this.strokeRole = null;
         this.strokeWidth = strokeWidth;
         this.strokePaint.setStyle(Paint.Style.STROKE);
         this.strokePaint.setStrokeWidth(strokeWidth);
+        invalidateSelf();
+    }
+
+    public void setStrokeRole(@Nullable M3ColorRoles.Role strokeRole) {
+        this.strokeRole = strokeRole;
         invalidateSelf();
     }
 
@@ -123,6 +143,30 @@ public class M3ExpressiveButtonDrawable extends Drawable {
             new float[]{pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner, pressedInner},
             0
         );
+    }
+
+    public static M3ExpressiveButtonDrawable createPrimary(int backgroundColor, int pressedOverlayColor, float cornerRadius, int inset) {
+        M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(backgroundColor, pressedOverlayColor, cornerRadius, inset);
+        drawable.setColorRoles(M3ColorRoles.Role.PRIMARY, M3ColorRoles.Role.ON_PRIMARY);
+        return drawable;
+    }
+
+    public static M3ExpressiveButtonDrawable createPrimary(int backgroundColor, int pressedOverlayColor, float cornerRadius, float pressedRadius, int inset) {
+        M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(backgroundColor, pressedOverlayColor, cornerRadius, pressedRadius, inset);
+        drawable.setColorRoles(M3ColorRoles.Role.PRIMARY, M3ColorRoles.Role.ON_PRIMARY);
+        return drawable;
+    }
+
+    public static M3ExpressiveButtonDrawable createSoftPrimary(int backgroundColor, int pressedOverlayColor, float cornerRadius, int inset) {
+        M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(backgroundColor, pressedOverlayColor, cornerRadius, inset);
+        drawable.setColorRoles(M3ColorRoles.Role.PRIMARY_CONTAINER, M3ColorRoles.Role.ON_PRIMARY_CONTAINER);
+        return drawable;
+    }
+
+    public static M3ExpressiveButtonDrawable createNeutral(int backgroundColor, int pressedOverlayColor, float cornerRadius, int inset) {
+        M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(backgroundColor, pressedOverlayColor, cornerRadius, inset);
+        drawable.setColorRoles(M3ColorRoles.Role.SURFACE_CONTAINER_HIGH, M3ColorRoles.Role.ON_SURFACE);
+        return drawable;
     }
 
     public void setMorphProgress(float progress) {
@@ -214,20 +258,21 @@ public class M3ExpressiveButtonDrawable extends Drawable {
                 currentRadii[i] = Math.max(0, AndroidUtilities.lerp(from, to, progress));
             }
             path.addRoundRect(rect, currentRadii, android.graphics.Path.Direction.CW);
-            paint.setColor(applyAlpha(backgroundColor, alpha));
+            paint.setColor(applyAlpha(resolveColor(backgroundColor, backgroundRole), alpha));
             paint.setColorFilter(colorFilter);
             if (Color.alpha(paint.getColor()) > 0) {
                 canvas.drawPath(path, paint);
             }
 
-            int pressedAlpha = (int) (Color.alpha(pressedOverlayColor) * (alpha / 255f) * alphaProgress);
+            int resolvedPressedOverlayColor = resolveColor(pressedOverlayColor, pressedOverlayRole);
+            int pressedAlpha = (int) (Color.alpha(resolvedPressedOverlayColor) * (alpha / 255f) * alphaProgress);
             if (pressedAlpha > 0) {
-                paint.setColor((pressedOverlayColor & 0x00ffffff) | (pressedAlpha << 24));
+                paint.setColor((resolvedPressedOverlayColor & 0x00ffffff) | (pressedAlpha << 24));
                 paint.setColorFilter(colorFilter);
                 canvas.drawPath(path, paint);
             }
             if (strokeColor != 0 && strokeWidth > 0) {
-                strokePaint.setColor(applyAlpha(strokeColor, alpha));
+                strokePaint.setColor(applyAlpha(resolveColor(strokeColor, strokeRole), alpha));
                 strokePaint.setColorFilter(colorFilter);
                 canvas.drawPath(path, strokePaint);
             }
@@ -245,20 +290,21 @@ public class M3ExpressiveButtonDrawable extends Drawable {
         }
         float radius = Math.max(0, AndroidUtilities.lerp(fromRadius, toRadius, progress));
 
-        paint.setColor(applyAlpha(backgroundColor, alpha));
+        paint.setColor(applyAlpha(resolveColor(backgroundColor, backgroundRole), alpha));
         paint.setColorFilter(colorFilter);
         if (Color.alpha(paint.getColor()) > 0) {
             canvas.drawRoundRect(rect, radius, radius, paint);
         }
 
-        int pressedAlpha = (int) (Color.alpha(pressedOverlayColor) * (alpha / 255f) * alphaProgress);
+        int resolvedPressedOverlayColor = resolveColor(pressedOverlayColor, pressedOverlayRole);
+        int pressedAlpha = (int) (Color.alpha(resolvedPressedOverlayColor) * (alpha / 255f) * alphaProgress);
         if (pressedAlpha > 0) {
-            paint.setColor((pressedOverlayColor & 0x00ffffff) | (pressedAlpha << 24));
+            paint.setColor((resolvedPressedOverlayColor & 0x00ffffff) | (pressedAlpha << 24));
             paint.setColorFilter(colorFilter);
             canvas.drawRoundRect(rect, radius, radius, paint);
         }
         if (strokeColor != 0 && strokeWidth > 0) {
-            strokePaint.setColor(applyAlpha(strokeColor, alpha));
+            strokePaint.setColor(applyAlpha(resolveColor(strokeColor, strokeRole), alpha));
             strokePaint.setColorFilter(colorFilter);
             canvas.drawRoundRect(rect, radius, radius, strokePaint);
         }
@@ -278,6 +324,21 @@ public class M3ExpressiveButtonDrawable extends Drawable {
         M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(backgroundColor, pressedOverlayColor, cornerRadius, pressedRadius, inset);
         drawable.setStroke(strokeColor, dp(1));
         return drawable;
+    }
+
+    public static M3ExpressiveButtonDrawable createOutlinedNeutral(int backgroundColor, int strokeColor, int pressedOverlayColor, float cornerRadius, int inset) {
+        M3ExpressiveButtonDrawable drawable = createNeutral(backgroundColor, pressedOverlayColor, cornerRadius, inset);
+        drawable.setStroke(strokeColor, dp(1));
+        drawable.setStrokeRole(M3ColorRoles.Role.OUTLINE_VARIANT);
+        return drawable;
+    }
+
+    private int resolveColor(int fallbackColor, @Nullable M3ColorRoles.Role role) {
+        if (role == null) {
+            return fallbackColor;
+        }
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     private static int applyAlpha(int color, int alpha) {
