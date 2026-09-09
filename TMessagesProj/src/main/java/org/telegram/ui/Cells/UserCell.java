@@ -67,6 +67,11 @@ import tw.nekomimi.nekogram.NekoConfig;
 
 public class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
 
+    private static final int CONTACT_RELATION_NONE = 0;
+    private static final int CONTACT_RELATION_MY_CONTACT = 1;
+    private static final int CONTACT_RELATION_MUTUAL = 2;
+    private static final int CONTACT_RELATION_VISIBLE_PHONE = 3;
+
     public BackupImageView avatarImageView;
     protected SimpleTextView nameTextView;
     protected SimpleTextView statusTextView;
@@ -81,7 +86,8 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
     private ImageView closeView;
     protected Theme.ResourcesProvider resourcesProvider;
-    private ImageView mutualView;
+    private ImageView contactRelationView;
+    private int contactRelationState = CONTACT_RELATION_NONE;
 
     protected AvatarDrawable avatarDrawable;
     private boolean storiable;
@@ -240,15 +246,18 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
 
         if (needMutualIcon) {
-            mutualView = new ImageView(context);
-            mutualView.setImageResource(R.drawable.ic_round_swap_horiz_24);
-            mutualView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_player_actionBarSelector)));
-            mutualView.setScaleType(ImageView.ScaleType.CENTER);
-            mutualView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
-            mutualView.setVisibility(GONE);
-            mutualView.setContentDescription(LocaleController.getString("MutualContact", R.string.MutualContact));
-            mutualView.setOnClickListener(v -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString("MutualContactDescription", R.string.MutualContactDescription)));
-            addView(mutualView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 8 : 0, 0, LocaleController.isRTL ? 0 : 8, 0));
+            contactRelationView = new ImageView(context);
+            contactRelationView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_player_actionBarSelector, resourcesProvider)));
+            contactRelationView.setScaleType(ImageView.ScaleType.CENTER);
+            contactRelationView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            contactRelationView.setVisibility(GONE);
+            contactRelationView.setOnClickListener(v -> {
+                String description = getContactRelationDescription(contactRelationState);
+                if (description != null) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, description);
+                }
+            });
+            addView(contactRelationView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 8 : 0, 0, LocaleController.isRTL ? 0 : 8, 0));
         }
 
         setFocusable(true);
@@ -361,6 +370,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             currentName = null;
             storiable = false;
             currentObject = null;
+            updateContactRelationIndicator(null);
             nameTextView.setText("");
             statusTextView.setText("");
             avatarImageView.setImageDrawable(null);
@@ -555,6 +565,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             dialogId = currentChat.id;
             isCommunity = ChatObject.isCommunity(currentChat);
         }
+        updateContactRelationIndicator(currentUser);
 
         if (mask != 0) {
             boolean continueUpdate = false;
@@ -769,6 +780,67 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 (currentChat != null && currentChat.forum ? dp(14) : dp(24)));
 
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+    }
+
+    private void updateContactRelationIndicator(TLRPC.User user) {
+        if (contactRelationView == null) {
+            return;
+        }
+        int relationState = getContactRelationState(user);
+        if (contactRelationState != relationState) {
+            contactRelationState = relationState;
+            int icon = getContactRelationIcon(relationState);
+            if (icon != 0) {
+                contactRelationView.setImageResource(icon);
+            }
+            String description = getContactRelationDescription(relationState);
+            contactRelationView.setContentDescription(description);
+        }
+        boolean showIndicator = relationState != CONTACT_RELATION_NONE;
+        contactRelationView.setVisibility(showIndicator ? VISIBLE : GONE);
+        setRightPadding(showIndicator ? 40 : 0, true, true);
+    }
+
+    private static int getContactRelationState(TLRPC.User user) {
+        if (user == null || user.self || user.bot) {
+            return CONTACT_RELATION_NONE;
+        }
+        if (user.mutual_contact) {
+            return CONTACT_RELATION_MUTUAL;
+        }
+        if (user.contact) {
+            return CONTACT_RELATION_MY_CONTACT;
+        }
+        if (!TextUtils.isEmpty(user.phone)) {
+            return CONTACT_RELATION_VISIBLE_PHONE;
+        }
+        return CONTACT_RELATION_NONE;
+    }
+
+    private static int getContactRelationIcon(int relationState) {
+        switch (relationState) {
+            case CONTACT_RELATION_MUTUAL:
+                return R.drawable.ic_round_swap_horiz_24;
+            case CONTACT_RELATION_MY_CONTACT:
+                return R.drawable.baseline_person_add_24;
+            case CONTACT_RELATION_VISIBLE_PHONE:
+                return R.drawable.baseline_contact_phone_24;
+            default:
+                return 0;
+        }
+    }
+
+    private static String getContactRelationDescription(int relationState) {
+        switch (relationState) {
+            case CONTACT_RELATION_MUTUAL:
+                return LocaleController.getString("MutualContactDescription", R.string.MutualContactDescription);
+            case CONTACT_RELATION_MY_CONTACT:
+                return LocaleController.getString(R.string.ContactInfoIsContact);
+            case CONTACT_RELATION_VISIBLE_PHONE:
+                return LocaleController.getString(R.string.ContactInfoPhone);
+            default:
+                return null;
+        }
     }
 
     @Override
