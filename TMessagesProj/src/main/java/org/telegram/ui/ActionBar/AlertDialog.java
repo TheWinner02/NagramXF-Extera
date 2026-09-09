@@ -20,6 +20,7 @@ import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -74,6 +75,7 @@ import org.telegram.ui.Components.AttachableDrawable;
 import org.telegram.ui.Components.EffectsTextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
@@ -82,6 +84,7 @@ import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stars.BalanceCloud;
 import org.telegram.ui.Stars.StarsIntroActivity;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -247,7 +250,19 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             super(context);
             this.resourcesProvider = resourcesProvider;
 
-            setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 2));
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                M3ExpressiveButtonDrawable selector = new M3ExpressiveButtonDrawable(
+                        Color.TRANSPARENT,
+                        Theme.multAlpha(getThemedColor(Theme.key_dialogTextBlack), .10f),
+                        dp(8),
+                        dp(24),
+                        0
+                );
+                selector.setColorRoles(null, M3ColorRoles.Role.ON_SURFACE);
+                setBackground(selector);
+            } else {
+                setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 2));
+            }
             setPadding(dp(23), 0, dp(23), 0);
 
             imageView = new ImageView(context);
@@ -291,7 +306,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
 
         protected int getThemedColor(int key) {
-            return Theme.getColor(key, resourcesProvider);
+            return getM3DialogColor(key, Theme.getColor(key, resourcesProvider));
         }
     }
 
@@ -1773,7 +1788,32 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     }
 
     protected int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        return getM3DialogColor(key, Theme.getColor(key, resourcesProvider));
+    }
+
+    private static int getM3DialogColor(int key, int fallbackColor) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        if (key == Theme.key_dialogBackground) {
+            return resolveM3RoleColor(M3ColorRoles.Role.SURFACE_CONTAINER_HIGH, fallbackColor);
+        } else if (key == Theme.key_dialogTextBlack) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE, fallbackColor);
+        } else if (key == Theme.key_dialogTextGray || key == Theme.key_dialogTextGray2 || key == Theme.key_dialogTextGray3 || key == Theme.key_dialogIcon) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE_VARIANT, fallbackColor);
+        } else if (key == Theme.key_dialogTextLink || key == Theme.key_dialogButton || key == Theme.key_dialogLineProgress) {
+            return resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, fallbackColor);
+        } else if (key == Theme.key_dialogLineProgressBackground) {
+            return resolveM3RoleColor(M3ColorRoles.Role.SURFACE_VARIANT, fallbackColor);
+        } else if (key == Theme.key_text_RedBold) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ERROR, fallbackColor);
+        }
+        return fallbackColor;
+    }
+
+    private static int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     public void showDelayed(long delay) {

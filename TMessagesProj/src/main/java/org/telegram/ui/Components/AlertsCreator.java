@@ -78,6 +78,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.annotation.RequiresApi;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
 import org.telegram.messenger.AccountInstance;
@@ -128,6 +129,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.TimezonesController;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 import org.telegram.ui.CacheControlActivity;
 import org.telegram.ui.Cells.AccountSelectCell;
 import org.telegram.ui.Cells.CheckBoxCell;
@@ -3602,6 +3604,7 @@ public class AlertsCreator {
 
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        applyM3PrimaryButtonStyle(buttonTextView, Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
 
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 16, 12, 16, 8));
 
@@ -4722,6 +4725,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(datePickerColors.buttonBackgroundColor, 24));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         ScaleStateListAnimator.apply(buttonTextView, .02f, 1.2f);
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
@@ -4981,6 +4985,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         buttonTextView.setText(button);
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
@@ -5254,6 +5259,7 @@ public class AlertsCreator {
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setText(button);
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
+        applyM3PrimaryButtonStyle(buttonTextView, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider));
         ScaleStateListAnimator.apply(buttonTextView);
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, showRemoveYear ? 0 : 15, 16, showDelete ? 0 : 16));
         buttonTextView.setOnClickListener(v -> {
@@ -5714,6 +5720,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(datePickerColors.buttonBackgroundColor, 24));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 14, 15, 14, 16));
         buttonTextView.setOnClickListener(v -> {
             canceled[0] = false;
@@ -5901,6 +5908,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         buttonTextView.setText(LocaleController.getString(R.string.SetEmojiStatusUntilButton));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
@@ -6048,6 +6056,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(dp(14));
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setText(LocaleController.getString(R.string.DisableAutoDeleteTimer));
 
@@ -6191,6 +6200,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         buttonTextView.setText(LocaleController.getString(R.string.AutoDeleteConfirm));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
 
@@ -6353,6 +6363,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(8), datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         buttonTextView.setText(LocaleController.getString(R.string.AutoDeleteConfirm));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
@@ -6569,6 +6580,7 @@ public class AlertsCreator {
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setText(LocaleController.getString(R.string.JumpToDate));
         buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
+        applyM3PrimaryButtonStyle(buttonTextView, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider));
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 16));
         buttonTextView.setOnClickListener(v -> {
             checkCalendarDate(minDate, dayPicker, monthPicker, yearPicker);
@@ -9196,6 +9208,7 @@ public class AlertsCreator {
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(datePickerColors.buttonBackgroundColor, 8));
+        applyM3PrimaryButtonStyle(buttonTextView, datePickerColors.buttonBackgroundColor, datePickerColors.buttonBackgroundPressedColor);
         container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 15, 16, 4));
         buttonTextView.setOnClickListener(v -> {
             canceled[0] = false;
@@ -9225,6 +9238,7 @@ public class AlertsCreator {
         buttonAnytimeTextView.setTextColor(datePickerColors.buttonBackgroundColor);
         buttonAnytimeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonAnytimeTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector)));
+        applyM3NeutralButtonStyle(buttonAnytimeTextView, Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_listSelector));
         container.addView(buttonAnytimeTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 16));
         buttonAnytimeTextView.setOnClickListener(v -> {
             canceled[0] = false;
@@ -9517,5 +9531,46 @@ public class AlertsCreator {
                 onClick.run();
             }
         });
+    }
+
+    private static void applyM3PrimaryButtonStyle(TextView button, int fallbackBackgroundColor, int fallbackPressedColor) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return;
+        }
+        int fallbackTextColor = button.getCurrentTextColor();
+        button.setTextColor(resolveM3RoleColor(M3ColorRoles.Role.ON_PRIMARY, fallbackTextColor));
+        M3ExpressiveButtonDrawable background = new M3ExpressiveButtonDrawable(fallbackBackgroundColor, Theme.multAlpha(fallbackTextColor, .16f), 0, 0);
+        background.setColorRoles(M3ColorRoles.Role.PRIMARY, M3ColorRoles.Role.ON_PRIMARY);
+        button.setBackground(background);
+        ScaleStateListAnimator.apply(button, .02f, 1.2f);
+    }
+
+    private static void applyM3PrimaryButtonStyle(AnimatedTextView button, int fallbackBackgroundColor, int fallbackPressedColor) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return;
+        }
+        int fallbackTextColor = resolveM3RoleColor(M3ColorRoles.Role.ON_PRIMARY, Theme.getColor(Theme.key_featuredStickers_buttonText));
+        button.setTextColor(fallbackTextColor);
+        M3ExpressiveButtonDrawable background = new M3ExpressiveButtonDrawable(fallbackBackgroundColor, Theme.multAlpha(fallbackTextColor, .16f), 0, 0);
+        background.setColorRoles(M3ColorRoles.Role.PRIMARY, M3ColorRoles.Role.ON_PRIMARY);
+        button.setBackground(background);
+        ScaleStateListAnimator.apply(button, .02f, 1.2f);
+    }
+
+    private static void applyM3NeutralButtonStyle(TextView button, int fallbackBackgroundColor, int fallbackPressedColor) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return;
+        }
+        int fallbackTextColor = button.getCurrentTextColor();
+        button.setTextColor(resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, fallbackTextColor));
+        M3ExpressiveButtonDrawable background = new M3ExpressiveButtonDrawable(fallbackBackgroundColor, Theme.multAlpha(fallbackTextColor, .10f), 0, 0);
+        background.setColorRoles(M3ColorRoles.Role.SURFACE_CONTAINER_HIGH, M3ColorRoles.Role.ON_SURFACE);
+        button.setBackground(background);
+        ScaleStateListAnimator.apply(button, .02f, 1.2f);
+    }
+
+    private static int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 }

@@ -35,6 +35,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.Keep;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -47,6 +48,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MonetHelper;
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 public class Switch extends View {
     private final BoolAnimator animatorIconVisibility = new BoolAnimator(this, CubicBezierInterpolator.EASE_OUT_QUINT, 380L, true);
@@ -624,7 +626,8 @@ public class Switch extends View {
 
         int trackCheckedFillKey = trackCheckedColorKey;
         int thumbCheckedKey = thumbCheckedColorKey;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && MonetHelper.useMonetMd3Colors()) {
+        boolean useM3RoleColors = isM3Expressive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && MonetHelper.useMonetMd3Colors();
+        if (!isM3Expressive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && MonetHelper.useMonetMd3Colors()) {
             trackCheckedFillKey = Theme.key_dialogRoundCheckBox;
             thumbCheckedKey = Theme.getActiveTheme().isMonetNight()
                     ? Theme.key_statisticChartRipple // a1_800
@@ -652,6 +655,21 @@ public class Switch extends View {
                     Theme.multAlpha(Theme.getColor(trackColorKey, resourcesProvider), Theme.isCurrentThemeDay() ? 0.2f : 0.1f)
             ));
         }
+        int md3CheckedTrackColor = processColor(Theme.getColor(trackCheckedFillKey, resourcesProvider));
+        int md3UncheckedOutlineColor = processColor(Theme.getColor(trackColorKey, resourcesProvider));
+        int md3UncheckedThumbColor = isM3Expressive ? processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider)) : processColor(Theme.getColor(trackColorKey, resourcesProvider));
+        int md3CheckedThumbColor = processColor(Theme.getColor(thumbCheckedKey, resourcesProvider));
+        int md3OffIconColor = md3OffTrackFillColor;
+        int md3CheckIconColor = Theme.getColor(trackCheckedFillKey, resourcesProvider);
+        if (useM3RoleColors) {
+            md3OffTrackFillColor = processColor(resolveM3RoleColor(M3ColorRoles.Role.SURFACE_CONTAINER_HIGHEST, md3OffTrackFillColor));
+            md3CheckedTrackColor = processColor(M3ColorRoles.primary(md3CheckedTrackColor));
+            md3UncheckedOutlineColor = processColor(resolveM3RoleColor(M3ColorRoles.Role.OUTLINE, md3UncheckedOutlineColor));
+            md3UncheckedThumbColor = processColor(resolveM3RoleColor(M3ColorRoles.Role.OUTLINE, md3UncheckedThumbColor));
+            md3CheckedThumbColor = processColor(resolveM3RoleColor(M3ColorRoles.Role.ON_PRIMARY, md3CheckedThumbColor));
+            md3OffIconColor = processColor(resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE_VARIANT, md3OffIconColor));
+            md3CheckIconColor = md3CheckedTrackColor;
+        }
 
         for (int a = 0; a < 2; a++) {
             if (a == 1 && overrideColorProgress == 0) {
@@ -669,7 +687,7 @@ public class Switch extends View {
 
             int originalColor1;
             color1 = originalColor1 = isMd3 && !isMd3PermissionStyle ? md3OffTrackFillColor : isMd3PermissionStyle ? md3PermissionTrackColor : trackColor;
-            color2 = processColor(Theme.getColor(trackCheckedFillKey, resourcesProvider));
+            color2 = md3CheckedTrackColor;
 
             if (!isMd3) {
                 color1 = separateTrackColorKey >= 0 ? processColor(Theme.getColor(separateTrackColorKey, resourcesProvider)) : Color.TRANSPARENT;
@@ -688,7 +706,7 @@ public class Switch extends View {
 
             color1 = isMd3 ? (isMd3PermissionStyle ? md3PermissionTrackColor : processColor(Theme.getColor(trackColorKey, resourcesProvider))) : originalColor1;
             if (isM3Expressive && !isMd3PermissionStyle) {
-                color1 = processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider));
+                color1 = md3UncheckedOutlineColor;
             }
             googleBorderPaint.setColor(lerpColor(color1, color2, colorProgress));
             googleBorderPaint.setStrokeWidth(isM3Expressive ? dpf2(2) : dp(1));
@@ -719,8 +737,8 @@ public class Switch extends View {
             float colorProgress = getLayerColorProgress(a);
 
             int thumbUncheckedKey = isMd3 ? (isMd3PermissionStyle ? thumbCheckedKey : trackColorKey) : trackColorKey;
-            color1 = isM3Expressive && !isMd3PermissionStyle ? Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider) : Theme.getColor(thumbUncheckedKey, resourcesProvider);
-            color2 = processColor(Theme.getColor(thumbCheckedKey, resourcesProvider));
+            color1 = isM3Expressive && !isMd3PermissionStyle ? md3UncheckedThumbColor : Theme.getColor(thumbUncheckedKey, resourcesProvider);
+            color2 = md3CheckedThumbColor;
             paint.setColor(lerpColor(color1, color2, colorProgress));
 
             float thumbRadius = isM3Expressive ? dpf2(8 + 4 * progress) : dp(isMd3 ? 8 : shouldDrawModernOffIcon ? 7 + progress : 6 + 2 * progress);
@@ -728,7 +746,7 @@ public class Switch extends View {
 
             if (isMd3 || shouldDrawModernOffIcon) {
                 if (isMd3) {
-                    int iconColor = isMd3PermissionStyle ? md3PermissionTrackColor : md3OffTrackFillColor;
+                    int iconColor = isMd3PermissionStyle ? md3PermissionTrackColor : md3OffIconColor;
                     if (hasVisibleIcon) {
                         if (lastIconColor != iconColor) {
                             iconDrawable.setColorFilter(new PorterDuffColorFilter(lastIconColor = iconColor, PorterDuff.Mode.MULTIPLY));
@@ -745,7 +763,7 @@ public class Switch extends View {
                     } else {
                         drawCross(canvasToDraw, thumbTx, ty, iconColor, 1.0f - progress, isM3Expressive ? 2.5f : 3);
                     }
-                    int checkColor = Theme.getColor(trackCheckedFillKey, resourcesProvider);
+                    int checkColor = md3CheckIconColor;
                     if (lastCheckColor != checkColor) {
                         checkDrawable.setColorFilter(new PorterDuffColorFilter(checkColor, PorterDuff.Mode.MULTIPLY));
                         lastCheckColor = checkColor;
@@ -791,6 +809,11 @@ public class Switch extends View {
             return layer == 0 ? 1 : 0;
         }
         return progress;
+    }
+
+    private int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     private int lerpColor(int color1, int color2, float progress) {

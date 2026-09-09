@@ -28,6 +28,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 
+import xyz.nextalone.nagram.ui.M3ColorRoles;
+
 public class RadioButton extends View {
 
     private static Paint paint;
@@ -173,7 +175,9 @@ public class RadioButton extends View {
             float outerRadius = effectiveSize / 2f - strokeWidth / 2f;
 
             float clampedP = Math.max(0f, Math.min(1f, progress));
-            int blendedColor = ColorUtils.blendARGB(color, checkedColor, clampedP);
+            int resolvedColor = resolveM3Color(M3ColorRoles.Role.OUTLINE, color);
+            int resolvedCheckedColor = resolveM3Color(M3ColorRoles.Role.PRIMARY, checkedColor);
+            int blendedColor = ColorUtils.blendARGB(resolvedColor, resolvedCheckedColor, clampedP);
 
             paint.setColor(blendedColor);
             paint.setStrokeWidth(strokeWidth);
@@ -187,14 +191,14 @@ public class RadioButton extends View {
 
             if (icon == null) {
                 if (progress > 0f) {
-                    checkedPaint.setColor(checkedColor);
+                    checkedPaint.setColor(resolvedCheckedColor);
                     checkedPaint.setStyle(Paint.Style.FILL);
                     float targetDotRadius = effectiveSize / 4f;
                     float currentDotRadius = Math.max(0f, targetDotRadius * progress);
                     canvas.drawCircle(cx, cy, currentDotRadius, checkedPaint);
                 }
             } else {
-                final int finalIconColor = ColorUtils.blendARGB(color, checkedColor, Utilities.clamp(progress, 1, 0));
+                final int finalIconColor = ColorUtils.blendARGB(resolvedColor, resolvedCheckedColor, Utilities.clamp(progress, 1, 0));
                 if (iconColor != finalIconColor) {
                     icon.setColorFilter(new PorterDuffColorFilter(iconColor = finalIconColor, PorterDuff.Mode.SRC_IN));
                 }
@@ -251,5 +255,10 @@ public class RadioButton extends View {
             );
             icon.draw(canvas);
         }
+    }
+
+    private int resolveM3Color(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 }

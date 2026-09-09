@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Insets;
 import android.graphics.Outline;
@@ -89,6 +90,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 import java.util.ArrayList;
 
@@ -1061,7 +1063,19 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
             currentType = type;
             if (type != Builder.CELL_TYPE_CALL) {
-                setBackgroundDrawable(Theme.getSelectorDrawable(false, resourcesProvider));
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    M3ExpressiveButtonDrawable selector = new M3ExpressiveButtonDrawable(
+                            Color.TRANSPARENT,
+                            Theme.multAlpha(getThemedColor(Theme.key_dialogTextBlack), .10f),
+                            dp(8),
+                            dp(24),
+                            0
+                    );
+                    selector.setColorRoles(null, M3ColorRoles.Role.ON_SURFACE);
+                    setBackground(selector);
+                } else {
+                    setBackgroundDrawable(Theme.getSelectorDrawable(false, resourcesProvider));
+                }
             }
             //setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
 
@@ -1072,7 +1086,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
             imageView2 = new ImageView(context);
             imageView2.setScaleType(ImageView.ScaleType.CENTER);
-            imageView2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_radioBackgroundChecked, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            imageView2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.SRC_IN));
             addView(imageView2, LayoutHelper.createFrame(56, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));
 
             textView = new AnimatedEmojiSpan.TextViewEmojis(context);
@@ -1179,7 +1193,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
         }
 
         protected int getThemedColor(int key) {
-            return Theme.getColor(key, resourcesProvider);
+            return getM3BottomSheetColor(key, Theme.getColor(key, resourcesProvider));
         }
 
         public boolean isSelected = false;
@@ -2528,7 +2542,34 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
     }
 
     protected int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        return getM3BottomSheetColor(key, Theme.getColor(key, resourcesProvider));
+    }
+
+    private static int getM3BottomSheetColor(int key, int fallbackColor) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        if (key == Theme.key_dialogBackground) {
+            return resolveM3RoleColor(M3ColorRoles.Role.SURFACE_CONTAINER, fallbackColor);
+        } else if (key == Theme.key_dialogBackgroundGray) {
+            return resolveM3RoleColor(M3ColorRoles.Role.SURFACE_CONTAINER_HIGH, fallbackColor);
+        } else if (key == Theme.key_dialogTextBlack) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE, fallbackColor);
+        } else if (key == Theme.key_dialogTextGray || key == Theme.key_dialogTextGray2 || key == Theme.key_dialogTextGray3 || key == Theme.key_dialogIcon) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE_VARIANT, fallbackColor);
+        } else if (key == Theme.key_dialogTextLink || key == Theme.key_dialogButton || key == Theme.key_radioBackgroundChecked || key == Theme.key_featuredStickers_addButton) {
+            return resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, fallbackColor);
+        } else if (key == Theme.key_featuredStickers_buttonText) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_PRIMARY, fallbackColor);
+        } else if (key == Theme.key_text_RedBold) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ERROR, fallbackColor);
+        }
+        return fallbackColor;
+    }
+
+    private static int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     public void setOpenNoDelay(boolean openNoDelay) {

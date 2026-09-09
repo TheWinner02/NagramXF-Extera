@@ -82,6 +82,7 @@ import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.SettingsActivity;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.recorder.HintView2;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 import java.lang.ref.WeakReference;
 import java.util.HashSet;
@@ -391,8 +392,8 @@ public class ItemOptions {
             subItem.setText(text);
         }
 
-        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
-        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+        subItem.setColors(textColor != null ? textColor : getM3MenuColor(textColorKey, Theme.getColor(textColorKey, resourcesProvider)), iconColor != null ? iconColor : getM3MenuColor(iconColorKey, Theme.getColor(iconColorKey, resourcesProvider)));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(getM3MenuColor(textColorKey, Theme.getColor(textColorKey, resourcesProvider)), isM3 ? .10f : .12f));
 
         subItem.setOnClickListener(view1 -> {
             if (onClickListener != null) {
@@ -430,9 +431,9 @@ public class ItemOptions {
         boolean isM3 = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
         subItem.setPadding(dp(isM3 ? 14 : 18), 0, dp(isM3 ? 14 : 18), 0);
 
-        subItem.setColors(textColor != null ? textColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+        subItem.setColors(textColor != null ? textColor : getM3MenuColor(Theme.key_actionBarDefaultSubmenuItem, Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider)), iconColor != null ? iconColor : getM3MenuColor(Theme.key_actionBarDefaultSubmenuItemIcon, Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider)));
         subItem.setSelectorColor(Theme.getColor(Theme.key_groupcreate_sectionText, resourcesProvider));
-        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(getM3MenuColor(Theme.key_actionBarDefaultSubmenuItem, Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider)), isM3 ? .10f : .12f));
 
         if (minWidthDp > 0) {
             subItem.setMinimumWidth(dp(minWidthDp));
@@ -2247,8 +2248,9 @@ public class ItemOptions {
         if (canAddNewAlbum && onAlbumAdd != null) {
             final ActionBarMenuSubItem subitem = new ActionBarMenuSubItem(options.getContext(), 2, false, false, options.resourcesProvider);
             subitem.setPadding(dp(18), 0, dp(18), 0);
-            subitem.setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, options.resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, options.resourcesProvider));
-            subitem.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, options.resourcesProvider), .12f));
+            int textColor = getM3MenuColor(Theme.key_actionBarDefaultSubmenuItem, Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, options.resourcesProvider));
+            subitem.setColors(textColor, getM3MenuColor(Theme.key_actionBarDefaultSubmenuItemIcon, Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, options.resourcesProvider)));
+            subitem.setSelectorColor(Theme.multAlpha(textColor, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? .10f : .12f));
             subitem.setTextAndIcon(getString(R.string.StoriesAlbumNewAlbum), R.drawable.menu_album_add);
             subitem.setOnClickListener(v -> {
                 onAlbumAdd.run();
@@ -2263,8 +2265,9 @@ public class ItemOptions {
             final ActionBarMenuSubItem subitem = new ActionBarMenuSubItem(options.getContext(), 2, false, false, options.resourcesProvider);
             subitem.setChecked(checked);
             subitem.setPadding(dp(18), 0, dp(18), 0);
-            subitem.setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, options.resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, options.resourcesProvider));
-            subitem.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, options.resourcesProvider), .12f));
+            int textColor = getM3MenuColor(Theme.key_actionBarDefaultSubmenuItem, Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, options.resourcesProvider));
+            subitem.setColors(textColor, getM3MenuColor(Theme.key_actionBarDefaultSubmenuItemIcon, Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, options.resourcesProvider)));
+            subitem.setSelectorColor(Theme.multAlpha(textColor, xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? .10f : .12f));
             if (album.icon_photo != null && album.icon_photo.sizes != null) {
                 TLRPC.PhotoSize currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(album.icon_photo.sizes, 50);
                 TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(album.icon_photo.sizes, dp(24), false, currentPhotoObjectThumb, true);
@@ -2292,5 +2295,26 @@ public class ItemOptions {
             });
             collectionsLayout.addView(subitem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
+    }
+
+    private static int getM3MenuColor(int key, int fallbackColor) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        if (key == Theme.key_actionBarDefaultSubmenuItem || key == Theme.key_actionBarDefaultSubmenuItemIcon) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE, fallbackColor);
+        } else if (key == Theme.key_text_RedRegular || key == Theme.key_text_RedBold) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ERROR, fallbackColor);
+        } else if (key == Theme.key_groupcreate_sectionText) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE_VARIANT, fallbackColor);
+        } else if (key == Theme.key_featuredStickers_addButton || key == Theme.key_dialogButton) {
+            return resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, fallbackColor);
+        }
+        return fallbackColor;
+    }
+
+    private static int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 }
