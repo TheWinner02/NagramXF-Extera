@@ -9,6 +9,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -40,6 +41,7 @@ import android.widget.TextView;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Keep;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -69,6 +71,8 @@ import java.util.ArrayList;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 @SuppressWarnings("FieldCanBeLocal")
 // @Deprecated // use Bulletin instead
@@ -1791,6 +1795,21 @@ public class UndoView extends FrameLayout {
     }
 
     private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        int fallbackColor = Theme.getColor(key, resourcesProvider);
+        if (!UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        M3ColorRoles.Role role;
+        if (key == Theme.key_undo_background) {
+            role = M3ColorRoles.Role.INVERSE_SURFACE;
+        } else if (key == Theme.key_undo_infoColor) {
+            role = M3ColorRoles.Role.INVERSE_ON_SURFACE;
+        } else if (key == Theme.key_undo_cancelColor) {
+            role = M3ColorRoles.Role.INVERSE_PRIMARY;
+        } else {
+            return fallbackColor;
+        }
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 }

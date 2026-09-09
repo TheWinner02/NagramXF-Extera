@@ -8,6 +8,7 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -32,6 +33,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -41,6 +43,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 import java.util.ArrayList;
 
@@ -346,11 +349,31 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     }
 
     private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        int fallbackColor = Theme.getColor(key, resourcesProvider);
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        if (key == Theme.key_windowBackgroundGray || key == Theme.key_windowBackgroundWhite) {
+            return resolveM3RoleColor(M3ColorRoles.Role.SURFACE_CONTAINER_HIGH, fallbackColor);
+        } else if (key == Theme.key_windowBackgroundWhiteBlackText) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE, fallbackColor);
+        } else if (key == Theme.key_groupcreate_cursor) {
+            return resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, fallbackColor);
+        } else if (key == Theme.key_listSelector) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE, fallbackColor);
+        } else if (key == Theme.key_divider) {
+            return resolveM3RoleColor(M3ColorRoles.Role.OUTLINE_VARIANT, fallbackColor);
+        }
+        return fallbackColor;
     }
 
     private int getThemedColor(int key, float alpha) {
         return Theme.multAlpha(getThemedColor(key), alpha);
+    }
+
+    private static int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     private Runnable onCloseSearch;

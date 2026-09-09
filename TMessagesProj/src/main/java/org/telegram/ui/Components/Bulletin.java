@@ -13,6 +13,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -50,6 +51,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.Insets;
 import androidx.core.math.MathUtils;
 import androidx.core.util.Consumer;
@@ -80,6 +82,9 @@ import org.telegram.ui.Components.quickforward.BlurVisibilityDrawable;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ViewPagerActivity;
+
+import xyz.nextalone.nagram.ui.M3ColorRoles;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
@@ -1274,7 +1279,22 @@ public class Bulletin {
         }
 
         protected int getThemedColor(int key) {
-            return Theme.getColor(key, resourcesProvider);
+            int fallbackColor = Theme.getColor(key, resourcesProvider);
+            if (!UIStyleEngine.isMaterial3Expressive()) {
+                return fallbackColor;
+            }
+            M3ColorRoles.Role role;
+            if (key == Theme.key_undo_background) {
+                role = M3ColorRoles.Role.INVERSE_SURFACE;
+            } else if (key == Theme.key_undo_infoColor) {
+                role = M3ColorRoles.Role.INVERSE_ON_SURFACE;
+            } else if (key == Theme.key_undo_cancelColor || key == Theme.key_featuredStickers_addButton) {
+                role = M3ColorRoles.Role.INVERSE_PRIMARY;
+            } else {
+                return fallbackColor;
+            }
+            int color = M3ColorRoles.get(role, fallbackColor);
+            return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
         }
         //endregion
     }

@@ -72,6 +72,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.view.menu.MenuItemImpl;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
@@ -89,6 +90,9 @@ import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+
+import xyz.nextalone.nagram.ui.M3ColorRoles;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1519,7 +1523,24 @@ public final class FloatingToolbar {
     }
 
     private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        int fallbackColor = Theme.getColor(key, resourcesProvider);
+        if (!UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        M3ColorRoles.Role role;
+        if (key == Theme.key_dialogBackground || key == Theme.key_windowBackgroundWhite) {
+            role = M3ColorRoles.Role.SURFACE_CONTAINER_HIGH;
+        } else if (key == Theme.key_dialogTextBlack || key == Theme.key_windowBackgroundWhiteBlackText) {
+            role = M3ColorRoles.Role.ON_SURFACE;
+        } else if (key == Theme.key_listSelector) {
+            role = M3ColorRoles.Role.ON_SURFACE;
+        } else if (key == Theme.key_divider) {
+            role = M3ColorRoles.Role.OUTLINE_VARIANT;
+        } else {
+            return fallbackColor;
+        }
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     private static PopupWindow createPopupWindow(ViewGroup content) {

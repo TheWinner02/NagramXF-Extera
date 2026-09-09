@@ -8,6 +8,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -32,6 +33,9 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
+
+import xyz.nextalone.nagram.ui.M3ColorRoles;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 
 @SuppressWarnings("FieldCanBeLocal")
@@ -582,7 +586,20 @@ public class HintView extends FrameLayout {
     }
 
     private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        int fallbackColor = Theme.getColor(key, resourcesProvider);
+        if (!UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        M3ColorRoles.Role role;
+        if (key == Theme.key_chat_gifSaveHintBackground) {
+            role = M3ColorRoles.Role.INVERSE_SURFACE;
+        } else if (key == Theme.key_chat_gifSaveHintText) {
+            role = M3ColorRoles.Role.INVERSE_ON_SURFACE;
+        } else {
+            return fallbackColor;
+        }
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     public void setUseScale(boolean useScale) {

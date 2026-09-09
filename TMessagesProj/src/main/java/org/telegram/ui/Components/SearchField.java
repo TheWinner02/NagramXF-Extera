@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.text.Editable;
@@ -14,10 +15,13 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 import java.util.List;
 
@@ -202,6 +206,24 @@ public class SearchField extends FrameLayout {
     }
 
     private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        int fallbackColor = Theme.getColor(key, resourcesProvider);
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        if (key == Theme.key_dialogSearchBackground) {
+            return resolveM3RoleColor(M3ColorRoles.Role.SURFACE_CONTAINER_HIGH, fallbackColor);
+        } else if (key == Theme.key_dialogSearchText) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE, fallbackColor);
+        } else if (key == Theme.key_dialogSearchHint || key == Theme.key_dialogSearchIcon) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE_VARIANT, fallbackColor);
+        } else if (key == Theme.key_featuredStickers_addedIcon) {
+            return resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, fallbackColor);
+        }
+        return fallbackColor;
+    }
+
+    private static int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 }
