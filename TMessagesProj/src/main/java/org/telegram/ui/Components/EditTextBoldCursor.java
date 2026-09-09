@@ -69,6 +69,7 @@ import org.telegram.ui.ActionBar.FloatingActionMode;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -478,6 +479,9 @@ public class EditTextBoldCursor extends EditTextEffects {
     }
 
     public void setCursorColor(int color) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            color = resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, color);
+        }
         if (cursorDrawable != null) {
             cursorDrawable.getPaint().setColor(color);
         }
@@ -502,12 +506,22 @@ public class EditTextBoldCursor extends EditTextEffects {
         lineVisible = true;
         getContext().getResources().getDrawable(R.drawable.search_dark).getPadding(padding);
         setPadding(padding.left, padding.top, padding.right, padding.bottom);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            color = resolveM3RoleColor(M3ColorRoles.Role.OUTLINE_VARIANT, color);
+            active = resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, active);
+            error = resolveM3RoleColor(M3ColorRoles.Role.ERROR, error);
+        }
         lineColor = color;
         activeLineColor = active;
         activeLinePaint.setColor(activeLineColor);
         errorLineColor = error;
         errorPaint.setColor(errorLineColor);
         invalidate();
+    }
+
+    private int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     public void setHintVisible(boolean value, boolean animated) {

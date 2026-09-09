@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -20,10 +21,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 public class EmptyTextProgressView extends FrameLayout {
 
@@ -108,6 +112,9 @@ public class EmptyTextProgressView extends FrameLayout {
     }
 
     public void setTextColor(int color) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            color = resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE_VARIANT, color);
+        }
         textView.setTextColor(color);
     }
 
@@ -121,6 +128,9 @@ public class EmptyTextProgressView extends FrameLayout {
 
     public void setProgressBarColor(int color) {
         if (progressView instanceof RadialProgressView) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                color = resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, color);
+            }
             ((RadialProgressView) progressView).setProgressColor(color);
         }
     }
@@ -194,6 +204,20 @@ public class EmptyTextProgressView extends FrameLayout {
     }
 
     private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        int fallbackColor = Theme.getColor(key, resourcesProvider);
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return fallbackColor;
+        }
+        if (key == Theme.key_emptyListPlaceholder || key == Theme.key_windowBackgroundWhiteGrayText || key == Theme.key_windowBackgroundWhiteGrayText2 || key == Theme.key_windowBackgroundWhiteGrayText3 || key == Theme.key_windowBackgroundWhiteGrayText4) {
+            return resolveM3RoleColor(M3ColorRoles.Role.ON_SURFACE_VARIANT, fallbackColor);
+        } else if (key == Theme.key_progressCircle || key == Theme.key_featuredStickers_addButton) {
+            return resolveM3RoleColor(M3ColorRoles.Role.PRIMARY, fallbackColor);
+        }
+        return fallbackColor;
+    }
+
+    private static int resolveM3RoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 }

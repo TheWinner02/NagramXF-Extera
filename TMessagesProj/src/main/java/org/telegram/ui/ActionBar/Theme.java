@@ -133,6 +133,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.RoundVideoProgressShadow;
 import org.telegram.ui.ThemeActivity;
 import org.telegram.ui.ThemePreviewActivity;
+import xyz.nextalone.nagram.ui.M3ColorRoles;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -4562,6 +4563,10 @@ public class Theme {
     }
 
     public static Drawable createEditTextDrawable(Context context, int color, int colorActivated) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            color = resolveM3InputRoleColor(M3ColorRoles.Role.OUTLINE_VARIANT, color);
+            colorActivated = resolveM3InputRoleColor(M3ColorRoles.Role.PRIMARY, colorActivated);
+        }
         Resources resources = context.getResources();
         Drawable defaultDrawable = resources.getDrawable(R.drawable.search_dark).mutate();
         defaultDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
@@ -4577,6 +4582,11 @@ public class Theme {
         stateListDrawable.addState(new int[]{android.R.attr.state_focused}, pressedDrawable);
         stateListDrawable.addState(StateSet.WILD_CARD, defaultDrawable);
         return stateListDrawable;
+    }
+
+    private static int resolveM3InputRoleColor(M3ColorRoles.Role role, int fallbackColor) {
+        int color = M3ColorRoles.get(role, fallbackColor);
+        return ColorUtils.setAlphaComponent(color, Color.alpha(fallbackColor));
     }
 
     public static boolean canStartHolidayAnimation() {
