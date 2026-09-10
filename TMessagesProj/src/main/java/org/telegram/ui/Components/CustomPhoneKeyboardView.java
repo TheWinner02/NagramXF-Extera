@@ -29,6 +29,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 public class CustomPhoneKeyboardView extends ViewGroup {
     public final static int KEYBOARD_HEIGHT_DP = 230;
@@ -252,13 +253,17 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     }
 
     private static Drawable getButtonDrawable(int index) {
+        final int defaultColor = Theme.getColor(Theme.key_listSelector);
+        final int pressedColor = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 30);
+
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            return new M3ExpressiveButtonDrawable(defaultColor, pressedColor, 0, dp(12), 0);
+        }
+
         final boolean isTop = index < 3;        // 0 1 2
         final boolean isLeft = index % 3 == 0;  // 0 3 6 9
         final boolean isRight = index % 3 == 2; // 2 5 8 11
         final boolean isBottom = index > 8;     // 9 10 11
-
-        final int defaultColor = Theme.getColor(Theme.key_listSelector);
-        final int pressedColor = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 30);
 
         return Theme.createSimpleSelectorRoundRectDrawable(
             dp(isLeft && isTop ? 24 : 12),

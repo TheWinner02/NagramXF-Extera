@@ -265,7 +265,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             menu.setGlassMode(true);
         }
         if (actionMode != null) {
-            actionMode.setTranslationX(-dp(10));
+            actionMode.setTranslationX(xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? 0 : -dp(10));
             actionMode.setGlassMode(true);
         }
         if (backButtonImageView != null) {
@@ -843,7 +843,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 }
             }
         };
-        actionMode.setTranslationX(glassMode ? -dp(10) : 0);
+        actionMode.setTranslationX(glassMode && !xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? -dp(10) : 0);
         actionMode.setGlassMode(glassMode);
         actionMode.isActionMode = true;
         actionMode.setClickable(true);

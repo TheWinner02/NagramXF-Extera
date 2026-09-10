@@ -195,7 +195,9 @@ import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.FragmentSearchField;
 import org.telegram.ui.Components.IconBackgroundColors;
 import org.telegram.ui.Components.ImageUpdater;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
 import org.telegram.ui.Components.PermissionRequest;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.BlurredBackgroundWithFadeDrawable;
@@ -583,6 +585,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private final Paint actionBarDefaultPaint = new Paint();
 
     private @Nullable ImageView actionModeCloseView;
+    private boolean actionModeReplacedMenuDrawable;
     private NumberTextView selectedDialogsCountTextView;
     private final ArrayList<View> actionModeViews = new ArrayList<>();
     @Nullable
@@ -593,6 +596,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuItem muteItem;
     @Nullable
     private ActionBarMenuItem archive2Item;
+    @Nullable
+    private ActionBarMenuItem otherItem;
     @Nullable
     private ActionBarMenuSubItem pin2Item;
     @Nullable
@@ -3631,6 +3636,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 actionBar.setBackButtonDrawable(backDrawable = new BackDrawable(false));
             } else if (tw.nekomimi.nekogram.NekoConfig.navigationDrawerEnabled.Bool()) {
                 actionBar.setBackButtonDrawable(new org.telegram.ui.ActionBar.MenuDrawable());
+                applyM3BackButtonStyle(false);
             }
             if (folderId != 0) {
                 actionBar.setTitle(actionBarTitleNax = getString(R.string.ArchivedChats));
@@ -6983,7 +6989,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         // actionMode.setBackgroundColor(Color.TRANSPARENT);
         // actionMode.drawBlur = false;
 
-        if (hasMainTabs) {
+        boolean useNativeActionModeBack = hasMainTabs && xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        actionModeCloseView = null;
+        if (hasMainTabs && !useNativeActionModeBack) {
             actionModeCloseView = new ImageView(getContext());
             actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
             actionModeCloseView.setImageDrawable(new BackDrawable(true));
@@ -6998,7 +7006,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         selectedDialogsCountTextView.setTextSize(18);
         selectedDialogsCountTextView.setTypeface(AndroidUtilities.bold());
         selectedDialogsCountTextView.setTextColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
-        actionMode.addView(selectedDialogsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, hasMainTabs ? 18 : 72, 0, 0, 0));
+        actionMode.addView(selectedDialogsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, actionModeCloseView != null ? 18 : 72, 0, 0, 0));
         selectedDialogsCountTextView.setOnTouchListener((v, event) -> true);
 
         pinItem = actionMode.addItemWithWidth(pin, R.drawable.msg_pin, dp(48));
@@ -7006,7 +7014,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         archive2Item = actionMode.addItemWithWidth(archive2, R.drawable.msg_archive, dp(48));
         deleteItem = actionMode.addItemWithWidth(delete, R.drawable.msg_delete, dp(48), LocaleController.getString(R.string.Delete));
 
-        ActionBarMenuItem otherItem = actionMode.addItemWithWidth(0, R.drawable.ic_ab_other, dp(48), LocaleController.getString(R.string.AccDescrMoreOptions));
+        otherItem = actionMode.addItemWithWidth(0, R.drawable.ic_ab_other, dp(48), LocaleController.getString(R.string.AccDescrMoreOptions));
         actionMode.addView(new View(getContext()), LayoutHelper.createLinear(5, LayoutHelper.MATCH_PARENT));
         archiveItem = otherItem.addSubItem(archive, R.drawable.msg_archive, LocaleController.getString(R.string.Archive));
         pin2Item = otherItem.addSubItem(pin2, R.drawable.msg_pin, LocaleController.getString(R.string.DialogPin));
@@ -7029,6 +7037,44 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         actionModeViews.add(otherItem);
 
         updateCounters(false);
+    }
+
+    private void updateActionModeButtonGroup() {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || actionBar == null) {
+            return;
+        }
+        ActionBarMenu actionMode = actionBar.getActionMode();
+        if (actionMode == null) {
+            return;
+        }
+        actionMode.setM3ButtonGroup(pinItem, muteItem, archive2Item, deleteItem, otherItem);
+    }
+
+    private void applyM3BackButtonStyle(boolean actionModeStyle) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || actionBar == null || actionBar.getBackButton() == null) {
+            return;
+        }
+        int iconColor = getThemedColor(actionModeStyle ? Theme.key_actionBarActionModeDefaultIcon : Theme.key_actionBarDefaultIcon);
+        int btnBg = Theme.multAlpha(iconColor, 0.14f);
+        int btnStroke = Theme.multAlpha(iconColor, 0.22f);
+        int pressColor = Theme.multAlpha(iconColor, 0.32f);
+        M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(btnBg, pressColor, dp(20), dp(12), dp(4));
+        drawable.setStroke(btnStroke, dp(1));
+        actionBar.getBackButton().setBackgroundDrawable(drawable);
+        ScaleStateListAnimator.apply(actionBar.getBackButton());
+    }
+
+    private void restoreMenuDrawableAfterActionMode() {
+        AndroidUtilities.runOnUIThread(() -> {
+            if (!actionModeReplacedMenuDrawable || actionBar == null || actionBar.isActionModeShowed()) {
+                return;
+            }
+            if (!onlySelect && folderId == 0 && communityId == 0 && tw.nekomimi.nekogram.NekoConfig.navigationDrawerEnabled.Bool()) {
+                actionBar.setBackButtonDrawable(new org.telegram.ui.ActionBar.MenuDrawable());
+                applyM3BackButtonStyle(false);
+            }
+            actionModeReplacedMenuDrawable = false;
+        }, 220);
     }
 
     public void closeSearching() {
@@ -9353,6 +9399,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (backDrawable != null) {
             backDrawable.setRotation(0, true);
         }
+        if (actionModeReplacedMenuDrawable) {
+            applyM3BackButtonStyle(true);
+            restoreMenuDrawableAfterActionMode();
+        }
         if (filterTabsView != null) {
             if (xyz.nextalone.nagram.ui.folders.FoldersHelper.moveFoldersToBottom()) {
                 filterTabsView.animateColorsTo(Theme.key_chats_actionBackground, Theme.key_windowBackgroundWhiteBlackText, Theme.key_windowBackgroundWhiteGrayText, Theme.key_listSelector, Theme.key_windowBackgroundWhite);
@@ -10317,6 +10367,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 pin2Item.setText(LocaleController.getString(R.string.DialogUnpin));
             }
         }
+        updateActionModeButtonGroup();
     }
 
     private boolean validateSlowModeDialog(long dialogId) {
@@ -10348,13 +10399,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 createActionMode(ACTION_MODE_SEARCH_DIALOGS_TAG);
                 if (actionBar.getBackButton() != null && actionBar.getBackButton().getDrawable() instanceof MenuDrawable) {
                     actionBar.setBackButtonDrawable(new BackDrawable(false));
+                    actionModeReplacedMenuDrawable = true;
                 }
             } else {
                 createActionMode(null);
+                if (actionBar.getBackButton() != null && actionBar.getBackButton().getDrawable() instanceof MenuDrawable) {
+                    actionBar.setBackButtonDrawable(new BackDrawable(false));
+                    actionModeReplacedMenuDrawable = true;
+                }
             }
             AndroidUtilities.hideKeyboard(fragmentView.findFocus());
             actionBar.setActionModeOverrideColor(getThemedColor(Theme.key_windowBackgroundWhite));
             actionBar.showActionMode();
+            applyM3BackButtonStyle(true);
             if (getPinnedCount() > 1) {
                 if (viewPages != null) {
                     for (int a = 0; a < viewPages.length; a++) {

@@ -743,6 +743,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     private final ArrayList<View> m3VisibleChildren = new ArrayList<>();
+    private final ArrayList<View> m3ManualGroupChildren = new ArrayList<>();
     private final Map<View, M3ChildState> m3ChildStates = new HashMap<>();
     private float m3ChildSizeChange = 0.18f;
     private float m3OuterCornerRadius = dp(20);
@@ -780,12 +781,15 @@ public class ActionBarMenu extends LinearLayout {
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
             View child = getChildAt(i);
-            if (child.getVisibility() != GONE && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField()) {
+            if (child.getVisibility() != GONE && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField() && !m3ManualGroupChildren.contains(child)) {
                 m3VisibleChildren.add(child);
             }
         }
         int totalVisible = m3VisibleChildren.size();
-        if (totalVisible == 0) return;
+        if (totalVisible == 0) {
+            updateManualM3ButtonGroup();
+            return;
+        }
 
         float outer = m3OuterCornerRadius;
         float inner = m3IsConnected && totalVisible > 1 ? m3InnerCornerRadius : m3OuterCornerRadius;
@@ -827,6 +831,76 @@ public class ActionBarMenu extends LinearLayout {
                 // Middle child
                 restRadii = new float[]{inner, inner, inner, inner, inner, inner, inner, inner};
             }
+            drawable.setRadii(restRadii, pressedRadii);
+        }
+        updateManualM3ButtonGroup();
+    }
+
+    public void setM3ButtonGroup(View... children) {
+        m3ManualGroupChildren.clear();
+        if (!UIStyleEngine.isMaterial3Expressive()) {
+            return;
+        }
+        for (View child : children) {
+            if (child != null && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField()) {
+                m3ManualGroupChildren.add(child);
+                if (!m3ChildStates.containsKey(child)) {
+                    m3ChildStates.put(child, new M3ChildState(child, this::applyM3ChildLayouts));
+                }
+            }
+        }
+        updateManualM3ButtonGroup();
+    }
+
+    public void updateManualM3ButtonGroup() {
+        if (!UIStyleEngine.isMaterial3Expressive() || m3ManualGroupChildren.isEmpty()) {
+            return;
+        }
+        m3VisibleChildren.clear();
+        for (int i = 0; i < m3ManualGroupChildren.size(); i++) {
+            View child = m3ManualGroupChildren.get(i);
+            if (child.getVisibility() != GONE) {
+                m3VisibleChildren.add(child);
+            }
+        }
+        int totalVisible = m3VisibleChildren.size();
+        if (totalVisible == 0) {
+            return;
+        }
+
+        int iconColor = parentActionBar != null ? (isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor) : Theme.getColor(Theme.key_actionBarDefaultIcon);
+        int btnBg = Theme.multAlpha(iconColor, 0.14f);
+        int btnStroke = Theme.multAlpha(iconColor, 0.22f);
+        int pressColor = Theme.multAlpha(iconColor, 0.32f);
+        float outer = m3OuterCornerRadius;
+        float inner = totalVisible > 1 ? m3InnerCornerRadius : m3OuterCornerRadius;
+        float morph = m3PressedCornerRadius;
+
+        for (int i = 0; i < totalVisible; i++) {
+            View child = m3VisibleChildren.get(i);
+            M3ExpressiveButtonDrawable drawable;
+            Drawable bg = child.getBackground();
+            if (bg instanceof M3ExpressiveButtonDrawable) {
+                drawable = (M3ExpressiveButtonDrawable) bg;
+                drawable.setColors(btnBg, pressColor);
+            } else {
+                drawable = new M3ExpressiveButtonDrawable(btnBg, pressColor, outer, morph, dp(0));
+                child.setBackgroundDrawable(drawable);
+                ScaleStateListAnimator.apply(child);
+            }
+            drawable.setStroke(btnStroke, dp(1));
+
+            float[] restRadii;
+            if (totalVisible == 1) {
+                restRadii = new float[]{outer, outer, outer, outer, outer, outer, outer, outer};
+            } else if (i == 0) {
+                restRadii = new float[]{outer, outer, inner, inner, inner, inner, outer, outer};
+            } else if (i == totalVisible - 1) {
+                restRadii = new float[]{inner, inner, outer, outer, outer, outer, inner, inner};
+            } else {
+                restRadii = new float[]{inner, inner, inner, inner, inner, inner, inner, inner};
+            }
+            float[] pressedRadii = new float[]{morph, morph, morph, morph, morph, morph, morph, morph};
             drawable.setRadii(restRadii, pressedRadii);
         }
     }
@@ -876,7 +950,7 @@ public class ActionBarMenu extends LinearLayout {
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
             View child = getChildAt(i);
-            if (child.getVisibility() != GONE && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField()) {
+            if (child.getVisibility() != GONE && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField() && !m3ManualGroupChildren.contains(child)) {
                 m3VisibleChildren.add(child);
                 if (!m3ChildStates.containsKey(child)) {
                     m3ChildStates.put(child, new M3ChildState(child, this::applyM3ChildLayouts));
