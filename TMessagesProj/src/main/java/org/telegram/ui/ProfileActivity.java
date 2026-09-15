@@ -4809,11 +4809,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     case UpdateHelper.UPDATE_OFF:
                         currentChannel += getString(R.string.AutoCheckUpdateOFF);
                         break;
+                    case UpdateHelper.UPDATE_CHANNEL_BETA:
                     case UpdateHelper.UPDATE_CHANNEL_RELEASE:
                         currentChannel += getString(R.string.AutoCheckUpdateRelease);
-                        break;
-                    case UpdateHelper.UPDATE_CHANNEL_BETA:
-                        currentChannel += getString( R.string.AutoCheckUpdateBeta);
                         break;
                 }
 
@@ -4831,15 +4829,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     });
                     switchBuilder.addRadioItem(getString(R.string.AutoCheckUpdateRelease), NaConfig.INSTANCE.getAutoUpdateChannel().Int() == UpdateHelper.UPDATE_CHANNEL_RELEASE, (radioButtonCell) -> {
                         NaConfig.INSTANCE.getAutoUpdateChannel().setConfigInt(UpdateHelper.UPDATE_CHANNEL_RELEASE);
-                        switchBuilder.doRadioCheck(radioButtonCell);
-                        AndroidUtilities.runOnUIThread(() -> {
-                            switchBuilder.dismiss();
-                            Browser.openUrl(context, "tg://update");
-                        }, 500);
-                        return Unit.INSTANCE;
-                    });
-                    switchBuilder.addRadioItem(getString(R.string.AutoCheckUpdateBeta), NaConfig.INSTANCE.getAutoUpdateChannel().Int() == UpdateHelper.UPDATE_CHANNEL_BETA, (radioButtonCell) -> {
-                        NaConfig.INSTANCE.getAutoUpdateChannel().setConfigInt(UpdateHelper.UPDATE_CHANNEL_BETA);
                         switchBuilder.doRadioCheck(radioButtonCell);
                         AndroidUtilities.runOnUIThread(() -> {
                             switchBuilder.dismiss();
@@ -5057,7 +5046,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             } else if (which == 8) { // ?
                                 SharedConfig.toggleRoundCamera16to9();
                             } else if (which == 9) { // Check app update
-                                ((LaunchActivity) getParentActivity()).checkAppUpdate(true, null);
+                                ((LaunchActivity) getParentActivity()).checkAppUpdate(true, null, BuildVars.DEBUG_VERSION);
                             } else if (which == 10) { // Read all chats
                                 getMessagesStorage().readAllDialogs(-1);
                             } else if (which == 11) { // Voip audio effects

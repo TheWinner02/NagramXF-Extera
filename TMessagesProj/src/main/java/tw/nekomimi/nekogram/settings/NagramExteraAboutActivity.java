@@ -8,12 +8,17 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.Cells.TextSettingsCell;
 
+import kotlin.Unit;
+import tw.nekomimi.nekogram.helpers.remote.UpdateHelper;
+import tw.nekomimi.nekogram.ui.BottomBuilder;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
+import xyz.nextalone.nagram.NaConfig;
 
 public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
 
@@ -25,6 +30,11 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
     private int discussionGroupRow;
     private int featuresTipsRow;
     private int contentsEndRow;
+
+    private int updatesSectionRow;
+    private int checkUpdatesRow;
+    private int autoUpdatesRow;
+    private int updatesEndRow;
 
     private int creditsSectionRow;
     private int creditsFeaturesTipsRow;
@@ -52,6 +62,11 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
         discussionGroupRow = addRow();
         featuresTipsRow = addRow();
         contentsEndRow = addRow();
+
+        updatesSectionRow = addRow();
+        checkUpdatesRow = addRow();
+        autoUpdatesRow = addRow();
+        updatesEndRow = addRow();
 
         creditsSectionRow = addRow();
         creditsFeaturesTipsRow = addRow();
@@ -83,6 +98,10 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
             MessagesController.getInstance(currentAccount).openByUserName("NagramExteraCommunity", this, 1);
         } else if (position == featuresTipsRow) {
             MessagesController.getInstance(currentAccount).openByUserName("NagramTips", this, 1);
+        } else if (position == checkUpdatesRow) {
+            Browser.openUrl(getParentActivity(), "tg://update");
+        } else if (position == autoUpdatesRow) {
+            showAutoUpdatesSelector();
         } else if (position == creditsFeaturesTipsRow) {
             MessagesController.getInstance(currentAccount).openByUserName("NagramTips", this, 1);
         } else if (position == creditsNagramXFRow) {
@@ -102,6 +121,40 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
         } else if (position == sourceCodeAyugramRow) {
             Browser.openUrl(getParentActivity(), "https://github.com/AyuGram/AyuGram4A");
         }
+    }
+
+    private void showAutoUpdatesSelector() {
+        BottomBuilder switchBuilder = new BottomBuilder(getParentActivity());
+        switchBuilder.addTitle(getString(R.string.AutoCheckUpdateSwitch));
+        switchBuilder.addRadioItem(getString(R.string.AutoCheckUpdateOFF), NaConfig.INSTANCE.getAutoUpdateChannel().Int() == UpdateHelper.UPDATE_OFF, (radioButtonCell) -> {
+            NaConfig.INSTANCE.getAutoUpdateChannel().setConfigInt(UpdateHelper.UPDATE_OFF);
+            switchBuilder.doRadioCheck(radioButtonCell);
+            AndroidUtilities.runOnUIThread(() -> {
+                switchBuilder.dismiss();
+                UpdateHelper.cleanAppUpdate();
+                if (listAdapter != null) {
+                    listAdapter.notifyItemChanged(autoUpdatesRow, PARTIAL);
+                }
+            }, 500);
+            return Unit.INSTANCE;
+        });
+        switchBuilder.addRadioItem(getString(R.string.AutoCheckUpdateRelease), NaConfig.INSTANCE.getAutoUpdateChannel().Int() != UpdateHelper.UPDATE_OFF, (radioButtonCell) -> {
+            NaConfig.INSTANCE.getAutoUpdateChannel().setConfigInt(UpdateHelper.UPDATE_CHANNEL_RELEASE);
+            switchBuilder.doRadioCheck(radioButtonCell);
+            AndroidUtilities.runOnUIThread(() -> {
+                switchBuilder.dismiss();
+                Browser.openUrl(getParentActivity(), "tg://update");
+                if (listAdapter != null) {
+                    listAdapter.notifyItemChanged(autoUpdatesRow, PARTIAL);
+                }
+            }, 500);
+            return Unit.INSTANCE;
+        });
+        showDialog(switchBuilder.create());
+    }
+
+    private String getAutoUpdatesValue() {
+        return getString(NaConfig.INSTANCE.getAutoUpdateChannel().Int() == UpdateHelper.UPDATE_OFF ? R.string.AutoCheckUpdateOFF : R.string.AutoCheckUpdateRelease);
     }
 
     @Override
@@ -124,6 +177,8 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
                     headerCell.setText(getString(R.string.NagramExtera));
                 } else if (position == contentsSectionRow) {
                     headerCell.setText(getString(R.string.NagramExteraContents));
+                } else if (position == updatesSectionRow) {
+                    headerCell.setText(getString(R.string.UpdateApp));
                 } else if (position == creditsSectionRow) {
                     headerCell.setText(getString(R.string.NagramExteraCredits));
                 } else if (position == sourceCodeSectionRow) {
@@ -139,6 +194,10 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
                     textCell.setTextAndValue(getString(R.string.NagramExteraDiscussionGroup), "@NagramExteraCommunity", true);
                 } else if (position == featuresTipsRow) {
                     textCell.setTextAndValue(getString(R.string.NagramExteraFeaturesTips), "@NagramTips", true);
+                } else if (position == checkUpdatesRow) {
+                    textCell.setText(getString(R.string.CheckUpdate), true);
+                } else if (position == autoUpdatesRow) {
+                    textCell.setTextAndValue(getString(R.string.AutoCheckUpdateSwitch), getAutoUpdatesValue(), false);
                 } else if (position == creditsFeaturesTipsRow) {
                     textCell.setTextAndValue(getString(R.string.NagramExteraFeaturesTips), "@NagramTips", true);
                 } else if (position == creditsNagramXFRow) {
@@ -163,10 +222,11 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == contentsEndRow || position == creditsEndRow) {
+            if (position == contentsEndRow || position == updatesEndRow || position == creditsEndRow) {
                 return TYPE_SHADOW;
             } else if (position == exteraHeaderRow
                     || position == contentsSectionRow
+                    || position == updatesSectionRow
                     || position == creditsSectionRow
                     || position == sourceCodeSectionRow) {
                 return TYPE_HEADER;

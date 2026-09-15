@@ -39,6 +39,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import java.util.Locale;
 
 import tw.nekomimi.nekogram.TextViewEffects;
+import tw.nekomimi.nekogram.helpers.remote.GithubUpdateHelper;
 import tw.nekomimi.nekogram.helpers.remote.UpdateHelper;
 
 public class BlockingUpdateView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -145,7 +146,13 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
                     showProgress(true);
                 }
             } else if (appUpdate.url != null) {
-                Browser.openUrl(getContext(), appUpdate.url);
+                showProgress(true);
+                GithubUpdateHelper.downloadAndInstall((Activity) getContext(), appUpdate.url, (installed, error) -> {
+                    showProgress(false);
+                    if (!installed) {
+                        Browser.openUrl(getContext(), appUpdate.url);
+                    }
+                });
             }
         });
 
