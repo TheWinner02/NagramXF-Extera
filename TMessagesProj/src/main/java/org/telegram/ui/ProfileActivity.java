@@ -4973,7 +4973,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.fastWallpaperDisabled ? "enable wallpaper shader" : "disable wallpaper shader") : null
                         };
 
-                        builder.setItems(items, (dialog, which) -> {
+                        DialogInterface.OnClickListener debugMenuClickListener = (dialog, which) -> {
                             if (which == 0) { // Import Contacts
                                 getUserConfig().syncContacts = true;
                                 getUserConfig().saveConfig(false);
@@ -5270,7 +5270,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             } else if (which == 38) {
                                 SharedConfig.toggleFastWallpaperDisabled();
                             }
-                        });
+                        };
+                        builder.setItems(items, debugMenuClickListener);
                         builder.setNegativeButton(getString("Cancel", R.string.Cancel), null);
                         showDialog(builder.create());
                     } else {

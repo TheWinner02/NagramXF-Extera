@@ -57,7 +57,7 @@ public class TextViewWithLoading extends TextView {
 
     @Override
     public void draw(Canvas canvas) {
-        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && !(getBackground() instanceof org.telegram.ui.Components.M3ExpressiveButtonDrawable)) {
             float progress = pressedMorphProgress.getProgress();
             float pillRad = getHeight() / 2f;
             float currentRad = org.telegram.messenger.AndroidUtilities.lerp(pillRad, dp(8f), progress);

@@ -62,6 +62,7 @@ public class SectionsScrollView extends ScrollView {
                 view instanceof RadioCell ||
                 view instanceof TextRadioCell ||
                 view instanceof DialogRadioCell ||
+                view instanceof org.telegram.ui.ActionBar.AlertDialog.AlertDialogCell ||
                 view instanceof org.telegram.ui.Cells.AdminedChannelCell ||
                 view instanceof LinkActionView ||
                 view instanceof org.telegram.ui.PeerColorActivity.ChangeNameColorCell ||
@@ -286,7 +287,7 @@ public class SectionsScrollView extends ScrollView {
         pressMorph.setPressed(child == pressedSectionView || child.isPressed());
         float pressProgress = pressMorph.getProgress();
         float innerRadius = dp(4);
-        float pressedRadius = Math.max(sectionRadius, child.getHeight() / 2f);
+        float pressedRadius = getM3PressedRadius(child);
         float topRadius = AndroidUtilities.lerp(hasAbove ? innerRadius : sectionRadius, pressedRadius, pressProgress);
         float bottomRadius = AndroidUtilities.lerp(hasBelow ? innerRadius : sectionRadius, pressedRadius, pressProgress);
         float gap = dp(1);
@@ -376,7 +377,7 @@ public class SectionsScrollView extends ScrollView {
             M3PressMorphHelper pressMorph = getPressMorph(child);
             pressMorph.setPressed(child == pressedSectionView || child.isPressed());
             float progress = pressMorph.getProgress();
-            float pressedRadius = Math.max(sectionRadius, child.getHeight() / 2f);
+            float pressedRadius = getM3PressedRadius(child);
             topRadius = AndroidUtilities.lerp(prev ? dp(4) : sectionRadius, pressedRadius, progress);
             bottomRadius = AndroidUtilities.lerp(next ? dp(4) : sectionRadius, pressedRadius, progress);
         }
@@ -421,6 +422,13 @@ public class SectionsScrollView extends ScrollView {
             currentParent = parentView.getParent();
         }
         return y;
+    }
+
+    private float getM3PressedRadius(View child) {
+        if (child instanceof org.telegram.ui.ActionBar.AlertDialog.AlertDialogCell) {
+            return dp(12);
+        }
+        return Math.max(sectionRadius, child.getHeight() / 2f);
     }
 
     public static class SectionsLinearLayout extends LinearLayout {

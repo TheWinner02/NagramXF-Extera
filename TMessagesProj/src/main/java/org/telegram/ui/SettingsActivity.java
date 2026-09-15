@@ -1613,7 +1613,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.debugViewMetrics ? "disable debug view metrics" : "enable debug view metrics") : null,
         };
 
-        builder.setItems(items, (dialog, which) -> {
+        DialogInterface.OnClickListener debugMenuClickListener = (dialog, which) -> {
             if (which == 0) { // Import Contacts
                 getUserConfig().syncContacts = true;
                 getUserConfig().saveConfig(false);
@@ -1925,7 +1925,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 final SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 prefs.edit().putBoolean("debugViewMetrics", SharedConfig.debugViewMetrics = !SharedConfig.debugViewMetrics).apply();
             }
-        });
+        };
+        builder.setItems(items, debugMenuClickListener);
         builder.setNegativeButton(getString(R.string.Cancel), null);
         showDialog(builder.create());
     }

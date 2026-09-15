@@ -80,6 +80,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stars.BalanceCloud;
@@ -240,6 +241,26 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
     }
 
+    private void applyM3DialogButtonStyle(TextView button) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return;
+        }
+        int textColor = M3ColorRoles.get(M3ColorRoles.Role.ON_SURFACE, getThemedColor(Theme.key_dialogTextBlack));
+        button.setTextColor(textColor);
+        M3ExpressiveButtonDrawable background = new M3ExpressiveButtonDrawable(
+                M3ColorRoles.get(M3ColorRoles.Role.SURFACE_CONTAINER_HIGHEST, Theme.multAlpha(textColor, .10f)),
+                Theme.multAlpha(textColor, .16f),
+                dp(20),
+                dp(12),
+                dp(2)
+        );
+        background.setColorRoles(M3ColorRoles.Role.SURFACE_CONTAINER_HIGHEST, M3ColorRoles.Role.ON_SURFACE);
+        button.setBackground(background);
+        button.setAlpha(1.0f);
+        button.setVisibility(View.VISIBLE);
+        ScaleStateListAnimator.apply(button);
+    }
+
     public static class AlertDialogCell extends FrameLayout {
 
         private final Theme.ResourcesProvider resourcesProvider;
@@ -254,9 +275,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 M3ExpressiveButtonDrawable selector = new M3ExpressiveButtonDrawable(
                         Color.TRANSPARENT,
                         Theme.multAlpha(getThemedColor(Theme.key_dialogTextBlack), .10f),
-                        dp(8),
-                        dp(24),
-                        0
+                        dp(20),
+                        dp(12),
+                        dp(2)
                 );
                 selector.setColorRoles(null, M3ColorRoles.Role.ON_SURFACE);
                 setBackground(selector);
@@ -848,27 +869,46 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             shadow[0].setCallback(this);
             shadow[1].setCallback(this);
 
-            contentScrollView = new ScrollView(getContext()) {
-                @Override
-                protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                    boolean result = super.drawChild(canvas, child, drawingTime);
-                    if (shadow[0].getPaint().getAlpha() != 0) {
-                        shadow[0].setBounds(0, getScrollY(), getMeasuredWidth(), getScrollY() + dp(3));
-                        shadow[0].draw(canvas);
+            boolean useM3ExpressiveSections = items != null && xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+            scrollContainer = useM3ExpressiveSections ? new SectionsScrollView.SectionsLinearLayout(getContext()) : new LinearLayout(getContext());
+            scrollContainer.setOrientation(LinearLayout.VERTICAL);
+            if (useM3ExpressiveSections) {
+                contentScrollView = new SectionsScrollView(getContext(), scrollContainer, resourcesProvider, false) {
+                    @Override
+                    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                        boolean result = super.drawChild(canvas, child, drawingTime);
+                        if (shadow[0].getPaint().getAlpha() != 0) {
+                            shadow[0].setBounds(0, getScrollY(), getMeasuredWidth(), getScrollY() + dp(3));
+                            shadow[0].draw(canvas);
+                        }
+                        if (shadow[1].getPaint().getAlpha() != 0) {
+                            shadow[1].setBounds(0, getScrollY() + getMeasuredHeight() - dp(3), getMeasuredWidth(), getScrollY() + getMeasuredHeight());
+                            shadow[1].draw(canvas);
+                        }
+                        return result;
                     }
-                    if (shadow[1].getPaint().getAlpha() != 0) {
-                        shadow[1].setBounds(0, getScrollY() + getMeasuredHeight() - dp(3), getMeasuredWidth(), getScrollY() + getMeasuredHeight());
-                        shadow[1].draw(canvas);
+                };
+            } else {
+                contentScrollView = new ScrollView(getContext()) {
+                    @Override
+                    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                        boolean result = super.drawChild(canvas, child, drawingTime);
+                        if (shadow[0].getPaint().getAlpha() != 0) {
+                            shadow[0].setBounds(0, getScrollY(), getMeasuredWidth(), getScrollY() + dp(3));
+                            shadow[0].draw(canvas);
+                        }
+                        if (shadow[1].getPaint().getAlpha() != 0) {
+                            shadow[1].setBounds(0, getScrollY() + getMeasuredHeight() - dp(3), getMeasuredWidth(), getScrollY() + getMeasuredHeight());
+                            shadow[1].draw(canvas);
+                        }
+                        return result;
                     }
-                    return result;
-                }
-            };
+                };
+            }
             contentScrollView.setVerticalScrollBarEnabled(false);
             AndroidUtilities.setScrollViewEdgeEffectColor(contentScrollView, getThemedColor(Theme.key_dialogScrollGlow));
             containerView.addView(contentScrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
 
-            scrollContainer = new LinearLayout(getContext());
-            scrollContainer.setOrientation(LinearLayout.VERTICAL);
             contentScrollView.addView(scrollContainer, new ScrollView.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
@@ -1167,7 +1207,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
                 }
                 if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                    ScaleStateListAnimator.apply(textView);
+                    applyM3DialogButtonStyle(textView);
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1212,7 +1252,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
                 }
                 if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                    ScaleStateListAnimator.apply(textView);
+                    applyM3DialogButtonStyle(textView);
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1257,7 +1297,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.LEFT));
                 }
                 if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                    ScaleStateListAnimator.apply(textView);
+                    applyM3DialogButtonStyle(textView);
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1302,7 +1342,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
                 }
                 if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                    ScaleStateListAnimator.apply(textView);
+                    applyM3DialogButtonStyle(textView);
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
