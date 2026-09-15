@@ -165,6 +165,7 @@
     <string name="NagramExteraSourceCode">Source Code</string>
     <string name="NagramExteraSourceNagramXF" translatable="false">Nagram XF</string>
     <string name="NagramExteraSourceAyugram" translatable="false">Ayugram</string>
+    <string name="NegramXFE" translatable="false">Negram XFE</string>
     <string name="NagramExteraInfo">NegramXFE</string>
     <string name="AyuSpySettings">Spy Settings</string>
     <string name="AyuMomentsCustomHeader">Custom</string>

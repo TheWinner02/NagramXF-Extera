@@ -34,6 +34,7 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
     private int creditsEndRow;
 
     private int sourceCodeSectionRow;
+    private int sourceCodeNegramXFERow;
     private int sourceCodeExteraRow;
     private int sourceCodeNagramXRow;
     private int sourceCodeNagramXFRow;
@@ -60,6 +61,7 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
         creditsEndRow = addRow();
 
         sourceCodeSectionRow = addRow();
+        sourceCodeNegramXFERow = addRow();
         sourceCodeExteraRow = addRow();
         sourceCodeNagramXRow = addRow();
         sourceCodeNagramXFRow = addRow();
@@ -89,6 +91,8 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
             MessagesController.getInstance(currentAccount).openByUserName("NagramX", this, 1);
         } else if (position == creditsNagramRow) {
             MessagesController.getInstance(currentAccount).openByUserName("nagram_channel", this, 1);
+        } else if (position == sourceCodeNegramXFERow) {
+            Browser.openUrl(getParentActivity(), "https://github.com/TheWinner02/NagramXF-Extera");
         } else if (position == sourceCodeExteraRow) {
             Browser.openUrl(getParentActivity(), "https://github.com/D1ZZY4/NagramXF-Extera");
         } else if (position == sourceCodeNagramXRow) {
@@ -143,6 +147,8 @@ public class NagramExteraAboutActivity extends BaseNekoSettingsActivity {
                     textCell.setTextAndValue(getString(R.string.NagramX), "@NagramX", true);
                 } else if (position == creditsNagramRow) {
                     textCell.setTextAndValue(getString(R.string.Nagram), "@nagram_channel", true);
+                } else if (position == sourceCodeNegramXFERow) {
+                    textCell.setTextAndValue(getString(R.string.NegramXFE), "GitHub", true);
                 } else if (position == sourceCodeExteraRow) {
                     textCell.setTextAndValue(getString(R.string.NagramExtera), "GitHub", true);
                 } else if (position == sourceCodeNagramXRow) {
