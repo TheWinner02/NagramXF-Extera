@@ -78,6 +78,11 @@ public class M3ExpressiveButtonDrawable extends Drawable {
         invalidateSelf();
     }
 
+    public void setInset(int inset) {
+        this.inset = inset;
+        invalidateSelf();
+    }
+
     public void setRadii(float[] restRadii, float[] pressedRadii) {
         this.restRadii = restRadii;
         this.pressedRadii = pressedRadii;

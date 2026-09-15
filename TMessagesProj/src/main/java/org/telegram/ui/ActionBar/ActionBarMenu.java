@@ -745,6 +745,7 @@ public class ActionBarMenu extends LinearLayout {
     private final ArrayList<View> m3VisibleChildren = new ArrayList<>();
     private final ArrayList<View> m3ManualGroupChildren = new ArrayList<>();
     private final Map<View, M3ChildState> m3ChildStates = new HashMap<>();
+    private boolean m3ManualGroupInsideContainer;
     private float m3ChildSizeChange = 0.18f;
     private float m3OuterCornerRadius = dp(20);
     private float m3InnerCornerRadius = dp(8);
@@ -837,7 +838,16 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void setM3ButtonGroup(View... children) {
+        setM3ButtonGroup(false, children);
+    }
+
+    public void setM3ButtonGroupInsideContainer(View... children) {
+        setM3ButtonGroup(true, children);
+    }
+
+    private void setM3ButtonGroup(boolean insideContainer, View... children) {
         m3ManualGroupChildren.clear();
+        m3ManualGroupInsideContainer = insideContainer;
         if (!UIStyleEngine.isMaterial3Expressive()) {
             return;
         }
@@ -875,6 +885,7 @@ public class ActionBarMenu extends LinearLayout {
         float outer = m3OuterCornerRadius;
         float inner = totalVisible > 1 ? m3InnerCornerRadius : m3OuterCornerRadius;
         float morph = m3PressedCornerRadius;
+        int inset = m3ManualGroupInsideContainer ? dp(4) : 0;
 
         for (int i = 0; i < totalVisible; i++) {
             View child = m3VisibleChildren.get(i);
@@ -884,11 +895,12 @@ public class ActionBarMenu extends LinearLayout {
                 drawable = (M3ExpressiveButtonDrawable) bg;
                 drawable.setColors(btnBg, pressColor);
             } else {
-                drawable = new M3ExpressiveButtonDrawable(btnBg, pressColor, outer, morph, dp(0));
+                drawable = new M3ExpressiveButtonDrawable(btnBg, pressColor, outer, morph, inset);
                 child.setBackgroundDrawable(drawable);
                 ScaleStateListAnimator.apply(child);
             }
-            drawable.setStroke(btnStroke, dp(1));
+            drawable.setInset(inset);
+            drawable.setStroke(m3ManualGroupInsideContainer ? 0 : btnStroke, m3ManualGroupInsideContainer ? 0 : dp(1));
 
             float[] restRadii;
             if (totalVisible == 1) {

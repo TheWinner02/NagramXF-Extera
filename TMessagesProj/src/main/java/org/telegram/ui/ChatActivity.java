@@ -602,6 +602,7 @@ public class ChatActivity extends BaseFragment implements
     public ChatActivityFragmentView contentView;
     private ChatBigEmptyView bigEmptyView;
     private ArrayList<View> actionModeViews = new ArrayList<>();
+    private ArrayList<View> actionModeSpacerViews = new ArrayList<>();
     public ChatAvatarContainer avatarContainer;
     private AnimatedTextView selectedMessagesCountTextView;
     private RecyclerListView.OnItemClickListener mentionsOnItemClickListener;
@@ -5063,6 +5064,7 @@ public class ChatActivity extends BaseFragment implements
         }
 
         actionModeViews.clear();
+        actionModeSpacerViews.clear();
         selectedMessagesCountTextView = null;
         checkActionBarMenu(false);
 
@@ -11091,6 +11093,55 @@ public class ChatActivity extends BaseFragment implements
         if (doShrinkActionBarItems) {
             actionMode.getItem(nkactionbarbtn_reply).setVisibility(View.GONE);
         }
+        updateActionModeButtonGroup();
+    }
+
+    private void updateActionModeButtonGroup() {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || actionBar == null || actionModeViews.isEmpty()) {
+            return;
+        }
+        ActionBarMenu actionMode = actionBar.createActionMode();
+        if (actionMode == null) {
+            return;
+        }
+        float groupOffset = -dp(12);
+        for (int i = 0; i < actionModeViews.size(); i++) {
+            View view = actionModeViews.get(i);
+            if (view != null) {
+                view.setTranslationX(groupOffset);
+            }
+        }
+        while (actionModeSpacerViews.size() < Math.max(0, actionModeViews.size() - 1)) {
+            int itemIndex = actionModeSpacerViews.size();
+            View spacer = new View(getContext());
+            spacer.setVisibility(View.GONE);
+            View anchor = actionModeViews.get(itemIndex);
+            int actionModeIndex = actionMode.indexOfChild(anchor);
+            actionMode.addView(spacer, actionModeIndex >= 0 ? actionModeIndex + 1 : -1, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT));
+            actionModeSpacerViews.add(spacer);
+        }
+        int gap = dp(6);
+        for (int i = 0; i < actionModeSpacerViews.size(); i++) {
+            View spacer = actionModeSpacerViews.get(i);
+            spacer.setTranslationX(groupOffset);
+            View currentItem = actionModeViews.get(i);
+            boolean hasVisibleAfter = false;
+            for (int j = i + 1; j < actionModeViews.size(); j++) {
+                View view = actionModeViews.get(j);
+                if (view != null && view.getVisibility() != View.GONE) {
+                    hasVisibleAfter = true;
+                    break;
+                }
+            }
+            int width = currentItem != null && currentItem.getVisibility() != View.GONE && hasVisibleAfter ? gap : 0;
+            ViewGroup.LayoutParams spacerParams = spacer.getLayoutParams();
+            if (spacerParams.width != width) {
+                spacerParams.width = width;
+                spacer.setLayoutParams(spacerParams);
+            }
+            spacer.setVisibility(width > 0 ? View.VISIBLE : View.GONE);
+        }
+        actionMode.setM3ButtonGroupInsideContainer(actionModeViews.toArray(new View[0]));
     }
 
     private void hideTagSelector() {
@@ -20450,6 +20501,7 @@ public class ChatActivity extends BaseFragment implements
                 if (actionModeOtherItem != null) {
                     actionModeOtherItem.setSubItemVisibility(nkbtn_translate, !isTranslatingDialog(messageObject));
                 }
+                updateActionModeButtonGroup();
             }
         }
         updateSelectedMessageReactions();
