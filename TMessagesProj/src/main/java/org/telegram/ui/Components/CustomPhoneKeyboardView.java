@@ -24,6 +24,9 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.GestureDetectorCompat;
+import androidx.dynamicanimation.animation.FloatValueHolder;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -39,6 +42,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     private final ImageView backButton;
     private EditText editText;
     private final View[] views = new View[12];
+    private final KeyState[] keyStates = new KeyState[12];
 
     private View viewToFindFocus;
 
@@ -49,7 +53,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         if (editText == null || editText.length() == 0 && !dispatchBackWhenEmpty) return;
 
         try {
-            if (!NekoConfig.disableVibration.Bool()) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            if ((!UIStyleEngine.isMaterial3Expressive() || runningLongClick) && !NekoConfig.disableVibration.Bool()) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             playSoundEffect(SoundEffectConstants.CLICK);
         } catch (Exception ignore) {}
         editText.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
@@ -114,7 +118,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
                 if (editText == null) return;
 
                 try {
-                    if (!NekoConfig.disableVibration.Bool()) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    if (!UIStyleEngine.isMaterial3Expressive() && !NekoConfig.disableVibration.Bool()) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 } catch (Exception ignore) {}
                 if (editText instanceof EditTextBoldCursor) {
                     ((EditTextBoldCursor) editText).setTextWatchersSuppressed(true, false);
@@ -164,8 +168,57 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         for (int a = 0; a < views.length; a++) {
             final View v = views[a];
             if (v == null) continue;
-            ScaleStateListAnimator.apply(v, 0.02f, 1.2f);
-            v.setBackground(getButtonDrawable(a));
+            ScaleStateListAnimator.apply(v, 0.02f, 1.2f, !UIStyleEngine.isMaterial3Expressive());
+            setButtonBackground(a);
+        }
+    }
+
+    private static class KeyState {
+        final SpringAnimation springAnimation;
+        float progress;
+        boolean pressed;
+        M3ExpressiveButtonDrawable drawable;
+
+        KeyState(Runnable onUpdate) {
+            springAnimation = new SpringAnimation(new FloatValueHolder(0f));
+            SpringForce force = new SpringForce(0f);
+            force.setStiffness(500f);
+            force.setDampingRatio(0.82f);
+            springAnimation.setSpring(force);
+            springAnimation.setMinimumVisibleChange(0.002f);
+            springAnimation.addUpdateListener((animation, value, velocity) -> {
+                progress = value;
+                if (drawable != null) {
+                    drawable.setMorphProgress(progress);
+                }
+                onUpdate.run();
+            });
+        }
+    }
+
+    @Override
+    public void childDrawableStateChanged(View child) {
+        super.childDrawableStateChanged(child);
+        if (!UIStyleEngine.isMaterial3Expressive()) {
+            return;
+        }
+        for (int i = 0; i < views.length; i++) {
+            if (views[i] != child) {
+                continue;
+            }
+            KeyState state = keyStates[i];
+            if (state == null) {
+                return;
+            }
+            boolean pressed = child.isPressed();
+            if (state.pressed != pressed) {
+                state.pressed = pressed;
+                if (pressed) {
+                    com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(child);
+                }
+                state.springAnimation.animateToFinalPosition(pressed ? 1f : 0f);
+            }
+            return;
         }
     }
 
@@ -225,6 +278,10 @@ public class CustomPhoneKeyboardView extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            applyExpressiveKeyLayouts();
+            return;
+        }
         int btnWidth = (getWidth() - dp(SIDE_PADDING * 2 + BUTTON_PADDING * 2)) / 3;
         int btnHeight = (getHeight() - dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
 
@@ -236,6 +293,60 @@ public class CustomPhoneKeyboardView extends ViewGroup {
                 views[i].layout(left, top, left + btnWidth, top + btnHeight);
             }
         }
+    }
+
+    private void applyExpressiveKeyLayouts() {
+        int btnHeight = (getHeight() - dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
+        int totalWidth = getWidth() - dp(SIDE_PADDING * 2);
+        int availableWidth = totalWidth - dp(BUTTON_PADDING * 2);
+        if (btnHeight <= 0 || availableWidth <= 0) {
+            return;
+        }
+
+        for (int row = 0; row < 4; row++) {
+            float totalExpansion = 0f;
+            int pressedCount = 0;
+            for (int col = 0; col < 3; col++) {
+                int index = row * 3 + col;
+                KeyState state = keyStates[index];
+                float progress = state != null ? state.progress : 0f;
+                if (progress > 0.001f) {
+                    totalExpansion += 0.18f * progress;
+                    pressedCount++;
+                }
+            }
+
+            float[] weights = new float[3];
+            float totalWeight = 0f;
+            for (int col = 0; col < 3; col++) {
+                int index = row * 3 + col;
+                KeyState state = keyStates[index];
+                float progress = state != null ? state.progress : 0f;
+                if (progress > 0.001f) {
+                    weights[col] = 1f + 0.18f * progress;
+                } else if (pressedCount > 0 && pressedCount < 3) {
+                    float shrink = totalExpansion / (3f - pressedCount);
+                    weights[col] = Math.max(0.70f, 1f - shrink);
+                } else {
+                    weights[col] = 1f;
+                }
+                totalWeight += weights[col];
+            }
+
+            int left = dp(SIDE_PADDING);
+            int top = row * (btnHeight + dp(BUTTON_PADDING)) + dp(SIDE_PADDING);
+            for (int col = 0; col < 3; col++) {
+                int index = row * 3 + col;
+                int width = col == 2 ? dp(SIDE_PADDING) + totalWidth - left : Math.round((weights[col] / totalWeight) * availableWidth);
+                View view = views[index];
+                if (view != null) {
+                    view.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(btnHeight, MeasureSpec.EXACTLY));
+                    view.layout(left, top, left + width, top + btnHeight);
+                }
+                left += width + dp(BUTTON_PADDING);
+            }
+        }
+        invalidate();
     }
 
     @Override
@@ -252,12 +363,27 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         }
     }
 
+    private void setButtonBackground(int index) {
+        Drawable drawable = getButtonDrawable(index);
+        if (UIStyleEngine.isMaterial3Expressive()) {
+            if (keyStates[index] == null) {
+                keyStates[index] = new KeyState(this::applyExpressiveKeyLayouts);
+            }
+            if (drawable instanceof M3ExpressiveButtonDrawable) {
+                keyStates[index].drawable = (M3ExpressiveButtonDrawable) drawable;
+            }
+        }
+        views[index].setBackground(drawable);
+    }
+
     private static Drawable getButtonDrawable(int index) {
         final int defaultColor = Theme.getColor(Theme.key_listSelector);
         final int pressedColor = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 30);
 
         if (UIStyleEngine.isMaterial3Expressive()) {
-            return new M3ExpressiveButtonDrawable(defaultColor, pressedColor, 0, dp(12), 0);
+            M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(defaultColor, pressedColor, getRestRadii(index), getPressedRadii(), 0);
+            drawable.setStroke(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), 18), dp(1));
+            return drawable;
         }
 
         final boolean isTop = index < 3;        // 0 1 2
@@ -273,12 +399,30 @@ public class CustomPhoneKeyboardView extends ViewGroup {
             defaultColor, pressedColor, pressedColor);
     }
 
+    private static float[] getPressedRadii() {
+        float pressed = dp(18);
+        return new float[]{pressed, pressed, pressed, pressed, pressed, pressed, pressed, pressed};
+    }
+
+    private static float[] getRestRadii(int index) {
+        final float outer = dp(24);
+        final float inner = dp(8);
+        boolean isLeft = index % 3 == 0 || index == 10;
+        boolean isRight = index % 3 == 2;
+        return new float[]{
+            isLeft ? outer : inner, isLeft ? outer : inner,
+            isRight ? outer : inner, isRight ? outer : inner,
+            isRight ? outer : inner, isRight ? outer : inner,
+            isLeft ? outer : inner, isLeft ? outer : inner
+        };
+    }
+
     public void updateColors() {
         backButton.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         for (int a = 0; a < views.length; a++) {
             View v = views[a];
             if (v != null) {
-                v.setBackground(getButtonDrawable(a));
+                setButtonBackground(a);
 
                 if (v instanceof NumberButtonView) {
                     ((NumberButtonView) v).updateColors();

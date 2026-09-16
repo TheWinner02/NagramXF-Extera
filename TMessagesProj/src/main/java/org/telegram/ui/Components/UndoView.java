@@ -1801,11 +1801,11 @@ public class UndoView extends FrameLayout {
         }
         M3ColorRoles.Role role;
         if (key == Theme.key_undo_background) {
-            role = M3ColorRoles.Role.INVERSE_SURFACE;
+            role = M3ColorRoles.Role.SURFACE;
         } else if (key == Theme.key_undo_infoColor) {
-            role = M3ColorRoles.Role.INVERSE_ON_SURFACE;
+            role = M3ColorRoles.Role.ON_SURFACE;
         } else if (key == Theme.key_undo_cancelColor) {
-            role = M3ColorRoles.Role.INVERSE_PRIMARY;
+            role = M3ColorRoles.Role.PRIMARY;
         } else {
             return fallbackColor;
         }
