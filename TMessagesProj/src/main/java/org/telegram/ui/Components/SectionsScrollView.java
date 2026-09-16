@@ -426,7 +426,7 @@ public class SectionsScrollView extends ScrollView {
 
     private float getM3PressedRadius(View child) {
         if (child instanceof org.telegram.ui.ActionBar.AlertDialog.AlertDialogCell) {
-            return dp(12);
+            return Math.max(sectionRadius, child.getHeight() / 2f);
         }
         return Math.max(sectionRadius, child.getHeight() / 2f);
     }

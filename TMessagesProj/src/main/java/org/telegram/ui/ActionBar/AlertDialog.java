@@ -276,7 +276,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                         Color.TRANSPARENT,
                         Theme.multAlpha(getThemedColor(Theme.key_dialogTextBlack), .10f),
                         dp(20),
-                        dp(12),
+                        dp(24),
                         dp(2)
                 );
                 selector.setColorRoles(null, M3ColorRoles.Role.ON_SURFACE);
