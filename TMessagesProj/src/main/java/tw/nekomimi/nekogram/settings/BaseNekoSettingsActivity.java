@@ -414,11 +414,11 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     break;
                 case TYPE_SETTINGS:
                     view = new TextSettingsCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_CHECK:
                     view = new TextCheckCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_HEADER:
                     view = new HeaderCell(mContext, resourcesProvider);
@@ -426,11 +426,11 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     break;
                 case TYPE_NOTIFICATION_CHECK:
                     view = new NotificationsCheckCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_DETAIL_SETTINGS:
                     view = new TextDetailSettingsCell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_INFO_PRIVACY:
                     view = new TextInfoPrivacyCell(mContext, resourcesProvider);
@@ -438,30 +438,30 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     break;
                 case TYPE_TEXT:
                     view = new TextCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_CHECKBOX:
                     view = new TextCheckbox2Cell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_RADIO:
                     view = new TextRadioCell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_ACCOUNT:
                     view = new AccountCell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_EMOJI:
                 case TYPE_EMOJI_SELECTION:
                     view = new EmojiSetCell(mContext, viewType == TYPE_EMOJI_SELECTION);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_CREATION:
                     CreationTextCell creationTextCell = new CreationTextCell(mContext, 70, resourcesProvider);
                     creationTextCell.startPadding = 61;
                     view = creationTextCell;
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_FLICKER:
                     view = new FlickerLoadingView(mContext, resourcesProvider);
@@ -469,7 +469,7 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     break;
                 case TYPE_CHECK2:
                     view = new TextCheckCell2(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
                 case TYPE_CHECKBOX2:
                     CheckBoxCell checkBoxCell = new CheckBoxCell(mContext, CheckBoxCell.TYPE_CHECK_BOX_ROUND, 21, getResourceProvider());
@@ -477,12 +477,20 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     checkBoxCell.getCheckBoxRound().setColor(Theme.key_switch2TrackChecked, Theme.key_radioBackground, Theme.key_checkboxCheck);
                     checkBoxCell.setEnabled(true);
                     view = checkBoxCell;
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    setM3SectionCellBackground(view);
                     break;
             }
             // noinspection ConstantConditions
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
+        }
+
+        private void setM3SectionCellBackground(@NonNull View view) {
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                view.setBackgroundColor(0x00000000);
+            } else {
+                view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            }
         }
     }
 
