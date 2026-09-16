@@ -294,6 +294,35 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
     }
 
+    private Drawable createExpressiveActionButtonDrawable(int iconColor, int fallbackBackgroundColor) {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            return Theme.createSelectorDrawable(fallbackBackgroundColor);
+        }
+        if (iconColor == 0) {
+            iconColor = Theme.getColor(Theme.key_actionBarDefaultIcon);
+        }
+        org.telegram.ui.Components.M3ExpressiveButtonDrawable drawable = new org.telegram.ui.Components.M3ExpressiveButtonDrawable(
+            Theme.multAlpha(iconColor, 0.14f),
+            Theme.multAlpha(iconColor, 0.32f),
+            dp(20),
+            dp(12),
+            dp(4)
+        );
+        drawable.setStroke(Theme.multAlpha(iconColor, 0.22f), dp(1));
+        return drawable;
+    }
+
+    private void updateBackButtonBackground() {
+        if (backButtonImageView == null) {
+            return;
+        }
+        boolean actionMode = actionModeVisible || isActionModeShowed();
+        int iconColor = actionMode ? itemsActionModeColor : itemsColor;
+        int backgroundColor = actionMode ? itemsActionModeBackgroundColor : itemsBackgroundColor;
+        backButtonImageView.setBackgroundDrawable(createExpressiveActionButtonDrawable(iconColor, backgroundColor));
+        ScaleStateListAnimator.apply(backButtonImageView);
+    }
+
     private void createBackButtonImage() {
         if (backButtonImageView != null) {
             return;
@@ -306,8 +335,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             }
         };
         backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
-        backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsBackgroundColor));
-        ScaleStateListAnimator.apply(backButtonImageView);
+        updateBackButtonBackground();
         backButtonImageView.setPadding(dp(1), 0, 0, 0);
         addView(backButtonImageView, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
 
@@ -1017,7 +1045,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 if (drawable instanceof BackDrawable) {
                     ((BackDrawable) drawable).setRotation(1, true);
                 }
-                backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsActionModeBackgroundColor));
+                updateBackButtonBackground();
             }
         } else {
             actionMode.setAlpha(1.0f);
@@ -1073,7 +1101,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 if (drawable instanceof BackDrawable) {
                     ((BackDrawable) drawable).setRotation(1, false);
                 }
-                backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsActionModeBackgroundColor));
+                updateBackButtonBackground();
             }
         }
     }
@@ -1174,7 +1202,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             if (drawable instanceof BackDrawable) {
                 ((BackDrawable) drawable).setRotation(0, true);
             }
-            backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsBackgroundColor));
+            updateBackButtonBackground();
         }
     }
 
@@ -1963,7 +1991,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             itemsActionModeBackgroundColor = color;
             if (actionModeVisible) {
                 if (backButtonImageView != null) {
-                    backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsActionModeBackgroundColor));
+                    updateBackButtonBackground();
                 }
             }
             if (actionMode != null) {
@@ -1972,7 +2000,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         } else {
             itemsBackgroundColor = color;
             if (backButtonImageView != null) {
-                backButtonImageView.setBackgroundDrawable(createAdaptiveSelectorDrawable(itemsBackgroundColor));
+                updateBackButtonBackground();
             }
             if (menu != null) {
                 menu.updateItemsBackgroundColor();
@@ -2016,6 +2044,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         if (backButtonImageView != null && mAlwaysApplyColorFilterToBackButton) {
             backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, PorterDuff.Mode.SRC_IN));
         }
+        updateBackButtonBackground();
     }
 
     public void setCastShadows(boolean value) {

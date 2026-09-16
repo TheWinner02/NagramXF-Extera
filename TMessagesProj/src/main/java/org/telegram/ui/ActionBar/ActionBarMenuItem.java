@@ -255,13 +255,18 @@ public class ActionBarMenuItem extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
         if (backgroundColor != 0) {
             if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() && !text) {
-                setBackgroundDrawable(new M3ExpressiveButtonDrawable(
-                    0,
-                    Theme.multAlpha(backgroundColor, 0.40f),
+                if (iconColor == 0) {
+                    iconColor = Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider);
+                }
+                M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(
+                    Theme.multAlpha(iconColor, 0.14f),
+                    Theme.multAlpha(iconColor, 0.32f),
                     dp(20),
                     dp(12),
                     dp(4)
-                ));
+                );
+                drawable.setStroke(Theme.multAlpha(iconColor, 0.22f), dp(1));
+                setBackgroundDrawable(drawable);
             } else {
                 setBackgroundDrawable(Theme.createSelectorDrawable(backgroundColor, text ? 5 : 1));
             }

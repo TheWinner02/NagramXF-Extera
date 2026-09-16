@@ -106,8 +106,10 @@ public class ActionBarMenu extends LinearLayout {
                     );
                     drawable.setStroke(btnStroke, dp(1));
                     view.setBackgroundDrawable(drawable);
+                    ScaleStateListAnimator.apply(view);
                 } else {
                     view.setBackgroundDrawable(Theme.createSelectorDrawable(color));
+                    ScaleStateListAnimator.reset(view);
                 }
             }
         }
