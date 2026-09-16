@@ -296,6 +296,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         exportMenuItem = actionMode.addItemWithWidth(MENU_EXPORT, R.drawable.msg_instant_link_solar, AndroidUtilities.dp(54));
         archiveMenuItem = actionMode.addItemWithWidth(MENU_ARCHIVE, R.drawable.msg_archive, dp(54));
         deleteMenuItem = actionMode.addItemWithWidth(MENU_DELETE, R.drawable.msg_delete, dp(54));
+        actionMode.setM3ButtonGroupInsideContainer(shareMenuItem, exportMenuItem, archiveMenuItem, deleteMenuItem);
 
         if (currentType == TYPE_EMOJIPACKS && frozenEmojiPacks != null) {
             sets = frozenEmojiPacks;

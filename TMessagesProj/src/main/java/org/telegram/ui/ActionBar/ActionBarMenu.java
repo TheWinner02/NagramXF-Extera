@@ -764,8 +764,9 @@ public class ActionBarMenu extends LinearLayout {
             springAnimation = new SpringAnimation(new FloatValueHolder(0f));
             SpringForce force = new SpringForce(0f);
             force.setStiffness(500f);
-            force.setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+            force.setDampingRatio(0.82f);
             springAnimation.setSpring(force);
+            springAnimation.setMinimumVisibleChange(0.002f);
             springAnimation.addUpdateListener((animation, value, velocity) -> {
                 progress = value;
                 if (view.getBackground() instanceof M3ExpressiveButtonDrawable) {
@@ -815,7 +816,7 @@ public class ActionBarMenu extends LinearLayout {
                 drawable = new M3ExpressiveButtonDrawable(btnBg, pressColor, outer, morph, dp(4));
                 drawable.setStroke(btnStroke, dp(1));
                 child.setBackgroundDrawable(drawable);
-                ScaleStateListAnimator.apply(child);
+                ScaleStateListAnimator.apply(child, .1f, 1.5f, false);
             }
             float[] restRadii;
             float[] pressedRadii = new float[]{morph, morph, morph, morph, morph, morph, morph, morph};
@@ -855,7 +856,7 @@ public class ActionBarMenu extends LinearLayout {
             if (child != null && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField()) {
                 m3ManualGroupChildren.add(child);
                 if (!m3ChildStates.containsKey(child)) {
-                    m3ChildStates.put(child, new M3ChildState(child, this::applyM3ChildLayouts));
+                    m3ChildStates.put(child, new M3ChildState(child, this::applyM3Layouts));
                 }
             }
         }
@@ -897,7 +898,7 @@ public class ActionBarMenu extends LinearLayout {
             } else {
                 drawable = new M3ExpressiveButtonDrawable(btnBg, pressColor, outer, morph, inset);
                 child.setBackgroundDrawable(drawable);
-                ScaleStateListAnimator.apply(child);
+                ScaleStateListAnimator.apply(child, .1f, 1.5f, false);
             }
             drawable.setInset(inset);
             drawable.setStroke(m3ManualGroupInsideContainer ? 0 : btnStroke, m3ManualGroupInsideContainer ? 0 : dp(1));
@@ -915,6 +916,7 @@ public class ActionBarMenu extends LinearLayout {
             float[] pressedRadii = new float[]{morph, morph, morph, morph, morph, morph, morph, morph};
             drawable.setRadii(restRadii, pressedRadii);
         }
+        applyM3ManualChildLayouts();
     }
 
     @Override
@@ -922,7 +924,7 @@ public class ActionBarMenu extends LinearLayout {
         super.onViewAdded(child);
         if (UIStyleEngine.isMaterial3Expressive()) {
             if (!m3ChildStates.containsKey(child)) {
-                M3ChildState state = new M3ChildState(child, this::applyM3ChildLayouts);
+                M3ChildState state = new M3ChildState(child, this::applyM3Layouts);
                 m3ChildStates.put(child, state);
             }
             updateChildShapes();
@@ -950,6 +952,9 @@ public class ActionBarMenu extends LinearLayout {
                 boolean isPressed = child.isPressed() || child.isSelected();
                 if (state.pressed != isPressed) {
                     state.pressed = isPressed;
+                    if (isPressed) {
+                        com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(child);
+                    }
                     state.springAnimation.animateToFinalPosition(isPressed ? 1f : 0f);
                 }
             }
@@ -965,7 +970,7 @@ public class ActionBarMenu extends LinearLayout {
             if (child.getVisibility() != GONE && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField() && !m3ManualGroupChildren.contains(child)) {
                 m3VisibleChildren.add(child);
                 if (!m3ChildStates.containsKey(child)) {
-                    m3ChildStates.put(child, new M3ChildState(child, this::applyM3ChildLayouts));
+                    m3ChildStates.put(child, new M3ChildState(child, this::applyM3Layouts));
                 }
             }
         }
@@ -1036,6 +1041,94 @@ public class ActionBarMenu extends LinearLayout {
         invalidate();
     }
 
+    private void applyM3Layouts() {
+        applyM3ChildLayouts();
+        applyM3ManualChildLayouts();
+    }
+
+    private void applyM3ManualChildLayouts() {
+        if (!UIStyleEngine.isMaterial3Expressive() || m3ManualGroupChildren.isEmpty()) {
+            return;
+        }
+        ArrayList<View> visibleChildren = new ArrayList<>();
+        int left = Integer.MAX_VALUE;
+        int right = Integer.MIN_VALUE;
+        int top = Integer.MAX_VALUE;
+        int bottom = Integer.MIN_VALUE;
+        for (int i = 0; i < m3ManualGroupChildren.size(); i++) {
+            View child = m3ManualGroupChildren.get(i);
+            if (child.getVisibility() != GONE) {
+                visibleChildren.add(child);
+                left = Math.min(left, child.getLeft());
+                right = Math.max(right, child.getRight());
+                top = Math.min(top, child.getTop());
+                bottom = Math.max(bottom, child.getBottom());
+            }
+        }
+        int visibleCount = visibleChildren.size();
+        if (visibleCount <= 1 || right <= left || bottom <= top) {
+            return;
+        }
+
+        int spacing = m3ManualGroupInsideContainer ? dp(2) : dp(3);
+        int totalW = right - left;
+        int totalH = bottom - top;
+        int availableW = totalW - (visibleCount - 1) * spacing;
+        if (availableW <= 0) {
+            return;
+        }
+
+        float[] weights = new float[visibleCount];
+        float totalWeight = 0f;
+        float totalExpansion = 0f;
+        int pressedCount = 0;
+
+        for (int i = 0; i < visibleCount; i++) {
+            View child = visibleChildren.get(i);
+            M3ChildState state = m3ChildStates.get(child);
+            float progress = state != null ? state.progress : 0f;
+            if (progress > 0.001f) {
+                totalExpansion += m3ChildSizeChange * progress;
+                pressedCount++;
+            }
+        }
+
+        for (int i = 0; i < visibleCount; i++) {
+            View child = visibleChildren.get(i);
+            M3ChildState state = m3ChildStates.get(child);
+            float base = state != null ? state.baseWeight : 1.0f;
+            float progress = state != null ? state.progress : 0f;
+            if (progress > 0.001f) {
+                weights[i] = base * (1f + m3ChildSizeChange * progress);
+            } else if (visibleCount > pressedCount && totalExpansion > 0f) {
+                float shrink = totalExpansion / (float) (visibleCount - pressedCount);
+                weights[i] = Math.max(0.5f * base, base * (1f - shrink));
+            } else {
+                weights[i] = base;
+            }
+            totalWeight += weights[i];
+        }
+
+        int curX = left;
+        for (int i = 0; i < visibleCount; i++) {
+            View child = visibleChildren.get(i);
+            int childW;
+            if (i == visibleCount - 1) {
+                childW = right - curX;
+            } else {
+                childW = Math.round((weights[i] / totalWeight) * availableW);
+            }
+            childW = Math.max(dp(28), childW);
+            child.measure(
+                MeasureSpec.makeMeasureSpec(childW, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(totalH, MeasureSpec.EXACTLY)
+            );
+            child.layout(curX, top, curX + childW, top + totalH);
+            curX += childW + spacing;
+        }
+        invalidate();
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
@@ -1044,6 +1137,7 @@ public class ActionBarMenu extends LinearLayout {
             if (m3VisibleChildren.size() > 1) {
                 applyM3ChildLayouts();
             }
+            applyM3ManualChildLayouts();
         }
         if (parentActionBar != null) {
             parentActionBar.checkMenuItemsWidth();

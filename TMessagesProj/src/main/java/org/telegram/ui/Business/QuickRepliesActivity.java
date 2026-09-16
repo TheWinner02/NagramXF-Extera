@@ -142,6 +142,7 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
         editItem.setContentDescription(LocaleController.getString(R.string.Edit));
         deleteItem = actionModeMenu.addItem(2, R.drawable.msg_delete);
         deleteItem.setContentDescription(LocaleController.getString(R.string.Delete));
+        actionModeMenu.setM3ButtonGroupInsideContainer(editItem, deleteItem);
 
         FrameLayout contentView = new SizeNotifierFrameLayout(context) {
             @Override

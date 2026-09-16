@@ -613,6 +613,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         shareMenuItem.setContentDescription(getString(R.string.StickersShare));
         deleteMenuItem = actionMode.addItemWithWidth(MENU_DELETE, R.drawable.msg_delete, AndroidUtilities.dp(54));
         deleteMenuItem.setContentDescription(getString(R.string.Delete));
+        actionMode.setM3ButtonGroupInsideContainer(shareMenuItem, deleteMenuItem);
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override

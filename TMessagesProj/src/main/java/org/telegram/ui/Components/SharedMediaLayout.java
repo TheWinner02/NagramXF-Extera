@@ -69,6 +69,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.dynamicanimation.animation.FloatValueHolder;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -175,6 +178,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 
 import kotlin.Unit;
@@ -721,6 +725,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private AnimatorSet floatingDateAnimation;
     private Runnable hideFloatingDateRunnable = () -> hideFloatingDateView(true);
     private ArrayList<View> actionModeViews = new ArrayList<>();
+    private final ArrayList<View> m3ActionModeGroupViews = new ArrayList<>();
+    private final Map<View, M3ActionModeGroupState> m3ActionModeGroupStates = new HashMap<>();
 
     private float additionalFloatingTranslation;
 
@@ -4011,8 +4017,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (unpinItem != null && unpinItem.getVisibility() != GONE) visibleItems.add(unpinItem);
         if (deleteItem != null && deleteItem.getVisibility() != GONE) visibleItems.add(deleteItem);
 
+        m3ActionModeGroupViews.clear();
         int total = visibleItems.size();
         if (total == 0) return;
+        m3ActionModeGroupViews.addAll(visibleItems);
 
         float outer = dp(20);
         float inner = total > 1 ? dp(8) : dp(20);
@@ -4036,9 +4044,143 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(btnBg, pressOverlayColor, restRadii, pressedRadii, dp(4));
             drawable.setStroke(btnStroke, dp(1));
             child.setBackground(drawable);
-            ScaleStateListAnimator.apply(child);
+            ScaleStateListAnimator.apply(child, .1f, 1.5f, false);
+            M3ActionModeGroupState state = getM3ActionModeGroupState(child);
+            state.drawable = drawable;
+            drawable.setMorphProgress(state.progress);
+        }
+        applyM3ActionModeGroupLayout();
+    }
+
+    private M3ActionModeGroupState getM3ActionModeGroupState(View child) {
+        M3ActionModeGroupState state = m3ActionModeGroupStates.get(child);
+        if (state == null) {
+            state = new M3ActionModeGroupState(child, this::applyM3ActionModeGroupLayout);
+            m3ActionModeGroupStates.put(child, state);
+            child.setOnTouchListener((view, event) -> {
+                M3ActionModeGroupState touchState = m3ActionModeGroupStates.get(view);
+                if (touchState != null) {
+                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                        touchState.setPressed(true);
+                    } else if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                        touchState.setPressed(false);
+                    }
+                }
+                return false;
+            });
+        }
+        return state;
+    }
+
+    private void applyM3ActionModeGroupLayout() {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || actionModeLayout == null || m3ActionModeGroupViews.isEmpty()) {
+            return;
+        }
+        ArrayList<View> visibleChildren = new ArrayList<>();
+        int left = Integer.MAX_VALUE;
+        int right = Integer.MIN_VALUE;
+        int top = Integer.MAX_VALUE;
+        int bottom = Integer.MIN_VALUE;
+        for (int i = 0; i < m3ActionModeGroupViews.size(); i++) {
+            View child = m3ActionModeGroupViews.get(i);
+            if (child.getVisibility() != GONE) {
+                visibleChildren.add(child);
+                left = Math.min(left, child.getLeft());
+                right = Math.max(right, child.getRight());
+                top = Math.min(top, child.getTop());
+                bottom = Math.max(bottom, child.getBottom());
+            }
+        }
+        int visibleCount = visibleChildren.size();
+        if (visibleCount <= 1 || right <= left || bottom <= top) {
+            return;
+        }
+
+        int spacing = dp(2);
+        int totalW = right - left;
+        int totalH = bottom - top;
+        int availableW = totalW - (visibleCount - 1) * spacing;
+        if (availableW <= 0) {
+            return;
+        }
+
+        float[] weights = new float[visibleCount];
+        float totalWeight = 0f;
+        float totalExpansion = 0f;
+        int pressedCount = 0;
+        for (int i = 0; i < visibleCount; i++) {
+            M3ActionModeGroupState state = m3ActionModeGroupStates.get(visibleChildren.get(i));
+            float progress = state != null ? state.progress : 0f;
+            if (progress > 0.001f) {
+                totalExpansion += 0.18f * progress;
+                pressedCount++;
+            }
+        }
+        for (int i = 0; i < visibleCount; i++) {
+            M3ActionModeGroupState state = m3ActionModeGroupStates.get(visibleChildren.get(i));
+            float progress = state != null ? state.progress : 0f;
+            if (progress > 0.001f) {
+                weights[i] = 1f + 0.18f * progress;
+            } else if (visibleCount > pressedCount && totalExpansion > 0f) {
+                float shrink = totalExpansion / (float) (visibleCount - pressedCount);
+                weights[i] = Math.max(0.5f, 1f - shrink);
+            } else {
+                weights[i] = 1f;
+            }
+            totalWeight += weights[i];
+        }
+
+        int curX = left;
+        for (int i = 0; i < visibleCount; i++) {
+            View child = visibleChildren.get(i);
+            int childW = i == visibleCount - 1 ? right - curX : Math.round((weights[i] / totalWeight) * availableW);
+            childW = Math.max(dp(28), childW);
+            child.measure(
+                View.MeasureSpec.makeMeasureSpec(childW, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(totalH, View.MeasureSpec.EXACTLY)
+            );
+            child.layout(curX, top, curX + childW, top + totalH);
+            curX += childW + spacing;
+        }
+        actionModeLayout.invalidate();
+    }
+
+    private static class M3ActionModeGroupState {
+        final View view;
+        final SpringAnimation springAnimation;
+        float progress;
+        boolean pressed;
+        M3ExpressiveButtonDrawable drawable;
+
+        M3ActionModeGroupState(View view, Runnable onUpdate) {
+            this.view = view;
+            springAnimation = new SpringAnimation(new FloatValueHolder(0f));
+            SpringForce force = new SpringForce(0f);
+            force.setStiffness(500f);
+            force.setDampingRatio(0.82f);
+            springAnimation.setSpring(force);
+            springAnimation.setMinimumVisibleChange(0.002f);
+            springAnimation.addUpdateListener((animation, value, velocity) -> {
+                progress = value;
+                if (drawable != null) {
+                    drawable.setMorphProgress(progress);
+                }
+                onUpdate.run();
+            });
+        }
+
+        void setPressed(boolean pressed) {
+            if (this.pressed == pressed) {
+                return;
+            }
+            this.pressed = pressed;
+            if (pressed) {
+                com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(view);
+            }
+            springAnimation.animateToFinalPosition(pressed ? 1f : 0f);
         }
     }
+
     private boolean hasNoforwardsMessage() {
         boolean hasNoforwardsMessage = false;
         for (int a = 1; a >= 0; a--) {

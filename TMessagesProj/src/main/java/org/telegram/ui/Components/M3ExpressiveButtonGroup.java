@@ -50,8 +50,9 @@ public class M3ExpressiveButtonGroup extends FrameLayout {
             springAnimation = new SpringAnimation(new FloatValueHolder(0f));
             SpringForce force = new SpringForce(0f);
             force.setStiffness(500f);
-            force.setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
+            force.setDampingRatio(0.82f);
             springAnimation.setSpring(force);
+            springAnimation.setMinimumVisibleChange(0.002f);
             springAnimation.addUpdateListener((animation, value, velocity) -> {
                 progress = value;
                 if (drawable != null) {
@@ -165,6 +166,9 @@ public class M3ExpressiveButtonGroup extends FrameLayout {
             boolean isPressed = child.isPressed();
             if (state.pressed != isPressed) {
                 state.pressed = isPressed;
+                if (isPressed) {
+                    com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(child);
+                }
                 state.springAnimation.animateToFinalPosition(isPressed ? 1f : 0f);
             }
         }

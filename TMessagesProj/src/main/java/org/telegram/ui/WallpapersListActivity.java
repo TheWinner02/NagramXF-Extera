@@ -705,6 +705,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
 
             actionModeViews.add(actionMode.addItemWithWidth(forward, R.drawable.msg_forward, AndroidUtilities.dp(54), LocaleController.getString(R.string.Forward)));
             actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), LocaleController.getString(R.string.Delete)));
+            actionMode.setM3ButtonGroupInsideContainer(actionModeViews.toArray(new View[0]));
 
             selectedWallPapers.clear();
         }

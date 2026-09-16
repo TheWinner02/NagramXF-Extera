@@ -8,11 +8,13 @@ import android.graphics.RectF;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
-import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
+import androidx.dynamicanimation.animation.FloatValueHolder;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -34,6 +36,9 @@ public class M3ConnectedButtonGroup extends View {
     private String[] items = new String[0];
     private int selectedIndex;
     private int pressedIndex = -1;
+    private int morphIndex = -1;
+    private float pressedProgress;
+    private final SpringAnimation pressedAnimation;
     private OnItemSelectedListener listener;
 
     public M3ConnectedButtonGroup(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -46,6 +51,19 @@ public class M3ConnectedButtonGroup extends View {
         textPaint.setTypeface(AndroidUtilities.bold());
         strokePaint.setStyle(Paint.Style.STROKE);
         strokePaint.setStrokeWidth(AndroidUtilities.dp(1));
+        pressedAnimation = new SpringAnimation(new FloatValueHolder(0f));
+        SpringForce force = new SpringForce(0f);
+        force.setStiffness(500f);
+        force.setDampingRatio(0.82f);
+        pressedAnimation.setSpring(force);
+        pressedAnimation.setMinimumVisibleChange(0.002f);
+        pressedAnimation.addUpdateListener((animation, value, velocity) -> {
+            pressedProgress = value;
+            if (pressedProgress <= 0.002f && pressedIndex < 0) {
+                morphIndex = -1;
+            }
+            invalidate();
+        });
     }
 
     public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
@@ -88,7 +106,7 @@ public class M3ConnectedButtonGroup extends View {
         final float gap = AndroidUtilities.dp(2);
         final int rows = getRowCount(getWidth());
         final int columns = Math.max(1, (int) Math.ceil(count / (float) rows));
-        final float segmentWidth = (getWidth() - getPaddingLeft() - getPaddingRight() - gap * (columns - 1)) / columns;
+        final float[] columnWidths = getColumnWidths(columns, gap);
         final float segmentHeight = (getHeight() - getPaddingTop() - getPaddingBottom() - gap * (rows - 1)) / rows;
         final int surfaceColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
         final int selectedColor = Theme.getColor(Theme.key_switch2TrackChecked, resourcesProvider);
@@ -104,14 +122,15 @@ public class M3ConnectedButtonGroup extends View {
             if (itemIndex < 0 || itemIndex >= count) {
                 continue;
             }
-            float left = getPaddingLeft() + visualColumn * (segmentWidth + gap);
-            float right = left + segmentWidth;
+            float left = getColumnLeft(columnWidths, visualColumn, gap);
+            float right = left + columnWidths[visualColumn];
             float top = getPaddingTop() + row * (segmentHeight + gap);
             float bottom = top + segmentHeight;
             rect.set(left, top, right, bottom);
 
             boolean selected = itemIndex == selectedIndex;
             boolean pressed = itemIndex == pressedIndex;
+            boolean morphing = itemIndex == morphIndex;
             int fillColor = selected ? selectedColor : unselectedColor;
             if (pressed && !selected) {
                 fillColor = ColorUtils.blendARGB(fillColor, selectorColor, 0.45f);
@@ -120,7 +139,7 @@ public class M3ConnectedButtonGroup extends View {
             }
 
             backgroundPaint.setColor(fillColor);
-            buildSegmentPath(row, visualColumn, rows, columns);
+            buildSegmentPath(row, visualColumn, rows, columns, morphing ? pressedProgress : 0f);
             canvas.drawPath(path, backgroundPaint);
             if (!selected) {
                 strokePaint.setColor(outlineColor);
@@ -178,20 +197,74 @@ public class M3ConnectedButtonGroup extends View {
         return best;
     }
 
-    private void buildSegmentPath(int row, int column, int rows, int columns) {
+    private float[] getColumnWidths(int columns, float gap) {
+        float[] widths = new float[columns];
+        if (columns <= 0) {
+            return widths;
+        }
+        float availableWidth = getWidth() - getPaddingLeft() - getPaddingRight() - gap * (columns - 1);
+        float totalExpansion = 0f;
+        int pressedColumn = getPressedVisualColumn(columns);
+        for (int i = 0; i < columns; i++) {
+            if (i == pressedColumn) {
+                totalExpansion += 0.18f * pressedProgress;
+            }
+        }
+        float totalWeight = 0f;
+        for (int i = 0; i < columns; i++) {
+            float weight;
+            if (i == pressedColumn) {
+                weight = 1f + 0.18f * pressedProgress;
+            } else if (pressedColumn >= 0 && columns > 1 && totalExpansion > 0f) {
+                weight = Math.max(0.5f, 1f - totalExpansion / (columns - 1));
+            } else {
+                weight = 1f;
+            }
+            widths[i] = weight;
+            totalWeight += weight;
+        }
+        for (int i = 0; i < columns; i++) {
+            widths[i] = Math.max(AndroidUtilities.dp(28), availableWidth * widths[i] / totalWeight);
+        }
+        return widths;
+    }
+
+    private float getColumnLeft(float[] widths, int visualColumn, float gap) {
+        float left = getPaddingLeft();
+        for (int i = 0; i < visualColumn && i < widths.length; i++) {
+            left += widths[i] + gap;
+        }
+        return left;
+    }
+
+    private int getPressedVisualColumn(int columns) {
+        if (morphIndex < 0 || pressedProgress <= 0.001f || columns <= 0) {
+            return -1;
+        }
+        final boolean rtl = getLayoutDirection() == LAYOUT_DIRECTION_RTL;
+        int rows = getRowCount(getWidth());
+        int column = morphIndex % columns;
+        if (morphIndex / columns >= rows) {
+            return -1;
+        }
+        return rtl ? columns - column - 1 : column;
+    }
+
+    private void buildSegmentPath(int row, int column, int rows, int columns, float progress) {
         float outer = AndroidUtilities.dp(24);
         float inner = AndroidUtilities.dp(8);
+        float pressed = AndroidUtilities.dp(16);
         boolean top = row == 0;
         boolean bottom = row == rows - 1;
         boolean left = column == 0;
         boolean right = column == columns - 1;
-        radii[0] = top && left ? outer : inner;
+        radii[0] = AndroidUtilities.lerp(top && left ? outer : inner, pressed, progress);
         radii[1] = radii[0];
-        radii[2] = top && right ? outer : inner;
+        radii[2] = AndroidUtilities.lerp(top && right ? outer : inner, pressed, progress);
         radii[3] = radii[2];
-        radii[4] = bottom && right ? outer : inner;
+        radii[4] = AndroidUtilities.lerp(bottom && right ? outer : inner, pressed, progress);
         radii[5] = radii[4];
-        radii[6] = bottom && left ? outer : inner;
+        radii[6] = AndroidUtilities.lerp(bottom && left ? outer : inner, pressed, progress);
         radii[7] = radii[6];
         path.reset();
         path.addRoundRect(rect, radii, Path.Direction.CW);
@@ -209,12 +282,23 @@ public class M3ConnectedButtonGroup extends View {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 pressedIndex = findItemIndex(event.getX(), event.getY());
+                if (pressedIndex >= 0) {
+                    morphIndex = pressedIndex;
+                    com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(this);
+                    pressedAnimation.animateToFinalPosition(1f);
+                }
                 invalidate();
                 return pressedIndex >= 0;
             case MotionEvent.ACTION_MOVE:
                 int moveIndex = findItemIndex(event.getX(), event.getY());
                 if (moveIndex != pressedIndex) {
                     pressedIndex = moveIndex;
+                    if (pressedIndex >= 0) {
+                        morphIndex = pressedIndex;
+                        pressedAnimation.animateToFinalPosition(1f);
+                    } else {
+                        pressedAnimation.animateToFinalPosition(0f);
+                    }
                     invalidate();
                 }
                 return true;
@@ -222,12 +306,12 @@ public class M3ConnectedButtonGroup extends View {
                 int upIndex = findItemIndex(event.getX(), event.getY());
                 int oldPressedIndex = pressedIndex;
                 pressedIndex = -1;
+                pressedAnimation.animateToFinalPosition(0f);
                 invalidate();
                 if (upIndex >= 0 && upIndex == oldPressedIndex) {
                     performClick();
                     if (upIndex != selectedIndex) {
                         selectedIndex = upIndex;
-                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                         invalidate();
                         if (listener != null) {
                             listener.onItemSelected(upIndex);
@@ -237,6 +321,7 @@ public class M3ConnectedButtonGroup extends View {
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 pressedIndex = -1;
+                pressedAnimation.animateToFinalPosition(0f);
                 invalidate();
                 return true;
         }
@@ -258,18 +343,26 @@ public class M3ConnectedButtonGroup extends View {
         final float gap = AndroidUtilities.dp(2);
         final int rows = getRowCount(getWidth());
         final int columns = Math.max(1, (int) Math.ceil(count / (float) rows));
-        final float segmentWidth = (getWidth() - getPaddingLeft() - getPaddingRight() - gap * (columns - 1)) / columns;
+        final float[] columnWidths = getColumnWidths(columns, gap);
         final float segmentHeight = (getHeight() - getPaddingTop() - getPaddingBottom() - gap * (rows - 1)) / rows;
         float relativeX = x - getPaddingLeft();
         float relativeY = y - getPaddingTop();
-        int visualColumn = (int) (relativeX / (segmentWidth + gap));
+        int visualColumn = -1;
+        float left = 0;
+        for (int i = 0; i < columns; i++) {
+            float right = left + columnWidths[i];
+            if (relativeX >= left && relativeX <= right) {
+                visualColumn = i;
+                break;
+            }
+            left = right + gap;
+        }
         int row = (int) (relativeY / (segmentHeight + gap));
         if (visualColumn < 0 || visualColumn >= columns || row < 0 || row >= rows) {
             return -1;
         }
-        float segmentLeft = visualColumn * (segmentWidth + gap);
         float segmentTop = row * (segmentHeight + gap);
-        if (relativeX < segmentLeft || relativeX > segmentLeft + segmentWidth || relativeY < segmentTop || relativeY > segmentTop + segmentHeight) {
+        if (relativeY < segmentTop || relativeY > segmentTop + segmentHeight) {
             return -1;
         }
         int column = rtl ? columns - visualColumn - 1 : visualColumn;

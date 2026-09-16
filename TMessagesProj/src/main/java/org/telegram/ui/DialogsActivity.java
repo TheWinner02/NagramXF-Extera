@@ -7047,7 +7047,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (actionMode == null) {
             return;
         }
-        actionMode.setM3ButtonGroup(pinItem, muteItem, archive2Item, deleteItem, otherItem);
+        actionMode.setM3ButtonGroupInsideContainer(pinItem, muteItem, archive2Item, deleteItem, otherItem);
     }
 
     private void applyM3BackButtonStyle(boolean actionModeStyle) {

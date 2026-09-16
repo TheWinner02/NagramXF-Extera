@@ -4164,6 +4164,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         createActionBarMenu(false);
+        updateProfileActionButtonGroup();
 
         listAdapter = new ListAdapter(context);
         searchAdapter = new SearchAdapter(this, context);
@@ -12881,7 +12882,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (sharedMediaLayout != null) {
             sharedMediaLayout.getSearchItem().requestLayout();
         }
+        updateProfileActionButtonGroup();
         updateStoriesViewBounds(false);
+    }
+
+    private void updateProfileActionButtonGroup() {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || actionBar == null || editItem == null || otherItem == null) {
+            return;
+        }
+        actionBar.createMenu().setM3ButtonGroupInsideContainer(editItem, otherItem);
     }
 
     private void createGhostModeExclusionItem(long chatId) {

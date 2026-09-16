@@ -13,6 +13,10 @@ public class ScaleStateListAnimator {
     }
 
     public static void apply(View view, float scale, float tension) {
+        apply(view, scale, tension, true);
+    }
+
+    public static void apply(View view, float scale, float tension, boolean hapticFeedback) {
         if (view == null) {
             return;
         }
@@ -31,7 +35,9 @@ public class ScaleStateListAnimator {
         pressedAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(android.animation.Animator animation) {
-                com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(view);
+                if (hapticFeedback) {
+                    com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(view);
+                }
             }
         });
 

@@ -246,6 +246,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     private ActionBarMenuSubItem closeTopic;
     private ActionBarMenuSubItem restartTopic;
     ActionBarMenuItem otherItem;
+    private final ArrayList<View> actionModeViews = new ArrayList<>();
     private RadialProgressView bottomOverlayProgress;
     private FrameLayout bottomOverlayContainer;
     private ActionBarMenuItem searchItem;
@@ -2412,6 +2413,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             showItem.setVisibility(canShowCount == 1 && selectedTopics.size() == 1 ? View.VISIBLE : View.GONE);
 
             otherItem.checkHideMenuItem();
+            updateActionModeButtonGroup();
 
             updateReordering();
         }
@@ -2443,6 +2445,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
             return;
         }
         final ActionBarMenu actionMode = actionBar.createActionMode(false, null);
+        actionModeViews.clear();
 
         if (inPreviewMode) {
             actionMode.setBackgroundColor(Color.TRANSPARENT);
@@ -2468,6 +2471,26 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         readItem = otherItem.addSubItem(read_id, R.drawable.msg_markread, getString(R.string.MarkAsRead));
         closeTopic = otherItem.addSubItem(close_topic_id, R.drawable.msg_topic_close, getString(R.string.CloseTopic));
         restartTopic = otherItem.addSubItem(restart_topic_id, R.drawable.msg_topic_restart, getString(R.string.RestartTopic));
+
+        actionModeViews.add(pinItem);
+        actionModeViews.add(unpinItem);
+        actionModeViews.add(muteItem);
+        actionModeViews.add(deleteItem);
+        actionModeViews.add(hideItem);
+        actionModeViews.add(showItem);
+        actionModeViews.add(otherItem);
+        updateActionModeButtonGroup();
+    }
+
+    private void updateActionModeButtonGroup() {
+        if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || actionBar == null || actionModeViews.isEmpty()) {
+            return;
+        }
+        ActionBarMenu actionMode = actionBar.getActionMode();
+        if (actionMode == null) {
+            return;
+        }
+        actionMode.setM3ButtonGroupInsideContainer(actionModeViews.toArray(new View[0]));
     }
 
     private DialogCell slidingView;

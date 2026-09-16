@@ -68,6 +68,8 @@ public class ProfileActionsView extends View {
     public float clipHeight = -1;
     private final Path clipAvatarPath = new Path();
     private final Path clipPath = new Path();
+    private final Path actionPath = new Path();
+    private final float[] actionRadii = new float[8];
     private ProfileActivity.AvatarImageView avatarView;
     private float renderNodeScale;
     private float renderNodeTranslateY;
@@ -202,7 +204,7 @@ public class ProfileActionsView extends View {
         int w = getMeasuredWidth();
         if (w <= 0) return;
 
-        float betweenPadding = xpadding / 2f;
+        float betweenPadding = getBetweenPadding();
         float width = (w - betweenPadding * Math.max(0, activeCount - 1) - xpadding * 2f) / Math.max(1, activeCount);
 
         this.radialGradient = new RadialGradient(
@@ -232,8 +234,123 @@ public class ProfileActionsView extends View {
 
     private float getItemWidth() {
         int w = getMeasuredWidth();
-        float betweenPadding = xpadding / 2f;
+        float betweenPadding = getBetweenPadding();
         return (w - betweenPadding * (activeCount - 1) - xpadding * 2f) / activeCount;
+    }
+
+    private float getBetweenPadding() {
+        return xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() ? dp(2) : xpadding / 2f;
+    }
+
+    private float[] getM3ItemWidths() {
+        int count = actions.size();
+        float[] widths = new float[count];
+        int visibleCount = 0;
+        float totalExpansion = 0f;
+        int pressedCount = 0;
+        for (int i = 0; i < count; i++) {
+            Action action = actions.get(i);
+            if (action.isDeleted || action.isDeleting) {
+                continue;
+            }
+            visibleCount++;
+            float progress = action.pressMorphHelper.getProgress();
+            if (progress > 0.001f) {
+                totalExpansion += 0.18f * progress;
+                pressedCount++;
+            }
+        }
+        if (visibleCount == 0) {
+            return widths;
+        }
+
+        float totalWeight = 0f;
+        float[] weights = new float[count];
+        for (int i = 0; i < count; i++) {
+            Action action = actions.get(i);
+            if (action.isDeleted || action.isDeleting) {
+                continue;
+            }
+            float progress = action.pressMorphHelper.getProgress();
+            if (progress > 0.001f) {
+                weights[i] = 1f + 0.18f * progress;
+            } else if (visibleCount > pressedCount && totalExpansion > 0f) {
+                float shrink = totalExpansion / (float) (visibleCount - pressedCount);
+                weights[i] = Math.max(0.5f, 1f - shrink);
+            } else {
+                weights[i] = 1f;
+            }
+            totalWeight += weights[i];
+        }
+
+        float availableWidth = getMeasuredWidth() - xpadding * 2f - getBetweenPadding() * Math.max(0, visibleCount - 1);
+        for (int i = 0; i < count; i++) {
+            if (weights[i] > 0f && totalWeight > 0f) {
+                widths[i] = Math.max(dp(28), availableWidth * weights[i] / totalWeight);
+            }
+        }
+        return widths;
+    }
+
+    private void addM3ActionRoundRect(Path path, RectF rect, Action action) {
+        setM3ActionRadii(action);
+        path.addRoundRect(rect, actionRadii, Path.Direction.CCW);
+    }
+
+    private void setM3ActionRadii(Action action) {
+        float outer = dp(20);
+        float inner = getM3VisibleActionCount() > 1 ? dp(8) : outer;
+        float pressed = dp(16);
+        float progress = action.pressMorphHelper.getProgress();
+        boolean first = isFirstM3Action(action);
+        boolean last = isLastM3Action(action);
+
+        if (first || getM3VisibleActionCount() == 1) {
+            actionRadii[0] = actionRadii[1] = AndroidUtilities.lerp(outer, pressed, progress);
+            actionRadii[6] = actionRadii[7] = AndroidUtilities.lerp(outer, pressed, progress);
+        } else {
+            actionRadii[0] = actionRadii[1] = AndroidUtilities.lerp(inner, pressed, progress);
+            actionRadii[6] = actionRadii[7] = AndroidUtilities.lerp(inner, pressed, progress);
+        }
+
+        if (last || getM3VisibleActionCount() == 1) {
+            actionRadii[2] = actionRadii[3] = AndroidUtilities.lerp(outer, pressed, progress);
+            actionRadii[4] = actionRadii[5] = AndroidUtilities.lerp(outer, pressed, progress);
+        } else {
+            actionRadii[2] = actionRadii[3] = AndroidUtilities.lerp(inner, pressed, progress);
+            actionRadii[4] = actionRadii[5] = AndroidUtilities.lerp(inner, pressed, progress);
+        }
+    }
+
+    private int getM3VisibleActionCount() {
+        int count = 0;
+        for (int i = 0; i < actions.size(); i++) {
+            Action action = actions.get(i);
+            if (!action.isDeleted && !action.isDeleting) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean isFirstM3Action(Action target) {
+        for (int i = 0; i < actions.size(); i++) {
+            Action action = actions.get(i);
+            if (!action.isDeleted && !action.isDeleting) {
+                return action == target;
+            }
+        }
+        return false;
+    }
+
+    private boolean isLastM3Action(Action target) {
+        for (int i = actions.size() - 1; i >= 0; i--) {
+            Action action = actions.get(i);
+            if (!action.isDeleted && !action.isDeleting) {
+                return action == target;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -252,8 +369,10 @@ public class ProfileActionsView extends View {
             return;
         }
 
-        final float betweenPadding = xpadding / 2f;
+        final boolean isM3Expressive = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive();
+        final float betweenPadding = getBetweenPadding();
         final float width = getItemWidth();
+        final float[] m3ItemWidths = isM3Expressive ? getM3ItemWidths() : null;
         float left = xpadding;
         float r = getRoundRadius();
 
@@ -268,8 +387,9 @@ public class ProfileActionsView extends View {
             if (action.isDeleted) continue;
 
             if (!action.isDeleting) {
-                action.rect.set(left, top, left + width, top + height);
-                left += width + betweenPadding;
+                float actionWidth = m3ItemWidths != null ? m3ItemWidths[i] : width;
+                action.rect.set(left, top, left + actionWidth, top + height);
+                left += actionWidth + betweenPadding;
 
                 if (newFirstAction == null) {
                     newFirstAction = action;
@@ -285,11 +405,11 @@ public class ProfileActionsView extends View {
                     action.rect.height() / 2.0f * (1.0f - action.getScale())
                 );
                 AndroidUtilities.rectTmp.inset(-1, -1);
-                float actionRadius = r;
-                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                    actionRadius = AndroidUtilities.lerp(r, dp(8), action.pressMorphHelper.getProgress());
+                if (isM3Expressive) {
+                    addM3ActionRoundRect(clipPath, AndroidUtilities.rectTmp, action);
+                } else {
+                    clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CCW);
                 }
-                clipPath.addRoundRect(AndroidUtilities.rectTmp, actionRadius, actionRadius, Path.Direction.CCW);
             }
         }
         firstAction = newFirstAction;
@@ -320,18 +440,24 @@ public class ProfileActionsView extends View {
                         paint.setShadowLayer(0, 0, 0, 0);
                     }
 
-                    float actionRadius = r;
-                    if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
-                        actionRadius = AndroidUtilities.lerp(r, dp(8), action.pressMorphHelper.getProgress());
+                    if (isM3Expressive) {
+                        setM3ActionRadii(action);
+                        actionPath.rewind();
+                        actionPath.addRoundRect(AndroidUtilities.rectTmp, actionRadii, Path.Direction.CW);
+                        canvas.drawPath(actionPath, paint);
+                    } else {
+                        canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);
                     }
-
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, actionRadius, actionRadius, paint);
                     if (radialGradient != null) {
                         int wasAlpha2 = shaderPaint.getAlpha();
                         shaderPaint.setAlpha((int) (action.getAlpha() * alphaFraction1 * wasAlpha2));
                         matrix.setTranslate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
                         radialGradient.setLocalMatrix(matrix);
-                        canvas.drawRoundRect(AndroidUtilities.rectTmp, actionRadius, actionRadius, shaderPaint);
+                        if (isM3Expressive) {
+                            canvas.drawPath(actionPath, shaderPaint);
+                        } else {
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, shaderPaint);
+                        }
                         shaderPaint.setAlpha(wasAlpha2);
                     }
                     paint.setAlpha(wasAlpha);
@@ -949,7 +1075,7 @@ public class ProfileActionsView extends View {
         float callAnimateFromY = callView.getTop();
         if (isOpen) {
             int c = actions.size();
-            final float betweenPadding = xpadding / 2f;
+            final float betweenPadding = getBetweenPadding();
             final float width = getItemWidth();
             float left = xpadding;
 
