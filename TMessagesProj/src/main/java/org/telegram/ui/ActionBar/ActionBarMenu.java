@@ -857,7 +857,7 @@ public class ActionBarMenu extends LinearLayout {
             return;
         }
         for (View child : children) {
-            if (child != null && child instanceof ActionBarMenuItem && !((ActionBarMenuItem) child).isSearchField()) {
+            if (child instanceof ActionBarMenuItem) {
                 m3ManualGroupChildren.add(child);
                 if (!m3ChildStates.containsKey(child)) {
                     m3ChildStates.put(child, new M3ChildState(child, this::applyM3Layouts));

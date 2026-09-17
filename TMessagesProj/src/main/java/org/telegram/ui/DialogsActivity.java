@@ -3561,6 +3561,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 showItemOptions();
                 return true;
             });
+            menu.setM3ButtonGroup(searchItem, downloadsItem, optionsItem);
         }
 
         // na: Added ability to open Saved Messages on long click on search top button

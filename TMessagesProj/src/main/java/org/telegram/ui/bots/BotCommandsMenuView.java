@@ -40,6 +40,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
+import org.telegram.ui.Components.M3PressMorphHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StaticLayoutEx;
@@ -72,6 +74,7 @@ public class BotCommandsMenuView extends View {
 
     Drawable backgroundDrawable;
     boolean drawBackgroundDrawable = true;
+    private final M3PressMorphHelper pressMorphHelper = new M3PressMorphHelper(this);
 
     public BotCommandsMenuView(Context context) {
         super(context);
@@ -82,7 +85,17 @@ public class BotCommandsMenuView extends View {
         backDrawable.setCallback(this);
         textPaint.setTypeface(AndroidUtilities.bold());
         backDrawable.setRoundCap();
-        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            backgroundDrawable = new M3ExpressiveButtonDrawable(
+                    paint.getColor(),
+                    Theme.getColor(Theme.key_featuredStickers_addButtonPressed),
+                    AndroidUtilities.dp(16),
+                    AndroidUtilities.dp(8),
+                    0
+            );
+        } else {
+            backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+        }
         backgroundDrawable.setCallback(this);
         webViewAnimation.setCallback(this);
         webViewAnimation.setMasterParent(this);
@@ -92,6 +105,18 @@ public class BotCommandsMenuView extends View {
     public void setDrawBackgroundDrawable(boolean drawBackgroundDrawable) {
         this.drawBackgroundDrawable = drawBackgroundDrawable;
         invalidate();
+    }
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            pressMorphHelper.setPressed(pressed);
+        }
+    }
+
+    public float getPressMorphProgress() {
+        return pressMorphHelper.getProgress();
     }
 
     public void setWebView(boolean webView) {
@@ -174,7 +199,12 @@ public class BotCommandsMenuView extends View {
 
             if (drawBackgroundDrawable) {
                 rectTmp.set(0, 0, AndroidUtilities.dp(40) + (menuTextWidth + AndroidUtilities.dp(4)) * expandProgress, getMeasuredHeight());
-                canvas.drawRoundRect(rectTmp, AndroidUtilities.dp(16), AndroidUtilities.dp(16), paint);
+                if (backgroundDrawable instanceof M3ExpressiveButtonDrawable) {
+                    ((M3ExpressiveButtonDrawable) backgroundDrawable).setMorphProgress(pressMorphHelper.getProgress());
+                }
+                if (!(backgroundDrawable instanceof M3ExpressiveButtonDrawable)) {
+                    canvas.drawRoundRect(rectTmp, AndroidUtilities.dp(16), AndroidUtilities.dp(16), paint);
+                }
                 backgroundDrawable.setBounds((int) rectTmp.left, (int) rectTmp.top, (int) rectTmp.right, (int) rectTmp.bottom);
                 backgroundDrawable.draw(canvas);
             }

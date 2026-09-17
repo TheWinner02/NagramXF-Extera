@@ -16,6 +16,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.M3PressMorphHelper;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SimpleFloatPropertyCompat;
 import org.telegram.ui.web.BotWebViewContainer;
@@ -36,6 +37,7 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
 
     private boolean progressWasVisible;
     private BotCommandsMenuView menuButton;
+    private final M3PressMorphHelper pressMorphHelper = new M3PressMorphHelper(this);
 
     public ChatActivityBotWebViewButton(Context context) {
         super(context);
@@ -65,6 +67,14 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
     public void setBotMenuButton(BotCommandsMenuView menuButton) {
         this.menuButton = menuButton;
         invalidate();
+    }
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+            pressMorphHelper.setPressed(pressed);
+        }
     }
 
     public void setupButtonParams(boolean isActive, String text, int color, int textColor, boolean isProgressVisible) {
@@ -120,7 +130,10 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         canvas.save();
         float menuY = (getHeight() - AndroidUtilities.dp(32)) / 2f;
         float offset = Math.max(getWidth() - menuButtonWidth - AndroidUtilities.dp(4), getHeight()) * progress;
-        float rad = AndroidUtilities.dp(16) + offset;
+        float pressProgress = xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()
+                ? Math.max(pressMorphHelper.getProgress(), menuButton == null ? 0f : menuButton.getPressMorphProgress())
+                : 0f;
+        float rad = AndroidUtilities.lerp(AndroidUtilities.dp(16), AndroidUtilities.dp(8), pressProgress) + offset;
         AndroidUtilities.rectTmp.set(AndroidUtilities.dp(14) - offset, menuY + AndroidUtilities.dp(4) - offset, AndroidUtilities.dp(6) + menuButtonWidth + offset, getHeight() - AndroidUtilities.dp(12) + offset);
 
         path.rewind();

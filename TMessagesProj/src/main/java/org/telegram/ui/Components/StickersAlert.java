@@ -23,6 +23,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -1157,7 +1158,37 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         shadow[1].setBackgroundColor(getThemedColor(Theme.key_dialogShadowLine));
         containerView.addView(shadow[1], frameLayoutParams);
 
-        pickerBottomLayout = new AnimatedTextView(context);
+        pickerBottomLayout = new AnimatedTextView(context) {
+            private final M3PressMorphHelper pressMorphHelper = new M3PressMorphHelper(this);
+            private final Path pressMorphPath = new Path();
+            private final RectF pressMorphRect = new RectF();
+
+            @Override
+            public void setPressed(boolean pressed) {
+                super.setPressed(pressed);
+                if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                    pressMorphHelper.setPressed(pressed);
+                }
+            }
+
+            @Override
+            public void draw(Canvas canvas) {
+                if (!xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive() || !(getBackground() instanceof M3ExpressiveButtonDrawable)) {
+                    super.draw(canvas);
+                    return;
+                }
+                float progress = pressMorphHelper.getProgress();
+                ((M3ExpressiveButtonDrawable) getBackground()).setMorphProgress(progress);
+                pressMorphRect.set(0, 0, getWidth(), getHeight());
+                float radius = AndroidUtilities.lerp(getHeight() / 2f, dp(8), progress);
+                pressMorphPath.rewind();
+                pressMorphPath.addRoundRect(pressMorphRect, radius, radius, Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(pressMorphPath);
+                super.draw(canvas);
+                canvas.restore();
+            }
+        };
         pickerBottomLayout.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_dialogBackground), getThemedColor(Theme.key_listSelector)));
         pickerBottomLayout.setTextColor(getThemedColor(buttonTextColorKey = Theme.key_dialogTextBlue2));
         pickerBottomLayout.setTextSize(dp(14));
@@ -2182,7 +2213,17 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         if (onClickListener == null) {
             pickerBottomLayout.setAlpha(0f);
         } else if (backgroundColorKey >= 0 && backgroundSelectorColorKey >= 0) {
-            pickerBottomLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(backgroundColorKey), getThemedColor(backgroundSelectorColorKey)));
+            if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
+                pickerBottomLayout.setBackground(new M3ExpressiveButtonDrawable(
+                        getThemedColor(backgroundColorKey),
+                        getThemedColor(backgroundSelectorColorKey),
+                        dp(24),
+                        dp(8),
+                        0
+                ));
+            } else {
+                pickerBottomLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(backgroundColorKey), getThemedColor(backgroundSelectorColorKey)));
+            }
             pickerBottomFrameLayout.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
             params.leftMargin = params.topMargin = params.rightMargin = params.bottomMargin = dp(8);
             emptyParams.bottomMargin = gridParams.bottomMargin = shadowParams.bottomMargin = dp(64);
