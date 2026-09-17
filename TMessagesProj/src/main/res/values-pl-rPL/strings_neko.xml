@@ -237,6 +237,7 @@
     <string name="BackupSettings">Eksportuj ustawienia</string>
     <string name="ImportSettings">Importuj ustawienia</string>
     <string name="ImportSettingsAlert">Nadpisać ustawienia\? Importowanie ustawień z nieznanych źródeł może spowodować nadpisanie kodu PIN i zablokowanie aplikacji.</string>
+    <string name="ImportSettingsAlertSafe">Nadpisać importowane ustawienia? Ustawienia blokady aplikacji i klucze push przypisane do urządzenia zostaną zachowane. Aby zastosować zmiany, należy ponownie uruchomić aplikację.</string>
     <string name="nekoXPaymentRemovedToast">Funkcje płatności zostały usunięte.</string>
     <string name="unreadBadgeOnBackButton">Odznaka nieprzeczytanych na przycisku Wstecz</string>
     <string name="DeleteDownloadedFileConfirm">Usunąć ten plik z pamięci podręcznej?</string>

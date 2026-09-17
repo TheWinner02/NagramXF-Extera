@@ -478,9 +478,10 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     }
 
     private void openFilePicker() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.setType("application/json");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/json", "text/plain", "application/octet-stream"});
         try {
             startActivityForResult(intent, 21);
         } catch (android.content.ActivityNotFoundException ex) {
@@ -496,24 +497,28 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                 File cacheDir = AndroidUtilities.getCacheDir();
                 String tempFile = UUID.randomUUID().toString().replace("-", "") + ".nekox-settings.json";
                 File file = new File(cacheDir.getPath(), tempFile);
-                try {
-                    final InputStream inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
-                    if (inputStream != null) {
-                        OutputStream outputStream = new FileOutputStream(file);
+                try (InputStream inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri)) {
+                    if (inputStream == null) {
+                        throw new IllegalStateException("Unable to open the selected settings backup");
+                    }
+                    try (OutputStream outputStream = new FileOutputStream(file)) {
                         final byte[] buffer = new byte[4 * 1024];
                         int read;
                         while ((read = inputStream.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, read);
                         }
-                        inputStream.close();
                         outputStream.flush();
-                        outputStream.close();
-                        SettingsBackupHelper.importSettings(getParentActivity(), file);
                     }
-                } catch (Exception ignore) {
+                    SettingsBackupHelper.importSettings(getParentActivity(), file);
+                } catch (Exception e) {
+                    AlertUtil.showSimpleAlert(getParentActivity(), e);
+                } finally {
+                    if (file.exists()) {
+                        file.delete();
+                    }
                 }
             }
-            super.onActivityResultFragment(requestCode, resultCode, data);
         }
+        super.onActivityResultFragment(requestCode, resultCode, data);
     }
 }

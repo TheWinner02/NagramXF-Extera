@@ -237,6 +237,7 @@
     <string name="BackupSettings">Експорт налаштувань</string>
     <string name="ImportSettings">Імпорт налаштувань</string>
     <string name="ImportSettingsAlert">Перезаписати налаштування? Імпорт налаштувань з невідомих джерел може призвести до перезапису Pin-коду та блокування додатка.</string>
+    <string name="ImportSettingsAlertSafe">Перезаписати імпортовані налаштування? Налаштування блокування застосунку та ключі push-сповіщень, прив’язані до пристрою, буде збережено. Щоб застосувати зміни, потрібно перезапустити застосунок.</string>
     <string name="nekoXPaymentRemovedToast">Функції оплати були видалені.</string>
     <string name="unreadBadgeOnBackButton">Кількість непрочитаних на кнопці Назад</string>
     <string name="DeleteDownloadedFileConfirm">Видалити завантажений файл?</string>

@@ -239,6 +239,7 @@
     <string name="BackupSettings">备份设置</string>
     <string name="ImportSettings">导入设置</string>
     <string name="ImportSettingsAlert">确定要覆盖设置吗？从未知来源导入设置可能导致锁定码被覆盖从而导致应用被锁定。</string>
+    <string name="ImportSettingsAlertSafe">要覆盖导入的设置吗？应用锁定设置和设备专用的推送密钥将会保留。需要重启应用才能应用更改。</string>
     <string name="nekoXPaymentRemovedToast">支付功能已被移除。</string>
     <string name="unreadBadgeOnBackButton">聊天窗口返回按钮上显示未读数</string>
     <string name="DeleteDownloadedFileConfirm">从本地缓存中删除此文件？</string>

@@ -15,6 +15,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -25,6 +26,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -141,6 +143,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private BlurredBackgroundDrawable tabsViewBackground;
     private View fadeView;
     private boolean lastHideContacts = NaConfig.INSTANCE.getMainTabsHideContacts().Bool();
+    private long lastChatsTabTapTime;
 
     public MainTabsActivity() {
         super();
@@ -381,7 +384,18 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 if (viewPager.getCurrentPosition() == position) {
                     final BaseFragment fragment = getCurrentVisibleFragment();
                     if (fragment instanceof MainTabsActivity.TabFragmentDelegate) {
-                        ((MainTabsActivity.TabFragmentDelegate) fragment).onParentScrollToTop();
+                        final MainTabsActivity.TabFragmentDelegate delegate = (MainTabsActivity.TabFragmentDelegate) fragment;
+                        if (tabIndex == INDEX_CHATS && delegate.isParentListAtTop()) {
+                            final long now = SystemClock.uptimeMillis();
+                            if (lastChatsTabTapTime != 0 && now - lastChatsTabTapTime <= ViewConfiguration.getDoubleTapTimeout() && delegate.onParentDoubleTapAtTop()) {
+                                lastChatsTabTapTime = 0;
+                                return;
+                            }
+                            lastChatsTabTapTime = now;
+                        } else if (tabIndex == INDEX_CHATS) {
+                            lastChatsTabTapTime = 0;
+                        }
+                        delegate.onParentScrollToTop();
                     }
                     return;
                 }
@@ -949,6 +963,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         default void onParentScrollToTop() {
 
+        }
+
+        default boolean isParentListAtTop() {
+            return false;
+        }
+
+        default boolean onParentDoubleTapAtTop() {
+            return false;
         }
 
         default BlurredBackgroundSourceRenderNode getGlassSource() {

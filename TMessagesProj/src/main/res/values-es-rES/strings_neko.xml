@@ -237,6 +237,7 @@
     <string name="BackupSettings">Exportar ajustes</string>
     <string name="ImportSettings">Importar ajustes</string>
     <string name="ImportSettingsAlert">¿Estás seguro de que quieres sobrescribir los ajustes? Importar ajustes de fuentes desconocidas puede hacer que se sobrescriba el pin y que la aplicación se bloquee.</string>
+    <string name="ImportSettingsAlertSafe">¿Sobrescribir los ajustes importados? Se conservarán los ajustes de bloqueo de la aplicación y las claves push específicas del dispositivo. Es necesario reiniciar la aplicación para aplicar los cambios.</string>
     <string name="nekoXPaymentRemovedToast">Las funciones de pago han sido eliminadas.</string>
     <string name="unreadBadgeOnBackButton">Icono de no leído en el botón Atrás</string>
     <string name="DeleteDownloadedFileConfirm">¿Eliminar este archivo de la memoria caché local?</string>

@@ -89,11 +89,24 @@ public class CloudStorageHelper extends AccountInstance {
         HashMap<String, String[]> map = new HashMap<>();
         map.put("keys", keys);
         invokeWebViewCustomMethod("getStorageValues", gson.toJson(map), (res, error) -> {
-            if (error == null) {
-                //noinspection unchecked
-                callback.run(gson.fromJson(res, HashMap.class), null);
-            } else {
+            if (error != null) {
                 callback.run(null, error);
+                return;
+            }
+            if (res == null) {
+                callback.run(null, "EMPTY_RESPONSE");
+                return;
+            }
+            try {
+                //noinspection unchecked
+                HashMap<String, String> values = gson.fromJson(res, HashMap.class);
+                if (values == null) {
+                    callback.run(null, "INVALID_RESPONSE");
+                } else {
+                    callback.run(values, null);
+                }
+            } catch (Exception e) {
+                callback.run(null, e.getLocalizedMessage());
             }
         });
     }
@@ -110,11 +123,19 @@ public class CloudStorageHelper extends AccountInstance {
 
     public void getKeys(Utilities.Callback2<String[], String> callback) {
         invokeWebViewCustomMethod("getStorageKeys", "{}", (res, error) -> {
-            if (error == null) {
-                String[] keys = gson.fromJson(res, String[].class);
-                callback.run(keys, null);
-            } else {
+            if (error != null) {
                 callback.run(null, error);
+                return;
+            }
+            if (res == null) {
+                callback.run(null, "EMPTY_RESPONSE");
+                return;
+            }
+            try {
+                String[] keys = gson.fromJson(res, String[].class);
+                callback.run(keys != null ? keys : new String[0], null);
+            } catch (Exception e) {
+                callback.run(null, e.getLocalizedMessage());
             }
         });
     }

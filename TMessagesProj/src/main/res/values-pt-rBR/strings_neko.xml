@@ -239,6 +239,7 @@
     <string name="BackupSettings">Exportar configurações</string>
     <string name="ImportSettings">Importar configurações</string>
     <string name="ImportSettingsAlert">Substituir as configurações\? A importação de configurações de fontes desconhecidas pode fazer com que a senha seja substituída e o aplicativo seja bloqueado.</string>
+    <string name="ImportSettingsAlertSafe">Substituir as configurações importadas? As configurações de bloqueio do aplicativo e as chaves push específicas do dispositivo serão preservadas. O aplicativo deve ser reiniciado para aplicar as alterações.</string>
     <string name="nekoXPaymentRemovedToast">Os recursos de pagamento foram removidos.</string>
     <string name="unreadBadgeOnBackButton">Contador de não lidas no botão de voltar</string>
     <string name="DeleteDownloadedFileConfirm">Excluir este arquivo do cache local?</string>

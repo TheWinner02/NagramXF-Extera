@@ -38,7 +38,15 @@ public class NekoConfig {
     public static final ConfigItem useOpenFreeMap = new ConfigItem("useOpenFreeMap", ConfigItem.configTypeBool, false);
     public static final ConfigItem disableInstantCamera = new ConfigItem("disableInstantCamera", ConfigItem.configTypeBool, false);
     public static final ConfigItem disableSwipeToNextTopic = new ConfigItem("disableSwipeToNextTopic", ConfigItem.configTypeBool, false);
-    public static HashMap<String, ConfigItem> getConfigTypes() { return new HashMap<>(); }
+    public static HashMap<String, ConfigItem> getConfigTypes() {
+        synchronized (sync) {
+            HashMap<String, ConfigItem> types = new HashMap<>();
+            for (ConfigItem item : configs) {
+                types.put(item.key, item);
+            }
+            return types;
+        }
+    }
     public static boolean fixDriftingForGoogleMaps() { return false; }
 
     public static final int TABLET_AUTO = 0;
@@ -283,7 +291,7 @@ public class NekoConfig {
                 }
             }
             if (!configLoaded)
-                getPreferences().registerOnSharedPreferenceChangeListener(CloudSettingsHelper.listener);
+                CloudSettingsHelper.getInstance();
             for (int a = 1; a <= 5; a++) {
                 datacenterInfos.add(new DatacenterInfo(a));
             }

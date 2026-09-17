@@ -236,6 +236,7 @@
     <string name="BackupSettings">Xuất cấu hình cài đặt</string>
     <string name="ImportSettings">Nhập cấu hình cài đặt</string>
     <string name="ImportSettingsAlert">Bạn có chắc chắn muốn ghi đè cài đặt không\? Việc nhập cài đặt từ các nguồn không xác định có thể khiến mã pin bị ghi đè và khiến ứng dụng bị khóa.</string>
+    <string name="ImportSettingsAlertSafe">Ghi đè các cài đặt đã nhập? Cài đặt khóa ứng dụng và khóa push dành riêng cho thiết bị sẽ được giữ nguyên. Cần khởi động lại ứng dụng để áp dụng các thay đổi.</string>
     <string name="nekoXPaymentRemovedToast">Tính năng thanh toán đã bị gỡ bỏ.</string>
     <string name="unreadBadgeOnBackButton">Huy hiệu Chưa đọc trên Nút Quay lại</string>
     <string name="DeleteDownloadedFileConfirm">Xóa tệp này khỏi bộ nhớ đệm cục bộ?</string>

@@ -20,7 +20,13 @@ object NaConfig {
 
     @JvmStatic
     fun getConfigTypes(): HashMap<String, ConfigItem> {
-        return HashMap()
+        synchronized(sync) {
+            val types = HashMap<String, ConfigItem>()
+            for (item in configs) {
+                types[item.key] = item
+            }
+            return types
+        }
     }
 
     @JvmStatic

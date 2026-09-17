@@ -11,7 +11,7 @@ object ShareUtil {
 
     @JvmOverloads
     @JvmStatic
-    fun shareFile(ctx: Context, fileToShare: File, caption: String = "") {
+    fun shareFile(ctx: Context, fileToShare: File, caption: String = "", mimeType: String = "message/rfc822") {
 
         val uri =
             FileProvider.getUriForFile(ctx, BuildConfig.APPLICATION_ID + ".provider", fileToShare)
@@ -20,7 +20,7 @@ object ShareUtil {
 
         i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-        i.type = "message/rfc822"
+        i.type = mimeType
         i.putExtra(Intent.EXTRA_EMAIL, "")
 
         if (caption.isNotBlank()) i.putExtra(Intent.EXTRA_SUBJECT, caption)

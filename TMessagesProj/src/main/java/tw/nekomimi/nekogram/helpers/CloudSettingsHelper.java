@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -39,9 +40,12 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -49,10 +53,15 @@ import tw.nekomimi.nekogram.utils.GsonUtil;
 
 public class CloudSettingsHelper {
     public static final SharedPreferences.OnSharedPreferenceChangeListener listener = (preferences, key) -> CloudSettingsHelper.getInstance().doAutoSync();
+    private static final String[] AUTO_SYNC_PREFERENCES = {
+            "nkmrcfg", "nekox_config", "pillstackconfig", "aichatconfig"
+    };
     private static final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekocloud", Context.MODE_PRIVATE);
     private final SparseArray<Long> cloudSyncedDate = new SparseArray<>();
     private final Handler handler = new Handler();
-    private long localSyncedDate = preferences.getLong("updated_at", -1);
+    private final SparseArray<Long> localSyncedDate = new SparseArray<>();
+    private final ArrayDeque<SyncRequest> syncQueue = new ArrayDeque<>();
+    private boolean syncInProgress;
     private boolean autoSync = preferences.getBoolean("auto_sync", false);
 
     private static final String SETTINGS_CHUNKS_COUNT_KEY = "neko_settings";
@@ -60,19 +69,33 @@ public class CloudSettingsHelper {
     private static final String SETTINGS_UPDATED_AT_KEY = "neko_settings_updated_at";
     private static final String SETTINGS_ENCODING_KEY = "neko_settings_encoding";
     private static final String SETTINGS_ENCODING_GZIP_BASE64_V1 = "gzip_base64_v1";
+    private static final String SETTINGS_MANIFEST_KEY = "neko_settings_manifest";
+    private static final String SETTINGS_DATA_KEY_PREFIX = "neko_settings_data_";
     private static final int MAX_CHUNK_CHARS = 3000;
+    private static final int MAX_CHUNKS = 256;
+    private static final int MAX_RESTORED_BYTES = 10 * 1024 * 1024;
     private static final int RESTORE_BATCH_SIZE = 50;
 
-    private final Runnable cloudSyncRunnable = () -> CloudSettingsHelper.getInstance().syncToCloud((success, error) -> {
-        if (!success) {
-            var global = BulletinFactory.global();
-            if (error == null) {
-                global.createSimpleBulletin(R.raw.error, getString(R.string.CloudConfigSyncFailed)).show();
-            } else {
-                global.createSimpleBulletin(R.raw.error, getString(R.string.CloudConfigSyncFailed), error).show();
+    private final Runnable cloudSyncRunnable = () -> {
+        int account = UserConfig.selectedAccount;
+        CloudSettingsHelper.getInstance().syncToCloud(account, (success, error) -> {
+            if (!success) {
+                var global = BulletinFactory.global();
+                if (error == null) {
+                    global.createSimpleBulletin(R.raw.error, getString(R.string.CloudConfigSyncFailed)).show();
+                } else {
+                    global.createSimpleBulletin(R.raw.error, getString(R.string.CloudConfigSyncFailed), error).show();
+                }
             }
+        });
+    };
+
+    private CloudSettingsHelper() {
+        for (String name : AUTO_SYNC_PREFERENCES) {
+            ApplicationLoader.applicationContext.getSharedPreferences(name, Context.MODE_PRIVATE)
+                    .registerOnSharedPreferenceChangeListener(listener);
         }
-    });
+    }
 
     public static CloudSettingsHelper getInstance() {
         return InstanceHolder.instance;
@@ -120,7 +143,7 @@ public class CloudSettingsHelper {
         });
         syncedDate.setInAnimation(context, R.anim.alpha_in);
         syncedDate.setOutAnimation(context, R.anim.alpha_out);
-        syncedDate.setText(formatSyncedDate(), false);
+        syncedDate.setText(formatSyncedDate(selectedAccount), false);
 
         ButtonWithCounterView restoreButton = new ButtonWithCounterView(context, false, resourcesProvider).setRound();
         restoreButton.setText(getString(R.string.CloudConfigRestore), false);
@@ -128,9 +151,10 @@ public class CloudSettingsHelper {
         restoreButton.setClickable(false);
 
         var storageHelper = getCloudStorageHelper();
-        storageHelper.getItem(SETTINGS_UPDATED_AT_KEY, (res, error) -> {
-            if (error == null && AndroidUtilities.isNumeric(res)) {
-                cloudSyncedDate.put(selectedAccount, Long.parseLong(res));
+        storageHelper.getItems(new String[]{SETTINGS_MANIFEST_KEY, SETTINGS_UPDATED_AT_KEY}, (res, error) -> {
+            long updatedAt = getCloudUpdatedAt(res);
+            if (error == null && updatedAt > 0) {
+                cloudSyncedDate.put(selectedAccount, updatedAt);
                 restoreButton.setEnabled(true);
                 restoreButton.setClickable(true);
             } else {
@@ -138,7 +162,7 @@ public class CloudSettingsHelper {
                 restoreButton.setEnabled(false);
                 restoreButton.setClickable(false);
             }
-            syncedDate.setText(formatSyncedDate());
+            syncedDate.setText(formatSyncedDate(selectedAccount));
         });
 
         LinearLayout linearLayout = new LinearLayout(context);
@@ -149,8 +173,8 @@ public class CloudSettingsHelper {
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 16, 0, 16, 0));
         buttonTextView.setOnClickListener(view -> {
             syncedDate.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CloudConfigSyncing)));
-            syncToCloud((success, error) -> {
-                syncedDate.setText(formatSyncedDate());
+            syncToCloud(selectedAccount, (success, error) -> {
+                syncedDate.setText(formatSyncedDate(selectedAccount));
                 if (!success) {
                     if (error == null) {
                         BulletinFactory.of(Bulletin.BulletinWindow.make(context), resourcesProvider).createSimpleBulletin(R.raw.error, getString(R.string.CloudConfigSyncFailed)).show();
@@ -168,8 +192,8 @@ public class CloudSettingsHelper {
         restoreButton.setOnClickListener(view -> {
             if (!restoreButton.isEnabled()) return;
             syncedDate.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CloudConfigSyncing)));
-            restoreFromCloud((success, error) -> {
-                syncedDate.setText(formatSyncedDate());
+            restoreFromCloud(selectedAccount, (success, error) -> {
+                syncedDate.setText(formatSyncedDate(selectedAccount));
                 if (!success) {
                     if (error == null) {
                         BulletinFactory.of(Bulletin.BulletinWindow.make(context), resourcesProvider).createSimpleBulletin(R.raw.error, getString(R.string.CloudConfigRestoreFailed)).show();
@@ -192,8 +216,8 @@ public class CloudSettingsHelper {
         linearLayout.addView(deleteButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 16, 8, 16, 0));
         deleteButton.setOnClickListener(view -> {
             syncedDate.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CloudConfigSyncing)));
-            deleteCloudBackup((success, error) -> {
-                syncedDate.setText(formatSyncedDate());
+            deleteCloudBackup(selectedAccount, (success, error) -> {
+                syncedDate.setText(formatSyncedDate(selectedAccount));
                 if (!success) {
                     if (error == null) {
                         BulletinFactory.of(Bulletin.BulletinWindow.make(context), resourcesProvider).createSimpleBulletin(R.raw.info, getString(R.string.CloudConfigNoBackupToDelete)).show();
@@ -231,71 +255,131 @@ public class CloudSettingsHelper {
         handler.postDelayed(cloudSyncRunnable, 1200);
     }
 
-    private void syncToCloud(Utilities.Callback2<Boolean, String> callback) {
+    private void syncToCloud(int account, Utilities.Callback2<Boolean, String> callback) {
+        syncQueue.add(new SyncRequest(account, callback));
+        runNextCloudSync();
+    }
+
+    private void runNextCloudSync() {
+        if (syncInProgress || syncQueue.isEmpty()) {
+            return;
+        }
+        syncInProgress = true;
+        SyncRequest request = syncQueue.peek();
+        performCloudSync(request.account, (success, error) -> {
+            syncQueue.poll();
+            syncInProgress = false;
+            request.callback.run(success, error);
+            runNextCloudSync();
+        });
+    }
+
+    private void performCloudSync(int account, Utilities.Callback2<Boolean, String> callback) {
         try {
-            String settingsJson = SettingsBackupHelper.backupSettingsJson(true, 0);
+            String settingsJson = SettingsBackupHelper.backupSettingsJson(true, 0, false);
             String payload = gzipBase64Encode(settingsJson);
             int numChunks = (int) Math.ceil((double) payload.length() / MAX_CHUNK_CHARS);
-            syncChunk(payload, 0, numChunks, MAX_CHUNK_CHARS, callback);
+            if (numChunks <= 0 || numChunks > MAX_CHUNKS) {
+                callback.run(false, "Cloud backup is too large");
+                return;
+            }
+            String generation = UUID.randomUUID().toString().replace("-", "");
+            CloudStorageHelper storage = CloudStorageHelper.getInstance(account);
+            storage.getItems(new String[]{SETTINGS_MANIFEST_KEY, SETTINGS_CHUNKS_COUNT_KEY}, (values, error) -> {
+                if (error != null) {
+                    callback.run(false, error);
+                    return;
+                }
+                PreviousBackup previous = PreviousBackup.from(values);
+                syncChunk(account, storage, generation, payload, 0, numChunks, previous, callback);
+            });
         } catch (Exception error) {
             callback.run(false, error.toString());
         }
     }
 
-    private void syncChunk(String setting, int index, int numChunks, int chunkSize, Utilities.Callback2<Boolean, String> callback) {
+    private void syncChunk(int account, CloudStorageHelper storage, String generation, String payload, int index,
+                           int numChunks, PreviousBackup previous, Utilities.Callback2<Boolean, String> callback) {
         if (index >= numChunks) {
-            getCloudStorageHelper().setItem(SETTINGS_CHUNKS_COUNT_KEY, String.valueOf(numChunks), (res, error) -> {
+            long updatedAt = System.currentTimeMillis();
+            JSONObject manifest = new JSONObject();
+            try {
+                manifest.put("generation", generation);
+                manifest.put("count", numChunks);
+                manifest.put("encoding", SETTINGS_ENCODING_GZIP_BASE64_V1);
+                manifest.put("updatedAt", updatedAt);
+            } catch (Exception e) {
+                cleanupGeneration(storage, generation, numChunks);
+                callback.run(false, e.getLocalizedMessage());
+                return;
+            }
+            storage.setItem(SETTINGS_MANIFEST_KEY, manifest.toString(), (res, error) -> {
                 if (error == null) {
-                    localSyncedDate = System.currentTimeMillis();
-                    cloudSyncedDate.put(UserConfig.selectedAccount, localSyncedDate);
-                    getCloudStorageHelper().setItem(SETTINGS_UPDATED_AT_KEY, String.valueOf(localSyncedDate), null);
-                    getCloudStorageHelper().setItem(SETTINGS_ENCODING_KEY, SETTINGS_ENCODING_GZIP_BASE64_V1, null);
-                    preferences.edit().putLong("updated_at", localSyncedDate).apply();
+                    setLocalSyncedDate(account, updatedAt);
+                    cloudSyncedDate.put(account, updatedAt);
+                    cleanupPreviousCloudData(storage, previous);
                     callback.run(true, null);
                 } else {
+                    cleanupGeneration(storage, generation, numChunks);
                     callback.run(false, error);
                 }
             });
             return;
         }
 
-        int startIndex = index * chunkSize;
-        int endIndex = Math.min(startIndex + chunkSize, setting.length());
-        String chunk = setting.substring(startIndex, endIndex);
-        String storageKey = SETTINGS_CHUNK_KEY_PREFIX + index;
+        int startIndex = index * MAX_CHUNK_CHARS;
+        int endIndex = Math.min(startIndex + MAX_CHUNK_CHARS, payload.length());
+        String chunk = payload.substring(startIndex, endIndex);
+        String storageKey = getDataKey(generation, index);
 
-        getCloudStorageHelper().setItem(storageKey, chunk, (res, error) -> {
+        storage.setItem(storageKey, chunk, (res, error) -> {
             if (error != null) {
+                cleanupGeneration(storage, generation, index);
                 callback.run(false, error);
             } else {
-                syncChunk(setting, index + 1, numChunks, chunkSize, callback);
+                syncChunk(account, storage, generation, payload, index + 1, numChunks, previous, callback);
             }
         });
     }
 
-    private void restoreFromCloud(Utilities.Callback2<Boolean, String> callback) {
-        getCloudStorageHelper().getItems(new String[]{SETTINGS_CHUNKS_COUNT_KEY, SETTINGS_ENCODING_KEY}, (meta, metaError) -> {
+    private void restoreFromCloud(int account, Utilities.Callback2<Boolean, String> callback) {
+        CloudStorageHelper storage = CloudStorageHelper.getInstance(account);
+        storage.getItems(new String[]{SETTINGS_MANIFEST_KEY, SETTINGS_CHUNKS_COUNT_KEY, SETTINGS_ENCODING_KEY}, (meta, metaError) -> {
             if (metaError != null || meta == null) {
                 callback.run(false, metaError);
                 return;
             }
-            String countStr = meta.get(SETTINGS_CHUNKS_COUNT_KEY);
-            if (!AndroidUtilities.isNumeric(countStr)) {
-                callback.run(false, null);
-                return;
-            }
-            int numChunks = 0;
+            int numChunks;
+            String encoding;
+            String generationValue;
             try {
-                if (countStr != null) {
+                String manifestValue = meta.get(SETTINGS_MANIFEST_KEY);
+                if (!TextUtils.isEmpty(manifestValue)) {
+                    JSONObject manifest = new JSONObject(manifestValue);
+                    generationValue = manifest.getString("generation");
+                    numChunks = manifest.getInt("count");
+                    encoding = manifest.getString("encoding");
+                } else {
+                    String countStr = meta.get(SETTINGS_CHUNKS_COUNT_KEY);
+                    if (!AndroidUtilities.isNumeric(countStr)) {
+                        callback.run(false, null);
+                        return;
+                    }
                     numChunks = Integer.parseInt(countStr);
+                    encoding = meta.get(SETTINGS_ENCODING_KEY);
+                    generationValue = null;
                 }
             } catch (Exception e) {
                 FileLog.e(e);
                 callback.run(false, e.getLocalizedMessage());
                 return;
             }
-            String encoding = meta.get(SETTINGS_ENCODING_KEY);
-            fetchChunksFromCloud(numChunks, 0, new StringBuilder(), (payload, chunksError) -> {
+            if (numChunks <= 0 || numChunks > MAX_CHUNKS) {
+                callback.run(false, "Invalid cloud backup size");
+                return;
+            }
+            final String generation = generationValue;
+            fetchChunksFromCloud(storage, generation, numChunks, 0, new StringBuilder(), (payload, chunksError) -> {
                 if (chunksError != null) {
                     callback.run(false, chunksError);
                     return;
@@ -303,13 +387,12 @@ public class CloudSettingsHelper {
                 try {
                     String json;
                     if (SETTINGS_ENCODING_GZIP_BASE64_V1.equals(encoding)) {
-                        json = gzipBase64Decode(payload);
+                        json = gzipBase64Decode(payload, MAX_RESTORED_BYTES);
                     } else {
                         json = payload;
                     }
-                    SettingsBackupHelper.importSettings(GsonUtil.toJsonObject(json));
-                    localSyncedDate = System.currentTimeMillis();
-                    preferences.edit().putLong("updated_at", localSyncedDate).apply();
+                    SettingsBackupHelper.importCloudSettings(GsonUtil.toJsonObject(json));
+                    setLocalSyncedDate(account, System.currentTimeMillis());
                     callback.run(true, null);
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -319,7 +402,8 @@ public class CloudSettingsHelper {
         });
     }
 
-    private void fetchChunksFromCloud(int numChunks, int offset, StringBuilder sb, Utilities.Callback2<String, String> callback) {
+    private void fetchChunksFromCloud(CloudStorageHelper storage, String generation, int numChunks, int offset,
+                                      StringBuilder sb, Utilities.Callback2<String, String> callback) {
         if (offset >= numChunks) {
             callback.run(sb.toString(), null);
             return;
@@ -327,22 +411,22 @@ public class CloudSettingsHelper {
         int end = Math.min(offset + RESTORE_BATCH_SIZE, numChunks);
         String[] keys = new String[end - offset];
         for (int i = offset; i < end; i++) {
-            keys[i - offset] = SETTINGS_CHUNK_KEY_PREFIX + i;
+            keys[i - offset] = generation == null ? SETTINGS_CHUNK_KEY_PREFIX + i : getDataKey(generation, i);
         }
-        getCloudStorageHelper().getItems(keys, (res, error) -> {
+        storage.getItems(keys, (res, error) -> {
             if (error != null || res == null) {
                 callback.run(null, error);
                 return;
             }
             for (int i = offset; i < end; i++) {
-                String chunk = res.get(SETTINGS_CHUNK_KEY_PREFIX + i);
+                String chunk = res.get(keys[i - offset]);
                 if (chunk == null) {
                     callback.run(null, "Chunk " + i + " is missing");
                     return;
                 }
                 sb.append(chunk);
             }
-            fetchChunksFromCloud(numChunks, end, sb, callback);
+            fetchChunksFromCloud(storage, generation, numChunks, end, sb, callback);
         });
     }
 
@@ -356,21 +440,38 @@ public class CloudSettingsHelper {
     }
 
     @SuppressWarnings("StringOperationCanBeSimplified") // API 33
-    private static String gzipBase64Decode(String input) throws Exception {
+    private static String gzipBase64Decode(String input, int maxBytes) throws Exception {
         byte[] compressed = Base64.decode(input, Base64.DEFAULT);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(compressed))) {
             byte[] buffer = new byte[8192];
             int read;
             while ((read = gzip.read(buffer)) != -1) {
+                if (baos.size() + read > maxBytes) {
+                    throw new IllegalArgumentException("Cloud backup is too large");
+                }
                 baos.write(buffer, 0, read);
             }
         }
         return new String(baos.toByteArray(), StandardCharsets.UTF_8);
     }
 
-    private void deleteCloudBackup(Utilities.Callback2<Boolean, String> callback) {
-        getCloudStorageHelper().getKeys((keys, error) -> {
+    private void deleteCloudBackup(int account, Utilities.Callback2<Boolean, String> callback) {
+        if (syncInProgress) {
+            handler.postDelayed(() -> deleteCloudBackup(account, callback), 100);
+            return;
+        }
+        syncInProgress = true;
+        performDeleteCloudBackup(account, (success, error) -> {
+            syncInProgress = false;
+            callback.run(success, error);
+            runNextCloudSync();
+        });
+    }
+
+    private void performDeleteCloudBackup(int account, Utilities.Callback2<Boolean, String> callback) {
+        CloudStorageHelper storage = CloudStorageHelper.getInstance(account);
+        storage.getKeys((keys, error) -> {
             if (error != null) {
                 callback.run(false, error);
                 return;
@@ -392,9 +493,9 @@ public class CloudSettingsHelper {
                 return;
             }
 
-            getCloudStorageHelper().removeItems(nekoKeys.toArray(new String[0]), (res_, error_) -> {
+            storage.removeItems(nekoKeys.toArray(new String[0]), (res_, error_) -> {
                 if (error_ == null) {
-                    cloudSyncedDate.put(UserConfig.selectedAccount, -1L);
+                    cloudSyncedDate.put(account, -1L);
                     callback.run(true, null);
                 } else {
                     callback.run(false, error_);
@@ -403,16 +504,146 @@ public class CloudSettingsHelper {
         });
     }
 
+    private static String getDataKey(String generation, int index) {
+        return SETTINGS_DATA_KEY_PREFIX + generation + "_" + index;
+    }
+
+    private static long getCloudUpdatedAt(HashMap<String, String> values) {
+        if (values == null) {
+            return -1;
+        }
+        String manifestValue = values.get(SETTINGS_MANIFEST_KEY);
+        if (!TextUtils.isEmpty(manifestValue)) {
+            try {
+                long updatedAt = new JSONObject(manifestValue).getLong("updatedAt");
+                return updatedAt > 0 ? updatedAt : -1;
+            } catch (Exception e) {
+                FileLog.e(e);
+                return -1;
+            }
+        }
+        String legacyUpdatedAt = values.get(SETTINGS_UPDATED_AT_KEY);
+        if (AndroidUtilities.isNumeric(legacyUpdatedAt)) {
+            try {
+                return Long.parseLong(legacyUpdatedAt);
+            } catch (NumberFormatException e) {
+                FileLog.e(e);
+            }
+        }
+        return -1;
+    }
+
+    private long getLocalSyncedDate(int account) {
+        Long cached = localSyncedDate.get(account);
+        if (cached != null) {
+            return cached;
+        }
+        long value = preferences.getLong("updated_at_" + account,
+                account == 0 ? preferences.getLong("updated_at", -1) : -1);
+        localSyncedDate.put(account, value);
+        return value;
+    }
+
+    private void setLocalSyncedDate(int account, long value) {
+        localSyncedDate.put(account, value);
+        preferences.edit().putLong("updated_at_" + account, value).apply();
+    }
+
+    private void cleanupPreviousCloudData(CloudStorageHelper storage, PreviousBackup previous) {
+        if (previous == null) {
+            return;
+        }
+        ArrayList<String> oldKeys = new ArrayList<>();
+        if (previous.generation == null) {
+            oldKeys.add(SETTINGS_CHUNKS_COUNT_KEY);
+            oldKeys.add(SETTINGS_UPDATED_AT_KEY);
+            oldKeys.add(SETTINGS_ENCODING_KEY);
+            for (int i = 0; i < previous.count; i++) {
+                oldKeys.add(SETTINGS_CHUNK_KEY_PREFIX + i);
+            }
+        } else {
+            for (int i = 0; i < previous.count; i++) {
+                oldKeys.add(getDataKey(previous.generation, i));
+            }
+        }
+        if (!oldKeys.isEmpty()) {
+            storage.removeItems(oldKeys.toArray(new String[0]), null);
+        }
+    }
+
+    private void cleanupGeneration(CloudStorageHelper storage, String generation, int count) {
+        if (count <= 0) {
+            return;
+        }
+        String[] keys = new String[count];
+        for (int i = 0; i < count; i++) {
+            keys[i] = getDataKey(generation, i);
+        }
+        storage.removeItems(keys, null);
+    }
+
     private CloudStorageHelper getCloudStorageHelper() {
         return CloudStorageHelper.getInstance(UserConfig.selectedAccount);
     }
 
-    private String formatSyncedDate() {
-        return LocaleController.formatString(R.string.CloudConfigSyncDate, localSyncedDate > 0 ? formatDateUntil(localSyncedDate) : getString(R.string.CloudConfigSyncDateNever), cloudSyncedDate.get(UserConfig.selectedAccount, 0L) > 0 ? formatDateUntil(cloudSyncedDate.get(UserConfig.selectedAccount, 0L)) : getString(R.string.CloudConfigSyncDateNever));
+    private String formatSyncedDate(int account) {
+        long localDate = getLocalSyncedDate(account);
+        return LocaleController.formatString(R.string.CloudConfigSyncDate, localDate > 0 ? formatDateUntil(localDate) : getString(R.string.CloudConfigSyncDateNever), cloudSyncedDate.get(account, 0L) > 0 ? formatDateUntil(cloudSyncedDate.get(account, 0L)) : getString(R.string.CloudConfigSyncDateNever));
     }
 
     private static final class InstanceHolder {
         private static final CloudSettingsHelper instance = new CloudSettingsHelper();
+    }
+
+    private static final class SyncRequest {
+        final int account;
+        final Utilities.Callback2<Boolean, String> callback;
+
+        SyncRequest(int account, Utilities.Callback2<Boolean, String> callback) {
+            this.account = account;
+            this.callback = callback;
+        }
+    }
+
+    private static final class PreviousBackup {
+        final String generation;
+        final int count;
+
+        PreviousBackup(String generation, int count) {
+            this.generation = generation;
+            this.count = count;
+        }
+
+        static PreviousBackup from(HashMap<String, String> values) {
+            if (values == null) {
+                return null;
+            }
+            String manifestValue = values.get(SETTINGS_MANIFEST_KEY);
+            if (!TextUtils.isEmpty(manifestValue)) {
+                try {
+                    JSONObject manifest = new JSONObject(manifestValue);
+                    int count = manifest.getInt("count");
+                    if (count > 0 && count <= MAX_CHUNKS) {
+                        return new PreviousBackup(manifest.getString("generation"), count);
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                return null;
+            }
+            String countValue = values.get(SETTINGS_CHUNKS_COUNT_KEY);
+            if (AndroidUtilities.isNumeric(countValue)) {
+                try {
+                    int count = Integer.parseInt(countValue);
+                    if (count > 0 && count <= MAX_CHUNKS) {
+                        return new PreviousBackup(null, count);
+                    }
+                } catch (NumberFormatException e) {
+                    FileLog.e(e);
+                }
+            }
+            return null;
+        }
     }
 
     @SuppressLint("ViewConstructor")

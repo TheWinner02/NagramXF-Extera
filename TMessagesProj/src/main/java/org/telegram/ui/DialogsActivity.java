@@ -14774,6 +14774,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         scrollToTop(true, true);
     }
 
+    @Override
+    public boolean isParentListAtTop() {
+        return viewPages != null && viewPages[0] != null && viewPages[0].listView != null && !viewPages[0].listView.canScrollVertically(-1);
+    }
+
+    @Override
+    public boolean onParentDoubleTapAtTop() {
+        if (filterTabsView == null || filterTabsView.getVisibility() != View.VISIBLE || filterTabsView.getCurrentTabId() == filterTabsView.getDefaultTabId()) {
+            return false;
+        }
+        filterTabsView.selectDefaultTab();
+        return true;
+    }
+
     private void switchTheme(Theme.ThemeInfo themeInfo, boolean toDark) {
         if (optionsItem == null) return;
         int[] pos = new int[2];

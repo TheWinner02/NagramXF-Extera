@@ -238,6 +238,7 @@
     <string name="BackupSettings">Экспорт настроек</string>
     <string name="ImportSettings">Импорт настроек</string>
     <string name="ImportSettingsAlert">Перезаписать настройки? Импорт настроек из ненадежных источников может привести к блокировке приложения.</string>
+    <string name="ImportSettingsAlertSafe">Перезаписать импортированные настройки? Настройки блокировки приложения и ключи push-уведомлений, привязанные к устройству, будут сохранены. Для применения изменений необходимо перезапустить приложение.</string>
     <string name="nekoXPaymentRemovedToast">Функции оплаты были удалены.</string>
     <string name="unreadBadgeOnBackButton">Количество непрочитанных на кнопке «Назад»</string>
     <string name="DeleteDownloadedFileConfirm">Удалить загруженный файл?</string>

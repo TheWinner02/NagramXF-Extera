@@ -237,6 +237,7 @@
     <string name="BackupSettings">خروجی گرفتن از تنظیمات</string>
     <string name="ImportSettings">وارد کردن تنظیمات</string>
     <string name="ImportSettingsAlert">تنظیمات بازنویسی شوند؟ وارد کردن تنظیمات از منابع ناشناس ممکن است باعث بازنویسی پین و قفل شدن برنامه شود.</string>
+    <string name="ImportSettingsAlertSafe">تنظیمات واردشده بازنویسی شوند؟ تنظیمات قفل برنامه و کلیدهای پوش اختصاصی دستگاه حفظ می‌شوند. برای اعمال تغییرات، برنامه باید راه‌اندازی مجدد شود.</string>
     <string name="nekoXPaymentRemovedToast">ویژگی‌های پرداخت حذف شده‌اند.</string>
     <string name="unreadBadgeOnBackButton">نشان خوانده نشده روی دکمه بازگشت</string>
     <string name="DeleteDownloadedFileConfirm">این فایل از حافظه پنهان محلی حذف شود؟</string>

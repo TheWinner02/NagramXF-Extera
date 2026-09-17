@@ -239,6 +239,7 @@
     <string name="BackupSettings">Ekspor Pengaturan</string>
     <string name="ImportSettings">Impor Pengaturan</string>
     <string name="ImportSettingsAlert">Timpa pengaturan\? Mengimpor pengaturan dari sumber yang tidak dikenal dapat menyebabkan kunci pin tertimpa dan aplikasi terkunci.</string>
+    <string name="ImportSettingsAlertSafe">Timpa pengaturan yang diimpor? Pengaturan kunci aplikasi dan kunci push khusus perangkat akan dipertahankan. Aplikasi harus dimulai ulang untuk menerapkan perubahan.</string>
     <string name="nekoXPaymentRemovedToast">Fitur pembayaran telah dihapus.</string>
     <string name="unreadBadgeOnBackButton">Lencana Belum Dibaca di Tombol Kembali</string>
     <string name="DeleteDownloadedFileConfirm">Hapus berkas ini dari cache lokal?</string>

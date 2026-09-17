@@ -237,6 +237,7 @@
     <string name="BackupSettings">設定をバックアップ</string>
     <string name="ImportSettings">設定をインポート</string>
     <string name="ImportSettingsAlert">設定を上書きしますか？ 不明なソースから設定をインポートすると、PINが上書きされ、アプリがロックされる可能性があります。</string>
+    <string name="ImportSettingsAlertSafe">インポートした設定を上書きしますか？ アプリロックの設定と端末固有のプッシュキーは保持されます。変更を適用するにはアプリの再起動が必要です。</string>
     <string name="nekoXPaymentRemovedToast">決済機能は廃止されました。</string>
     <string name="unreadBadgeOnBackButton">チャットの戻るボタンに未読数を表示</string>
     <string name="DeleteDownloadedFileConfirm">ローカルキャッシュからこのファイルを削除しますか？</string>

@@ -238,6 +238,7 @@
     <string name="BackupSettings">備份設定</string>
     <string name="ImportSettings">匯入設定</string>
     <string name="ImportSettingsAlert">確定要覆蓋設定嗎？從未知來源匯入設定可能導致 PIN 被覆蓋，進而使應用程式被鎖定。</string>
+    <string name="ImportSettingsAlertSafe">要覆蓋匯入的設定嗎？應用程式鎖定設定和裝置專用的推播金鑰將會保留。必須重新啟動應用程式才能套用變更。</string>
     <string name="nekoXPaymentRemovedToast">付款功能已移除。</string>
     <string name="unreadBadgeOnBackButton">聊天視窗返回按鈕上顯示未讀數</string>
     <string name="DeleteDownloadedFileConfirm">從本機快取中刪除此檔案？</string>

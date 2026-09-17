@@ -237,6 +237,7 @@
     <string name="BackupSettings">Ayarları Dışa Aktar</string>
     <string name="ImportSettings">Ayarları İçe Aktar</string>
     <string name="ImportSettingsAlert">Ayarların üzerine yazılsın mı\? Bilinmeyen kaynaklardan ayarları içe aktarmak şifrenin üzerine yazılmasına ve uygulamanın kilitlenmesine neden olabilir.</string>
+    <string name="ImportSettingsAlertSafe">İçe aktarılan ayarların üzerine yazılsın mı? Uygulama kilidi ayarları ve cihaza özel push anahtarları korunacaktır. Değişiklikleri uygulamak için uygulamanın yeniden başlatılması gerekir.</string>
     <string name="nekoXPaymentRemovedToast">Ödeme özellikleri kaldırıldı.</string>
     <string name="unreadBadgeOnBackButton">Geri Butonunda Okunmamış Sayacı</string>
     <string name="DeleteDownloadedFileConfirm">Bu dosya yerel önbellekten silinsin mi?</string>
