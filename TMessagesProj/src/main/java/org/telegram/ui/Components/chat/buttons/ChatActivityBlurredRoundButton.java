@@ -69,16 +69,6 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         }
     }
 
-    @Override
-    public boolean onTouchEvent(android.view.MotionEvent event) {
-        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-            setPressed(true);
-        } else if (event.getAction() == android.view.MotionEvent.ACTION_UP || event.getAction() == android.view.MotionEvent.ACTION_CANCEL) {
-            setPressed(false);
-        }
-        return super.onTouchEvent(event);
-    }
-
     private final android.graphics.Path morphClipPath = new android.graphics.Path();
     private final android.graphics.RectF morphRect = new android.graphics.RectF();
 

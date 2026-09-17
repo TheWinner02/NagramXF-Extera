@@ -695,6 +695,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     private ImageView scheduledButton;
     @Nullable
     private ImageView giftButton;
+    private boolean giftButtonTextEmpty = true;
     private boolean scheduleButtonHidden;
     private AnimatorSet scheduledButtonAnimation;
     @Nullable
@@ -6501,6 +6502,12 @@ public class ChatActivityEnterView extends FrameLayout implements
                     return;
                 }
 
+                boolean textEmpty = TextUtils.isEmpty(charSequence);
+                if (giftButtonTextEmpty != textEmpty) {
+                    giftButtonTextEmpty = textEmpty;
+                    updateGiftButton(true);
+                }
+
                 boolean allowChangeToSmile = true;
                 int currentPage;
                 if (emojiView == null) {
@@ -9813,9 +9820,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     buttonsCount++;
                 }
             }
-            if (giftButton != null && giftButton.getVisibility() == VISIBLE) {
-                buttonsCount++;
-            }
+            float giftButtonSpace = giftButton != null && giftButton.getVisibility() == VISIBLE ? giftButton.getAlpha() : 0f;
             if (botButton != null && botButton.getVisibility() == VISIBLE) {
                 buttonsCount++;
             }
@@ -9826,7 +9831,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 buttonsCount++;
             }
             if (buttonsCount > 0) {
-                layoutParams.rightMargin = dp(2 + buttonsCount * 48);
+                layoutParams.rightMargin = dp(2 + buttonsCount * 48 + giftButtonSpace * 48);
+            } else if (giftButtonSpace > 0f) {
+                layoutParams.rightMargin = dp(2 + giftButtonSpace * 48);
             } else {
                 layoutParams.rightMargin = dp(2);
             }
@@ -12037,6 +12044,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     userInfo.disallowed_stargifts.disallow_unique_stargifts
                 )
             ) &&
+            (messageEditText == null || TextUtils.isEmpty(messageEditText.getText())) &&
             parentFragment != null && parentFragment.getChatMode() == 0;
 
         if (!visible && birthdayHint != null) {
@@ -12051,6 +12059,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (scheduledButton != null) {
                 scheduledButton.setTranslationX(scheduledButton.getTranslationX());
             }
+            updateFieldRight(lastAttachVisible);
         });
         updateFieldRight(lastAttachVisible);
         if (visible) {

@@ -1968,47 +1968,46 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (event == null) {
             return false;
         }
-        if (!pressed && event.getActionMasked() == MotionEvent.ACTION_DOWN || event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
+        int action = event.getActionMasked();
+        if (!pressed && action == MotionEvent.ACTION_DOWN) {
             zoomControlView.getHitRect(hitRect);
             if (zoomControlView.getTag() != null && hitRect.contains((int) event.getX(), (int) event.getY())) {
                 return false;
             }
-            if (!takingPhoto && !dragging) {
-                if (event.getPointerCount() == 2) {
-                    pinchStartDistance = (float) Math.hypot(event.getX(1) - event.getX(0), event.getY(1) - event.getY(0));
-                    zooming = true;
-                } else {
-                    maybeStartDraging = true;
-                    lastY = event.getY();
-                    zooming = false;
-                }
+            if (!takingPhoto) {
+                maybeStartDraging = true;
+                lastY = event.getY();
+                zooming = false;
                 zoomWas = false;
                 pressed = true;
             }
+        } else if (action == MotionEvent.ACTION_POINTER_DOWN && event.getPointerCount() >= 2 && !takingPhoto) {
+            pinchStartDistance = (float) Math.hypot(event.getX(1) - event.getX(0), event.getY(1) - event.getY(0));
+            maybeStartDraging = false;
+            dragging = false;
+            zooming = true;
+            zoomWas = false;
+            pressed = true;
         } else if (pressed) {
-            if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
-                if (zooming && event.getPointerCount() == 2 && !dragging) {
+            if (action == MotionEvent.ACTION_MOVE) {
+                if (zooming && event.getPointerCount() >= 2) {
                     float newDistance = (float) Math.hypot(event.getX(1) - event.getX(0), event.getY(1) - event.getY(0));
-                    if (!zoomWas) {
-                        if (Math.abs(newDistance - pinchStartDistance) >= AndroidUtilities.getPixelsInCM(0.4f, false)) {
-                            pinchStartDistance = newDistance;
-                            zoomWas = true;
+                    float distanceDiff = newDistance - pinchStartDistance;
+                    if (!zoomWas && Math.abs(distanceDiff) >= dp(8)) {
+                        zoomWas = true;
+                    }
+                    if (zoomWas && cameraView != null) {
+                        cameraZoom += distanceDiff / dp(100);
+                        if (cameraZoom < 0.0f) {
+                            cameraZoom = 0.0f;
+                        } else if (cameraZoom > 1.0f) {
+                            cameraZoom = 1.0f;
                         }
-                    } else {
-                        if (cameraView != null) {
-                            float diff = (newDistance - pinchStartDistance) / dp(100);
-                            pinchStartDistance = newDistance;
-                            cameraZoom += diff;
-                            if (cameraZoom < 0.0f) {
-                                cameraZoom = 0.0f;
-                            } else if (cameraZoom > 1.0f) {
-                                cameraZoom = 1.0f;
-                            }
-                            zoomControlView.setZoom(cameraZoom, false);
-                            parentAlert.getSheetContainer().invalidate();
-                            cameraView.setZoom(cameraZoom);
-                            showZoomControls(true, true);
-                        }
+                        zoomControlView.setZoom(cameraZoom, false);
+                        parentAlert.getSheetContainer().invalidate();
+                        cameraView.setZoom(cameraZoom);
+                        showZoomControls(true, true);
+                        pinchStartDistance = newDistance;
                     }
                 } else {
                     float newY = event.getY();
@@ -2044,12 +2043,17 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         }
                     }
                 }
-            } else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL || event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_POINTER_UP) {
+            } else if (action == MotionEvent.ACTION_POINTER_UP && zooming) {
                 pressed = false;
                 zooming = false;
-                if (zooming) {
-                    zooming = false;
-                } else if (dragging) {
+                maybeStartDraging = false;
+                dragging = false;
+            } else if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
+                boolean wasZooming = zooming;
+                pressed = false;
+                zooming = false;
+                maybeStartDraging = false;
+                if (dragging) {
                     dragging = false;
                     if (cameraView != null) {
                         if (Math.abs(cameraView.getTranslationY()) > cameraView.getMeasuredHeight() / 6.0f) {
@@ -2069,7 +2073,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                             cameraPanel.setTag(null);
                         }
                     }
-                } else if (cameraView != null && !zoomWas) {
+                } else if (action == MotionEvent.ACTION_UP && cameraView != null && !zoomWas && !wasZooming) {
                     cameraView.getLocationOnScreen(viewPosition);
                     float viewX = event.getRawX() - viewPosition[0];
                     float viewY = event.getRawY() - viewPosition[1];
@@ -4993,6 +4997,14 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
         public CameraViewInternal(Context context, boolean frontface, boolean lazy) {
             super(context, frontface, lazy);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent event) {
+            if (cameraOpened && !cameraAnimationInProgress) {
+                return processTouchEvent(event);
+            }
+            return super.dispatchTouchEvent(event);
         }
 
         public boolean drawInDecoration;

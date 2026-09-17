@@ -4301,7 +4301,7 @@ public class ChatActivity extends BaseFragment implements
                         FileLog.e(e);
                     }
                 } else if (id == to_the_beginning) {
-                    scrollToMessageId(1, 0, false, 0, true, 0);
+                    scrollToBeginning();
                 } else if (id == to_the_message){
                     setScrollToMessage();
                 } else if (id == boost_group) {
@@ -13388,7 +13388,8 @@ public class ChatActivity extends BaseFragment implements
         }
         MessageObject firstMessage = messages.get(0);
         MessageObject lastMessage = messages.get(messages.size() - 1);
-        if (firstMessage.messageOwner.date >= date && lastMessage.messageOwner.date <= date || lastMessage.messageOwner.date >= date && endReached[0]) {
+        if (firstMessage.messageOwner.date >= date && lastMessage.messageOwner.date <= date ||
+                lastMessage.messageOwner.date >= date && endReached[0] && (mergeDialogId == 0 || endReached[1])) {
             for (int a = messages.size() - 1; a >= 0; a--) {
                 MessageObject message = messages.get(a);
                 if (message.messageOwner.date >= date && message.getId() != 0) {
@@ -13434,6 +13435,37 @@ public class ChatActivity extends BaseFragment implements
             updateFloatingTopicView();
             floatingTopicSeparator.setTag(null);
         }
+    }
+
+    private void scrollToBeginning() {
+        if (messages.isEmpty()) {
+            return;
+        }
+        if (!DialogObject.isEncryptedDialog(dialog_id)) {
+            jumpToDate(1);
+            return;
+        }
+
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            Pair<Integer, Integer> range = getMessagesStorage().getMinAndMaxForDialog(dialog_id);
+            int oldestMessageId = range != null ? range.second : 0;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                if (oldestMessageId != 0) {
+                    scrollToMessageId(oldestMessageId, 0, false, 0, true, 0);
+                    return;
+                }
+                for (int i = messages.size() - 1; i >= 0; i--) {
+                    MessageObject message = messages.get(i);
+                    if (message.getId() != 0) {
+                        scrollToMessageId(message.getId(), 0, false, 0, true, 0);
+                        break;
+                    }
+                }
+            });
+        });
     }
 
     private boolean approved;
@@ -48761,11 +48793,6 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_PIN);
                     icons.add(R.drawable.msg_pin);
                 }
-                if (selectedObject != null && !selectedObject.isEphemeral() && selectedObject.contentType == 0 && ((!TextUtils.isEmpty(selectedObject.getMessageTextToTranslate(groupedMessages, null)) && !selectedObject.isAnimatedEmoji() && !selectedObject.isDice()) || (selectedObject.type == MessageObject.TYPE_ARTICLE && selectedObject.messageOwner != null && selectedObject.messageOwner.rich_message != null && !selectedObject.translated))) {
-                    items.add(LocaleController.getString(R.string.TranslateMessage));
-                    options.add(OPTION_TRANSLATE);
-                    icons.add(R.drawable.msg_translate);
-                }
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);
@@ -49317,11 +49344,6 @@ public class ChatActivity extends BaseFragment implements
                     items.add(LocaleController.getString(R.string.PinMessage));
                     options.add(OPTION_PIN);
                     icons.add(R.drawable.msg_pin);
-                }
-                if (selectedObject != null && !selectedObject.isEphemeral() && selectedObject.contentType == 0 && ((!TextUtils.isEmpty(selectedObject.getMessageTextToTranslate(selectedObjectGroup, null)) && !selectedObject.isAnimatedEmoji() && !selectedObject.isDice()) || (selectedObject.type == MessageObject.TYPE_ARTICLE && selectedObject.messageOwner != null && selectedObject.messageOwner.rich_message != null && !selectedObject.translated))) {
-                    items.add(LocaleController.getString(R.string.TranslateMessage));
-                    options.add(OPTION_TRANSLATE);
-                    icons.add(R.drawable.msg_translate);
                 }
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));

@@ -451,16 +451,6 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     @Override
-    public boolean onTouchEvent(android.view.MotionEvent event) {
-        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-            setPressed(true);
-        } else if (event.getAction() == android.view.MotionEvent.ACTION_UP || event.getAction() == android.view.MotionEvent.ACTION_CANCEL) {
-            setPressed(false);
-        }
-        return super.onTouchEvent(event);
-    }
-
-    @Override
     protected void dispatchDraw(Canvas canvas) {
         if (xyz.nextalone.nagram.ui.UIStyleEngine.isMaterial3Expressive()) {
             float progress = pressedMorphProgress.getProgress();
