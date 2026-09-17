@@ -409,7 +409,18 @@ public class MessagePreviewParams {
                     }
                 }
             }
-            this.forwardMessages = new Messages(true, 0, forwardMessages, dialogId, this.forwardMessages != null ? this.forwardMessages.selectedIds : null);
+            SparseBooleanArray pastSelectedIds = this.forwardMessages != null ? this.forwardMessages.selectedIds : null;
+            boolean hasMatchingSelection = false;
+            if (pastSelectedIds != null && pastSelectedIds.size() > 0) {
+                for (int i = 0; i < forwardMessages.size(); i++) {
+                    if (pastSelectedIds.indexOfKey(forwardMessages.get(i).getId()) >= 0) {
+                        hasMatchingSelection = true;
+                        break;
+                    }
+                }
+            }
+            this.forwardMessages = new Messages(true, 0, forwardMessages, dialogId,
+                    hasMatchingSelection ? pastSelectedIds : null);
             if (this.forwardMessages.messages.isEmpty()) {
                 this.forwardMessages = null;
             }

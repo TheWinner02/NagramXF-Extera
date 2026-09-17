@@ -5,6 +5,7 @@ import com.radolyn.ayugram.AyuState;
 import com.radolyn.ayugram.controllers.AyuGhostController;
 import com.radolyn.ayugram.utils.network.AyuRequestUtils;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -136,6 +137,23 @@ public class AyuGhostUtils {
         }
 
         return baseDelay + additionalDelay;
+    }
+
+    public static int calculateAutoScheduleDelay(int account, java.util.List<MessageObject> messages) {
+        int delay = 12;
+        int textLength = 0;
+        if (messages != null) {
+            for (MessageObject message : messages) {
+                if (message != null && message.messageOwner != null && message.messageOwner.message != null) {
+                    textLength += message.messageOwner.message.length();
+                }
+            }
+        }
+        delay += Math.min(40, textLength / (org.telegram.messenger.ApplicationLoader.isConnectionSlow() ? 20 : 30));
+        if (org.telegram.messenger.ApplicationLoader.isConnectionSlow()) {
+            delay += 3;
+        }
+        return delay;
     }
 
     public static class InterceptResult {

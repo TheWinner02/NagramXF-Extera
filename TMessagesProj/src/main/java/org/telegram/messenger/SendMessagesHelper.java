@@ -2102,6 +2102,38 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         if (messages == null || messages.isEmpty()) {
             return 0;
         }
+        if (AyuGhostController.getInstance(currentAccount).isUseScheduledMessages()
+                && !DialogObject.isEncryptedDialog(peer) && scheduleDate == 0) {
+            int delay = com.radolyn.ayugram.utils.AyuGhostUtils.calculateAutoScheduleDelay(currentAccount, messages);
+            int autoScheduleDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + delay;
+            com.radolyn.ayugram.AyuState.setAutomaticallyScheduled(true, 1);
+            return sendForwardMessagesInternal(messages, peer, forwardFromMyName, hideCaption, notify,
+                    autoScheduleDate, scheduleRepeatPeriod, replyToTopMsg, video_timestamp, payStars,
+                    monoForumPeerId, suggestionParams, true);
+        }
+        return sendForwardMessagesInternal(messages, peer, forwardFromMyName, hideCaption, notify, scheduleDate,
+                scheduleRepeatPeriod, replyToTopMsg, video_timestamp, payStars, monoForumPeerId,
+                suggestionParams, false);
+    }
+
+    private int sendForwardMessagesInternal(
+        ArrayList<MessageObject> messages,
+        final long peer,
+        boolean forwardFromMyName,
+        boolean hideCaption,
+        boolean notify,
+        int scheduleDate,
+        int scheduleRepeatPeriod,
+        MessageObject replyToTopMsg,
+        int video_timestamp,
+        long payStars,
+        long monoForumPeerId,
+        MessageSuggestionParams suggestionParams,
+        boolean automaticallyScheduledForward
+    ) {
+        if (messages == null || messages.isEmpty()) {
+            return 0;
+        }
         int sendResult = 0;
         long myId = getUserConfig().getClientUserId();
         boolean isChannel = false;
@@ -2170,6 +2202,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
             LongSparseArray<Long> groupsMap = new LongSparseArray<>();
             ArrayList<MessageObject> objArr = new ArrayList<>();
+            ArrayList<MessageObject> sourceObjArr = new ArrayList<>();
             ArrayList<TLRPC.Message> arr = new ArrayList<>();
             ArrayList<Long> randomIds = new ArrayList<>();
             ArrayList<Integer> ids = new ArrayList<>();
@@ -2531,6 +2564,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
                 newMsgObj.wasJustSent = true;
                 objArr.add(newMsgObj);
+                sourceObjArr.add(msgObj);
                 arr.add(newMsg);
                 StarsController.getInstance(currentAccount).beforeSendingMessage(newMsgObj);
 
@@ -2617,6 +2651,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                     final ArrayList<TLRPC.Message> newMsgObjArr = arr;
                     final ArrayList<MessageObject> newMsgArr = new ArrayList<>(objArr);
+                    final ArrayList<MessageObject> sourceMsgArr = new ArrayList<>(sourceObjArr);
                     final LongSparseArray<TLRPC.Message> messagesByRandomIdsFinal = messagesByRandomIds;
                     final boolean scheduledOnline = scheduleDate == 0x7FFFFFFE;
                     final Runnable send = () -> {
@@ -2770,8 +2805,28 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     getMessagesController().processUpdates(updates, false);
                                 }
                                 getStatsController().incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MESSAGES, sentCount);
-                            } else {
+                            } else if (!automaticallyScheduledForward) {
                                 AndroidUtilities.runOnUIThread(() -> AlertsCreator.processError(currentAccount, error, null, req));
+                            }
+                            if (error != null && automaticallyScheduledForward) {
+                                FileLog.e("Auto-scheduled forward failed, retrying immediately: " + error.text);
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    ArrayList<Integer> failedMessageIds = new ArrayList<>();
+                                    for (int i = 0; i < newMsgObjArr.size(); i++) {
+                                        TLRPC.Message failedMessage = newMsgObjArr.get(i);
+                                        failedMessageIds.add(failedMessage.id);
+                                        processSentMessage(failedMessage.id);
+                                        removeFromSendingMessages(failedMessage.id, true);
+                                    }
+                                    if (!failedMessageIds.isEmpty()) {
+                                        getMessagesController().deleteMessages(failedMessageIds, null, null, peer,
+                                                false, ChatActivity.MODE_SCHEDULED, true, 0, null, 0, false, 0);
+                                    }
+                                    sendForwardMessagesInternal(sourceMsgArr, peer, forwardFromMyName, hideCaption,
+                                            notify, 0, 0, replyToTopMsg, video_timestamp, payStars, monoForumPeerId,
+                                            suggestionParams, false);
+                                });
+                                return;
                             }
                             for (int a1 = 0; a1 < newMsgObjArr.size(); a1++) {
                                 final TLRPC.Message newMsgObj1 = newMsgObjArr.get(a1);
@@ -2808,6 +2863,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                     if (a != messages.size() - 1) {
                         objArr = new ArrayList<>();
+                        sourceObjArr = new ArrayList<>();
                         arr = new ArrayList<>();
                         randomIds = new ArrayList<>();
                         ids = new ArrayList<>();
@@ -9849,6 +9905,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
     @UiThread
     public static void prepareSendingDocument(AccountInstance accountInstance, String path, String originalPath, Uri uri, String caption, String mine, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, TL_stories.StoryItem storyItem, ChatActivity.ReplyQuote quote, MessageObject editingMessageObject, boolean notify, int scheduleDate, InputContentInfoCompat inputContent, SendMessageChatArguments sendMessageChatArguments, boolean invertMedia) {
+        prepareSendingDocument(accountInstance, path, originalPath, uri, caption, mine, dialogId, replyToMsg,
+                replyToTopMsg, storyItem, quote, editingMessageObject, notify, scheduleDate, 0, inputContent,
+                sendMessageChatArguments, invertMedia);
+    }
+
+    @UiThread
+    public static void prepareSendingDocument(AccountInstance accountInstance, String path, String originalPath, Uri uri, String caption, String mine, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, TL_stories.StoryItem storyItem, ChatActivity.ReplyQuote quote, MessageObject editingMessageObject, boolean notify, int scheduleDate, int scheduleRepeatPeriod, InputContentInfoCompat inputContent, SendMessageChatArguments sendMessageChatArguments, boolean invertMedia) {
         if ((path == null || originalPath == null) && uri == null) {
             return;
         }
@@ -9863,7 +9926,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             paths.add(path);
             originalPaths.add(originalPath);
         }
-        prepareSendingDocuments(accountInstance, paths, originalPaths, uris, caption, mine, dialogId, replyToMsg, replyToTopMsg, storyItem, quote, editingMessageObject, notify, scheduleDate, inputContent, sendMessageChatArguments, 0, invertMedia, 0);
+        prepareSendingDocuments(accountInstance, paths, originalPaths, uris, caption, null, mine, dialogId,
+                replyToMsg, replyToTopMsg, storyItem, quote, editingMessageObject, notify, scheduleDate,
+                scheduleRepeatPeriod, inputContent, sendMessageChatArguments, 0, invertMedia, 0, 0, null);
     }
 
     @UiThread
@@ -10123,7 +10188,14 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
     @UiThread
     public static void prepareSendingPhoto(AccountInstance accountInstance, String imageFilePath, Uri imageUri, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, ChatActivity.ReplyQuote quote, CharSequence caption, ArrayList<TLRPC.MessageEntity> entities, ArrayList<TLRPC.InputDocument> stickers, InputContentInfoCompat inputContent, int ttl, MessageObject editingMessageObject, boolean notify, int scheduleDate, int mode, SendMessageChatArguments sendMessageChatArguments) {
-        prepareSendingPhoto(accountInstance, imageFilePath, null, imageUri, dialogId, replyToMsg, replyToTopMsg, null, null, entities, stickers, inputContent, ttl, editingMessageObject, null, notify, scheduleDate, 0, mode, false, caption, sendMessageChatArguments, 0, 0, 0, null);
+        prepareSendingPhoto(accountInstance, imageFilePath, imageUri, dialogId, replyToMsg, replyToTopMsg, quote,
+                caption, entities, stickers, inputContent, ttl, editingMessageObject, notify, scheduleDate, 0, mode,
+                sendMessageChatArguments);
+    }
+
+    @UiThread
+    public static void prepareSendingPhoto(AccountInstance accountInstance, String imageFilePath, Uri imageUri, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, ChatActivity.ReplyQuote quote, CharSequence caption, ArrayList<TLRPC.MessageEntity> entities, ArrayList<TLRPC.InputDocument> stickers, InputContentInfoCompat inputContent, int ttl, MessageObject editingMessageObject, boolean notify, int scheduleDate, int scheduleRepeatPeriod, int mode, SendMessageChatArguments sendMessageChatArguments) {
+        prepareSendingPhoto(accountInstance, imageFilePath, null, imageUri, dialogId, replyToMsg, replyToTopMsg, null, null, entities, stickers, inputContent, ttl, editingMessageObject, null, notify, scheduleDate, scheduleRepeatPeriod, mode, false, caption, sendMessageChatArguments, 0, 0, 0, null);
     }
 
     @UiThread
@@ -10148,7 +10220,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         info.videoEditedInfo = videoEditedInfo;
         ArrayList<SendingMediaInfo> infos = new ArrayList<>();
         infos.add(info);
-        prepareSendingMedia(accountInstance, infos, dialogId, replyToMsg, replyToTopMsg, null, quote, forceDocument, false, editingMessageObject, notify, scheduleDate, 0, mode, false, inputContent, sendMessageChatArguments, effectId, false, payStars, monoForumPeerId, suggestionParams);
+        prepareSendingMedia(accountInstance, infos, dialogId, replyToMsg, replyToTopMsg, null, quote, forceDocument, false, editingMessageObject, notify, scheduleDate, scheduleRepeatPeriod, mode, false, inputContent, sendMessageChatArguments, effectId, false, payStars, monoForumPeerId, suggestionParams);
     }
 
     @UiThread

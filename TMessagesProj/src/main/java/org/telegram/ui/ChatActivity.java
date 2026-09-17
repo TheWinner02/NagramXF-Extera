@@ -15395,7 +15395,10 @@ public class ChatActivity extends BaseFragment implements
         if (!checkSlowModeAlert()) {
             return;
         }
-        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
+        boolean willBeAutomaticallyScheduled = scheduleDate == 0
+                && !DialogObject.isEncryptedDialog(dialog_id)
+                && com.radolyn.ayugram.controllers.AyuGhostController.getInstance(currentAccount).isUseScheduledMessages();
+        if (!willBeAutomaticallyScheduled && (scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
             waitingForSendingMessageLoad = true;
             if (chatAdapter != null) {
                 chatAdapter.checkRemoveBotForumRowsStartThreadRow(true);
@@ -15416,10 +15419,14 @@ public class ChatActivity extends BaseFragment implements
         if (arrayList == null || arrayList.isEmpty()) {
             return;
         }
-        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
+        long targetDialogId = did == 0 ? dialog_id : did;
+        boolean willBeAutomaticallyScheduled = scheduleDate == 0
+                && !DialogObject.isEncryptedDialog(targetDialogId)
+                && com.radolyn.ayugram.controllers.AyuGhostController.getInstance(currentAccount).isUseScheduledMessages();
+        if (!willBeAutomaticallyScheduled && (scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
             waitingForSendingMessageLoad = true;
         }
-        AlertsCreator.showSendMediaAlert(getSendMessagesHelper().sendMessage(arrayList, did == 0 ? dialog_id : did, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams()), this);
+        AlertsCreator.showSendMediaAlert(getSendMessagesHelper().sendMessage(arrayList, targetDialogId, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams()), this);
     }
 
     public boolean shouldShowImport() {
@@ -15740,6 +15747,10 @@ public class ChatActivity extends BaseFragment implements
                 ArrayList<MessageObject> messagesToForward = new ArrayList<>();
                 if (messagePreviewParams.forwardMessages != null) {
                     messagePreviewParams.forwardMessages.getSelectedMessages(messagesToForward);
+                    if (messagesToForward.isEmpty() && !messagePreviewParams.forwardMessages.messages.isEmpty()) {
+                        FileLog.e("Forward preview had no matching selected ids; restoring visible messages");
+                        messagesToForward.addAll(messagePreviewParams.forwardMessages.messages);
+                    }
                 }
                 forwardMessages(messagesToForward, messagePreviewParams.hideForwardSendersName, messagePreviewParams.hideCaption, notify, scheduleDate != 0 && scheduleDate != 0x7ffffffe ? scheduleDate + 1 : scheduleDate, payStars);
             // }

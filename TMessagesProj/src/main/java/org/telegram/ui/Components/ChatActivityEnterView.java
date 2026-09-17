@@ -5912,9 +5912,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             ClipDescription description = inputContentInfo.getDescription();
             if (description.hasMimeType("image/gif")) {
-                SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, inputContentInfo.getContentUri(), null, "image/gif", dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, null, notify, 0, inputContentInfo, parentFragment != null ? parentFragment.getMessageChatSendParams() : null, false);
+                SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, inputContentInfo.getContentUri(), null, "image/gif", dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, null, notify, scheduleDate, scheduleRepeatPeriod, inputContentInfo, parentFragment != null ? parentFragment.getMessageChatSendParams() : null, false);
             } else {
-                SendMessagesHelper.prepareSendingPhoto(accountInstance, null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, getThreadMessage(), replyingQuote, null, null, null, inputContentInfo, 0, null, notify, 0, parentFragment == null ? 0 : parentFragment.getChatMode(), parentFragment != null ? parentFragment.getMessageChatSendParams() : null);
+                SendMessagesHelper.prepareSendingPhoto(accountInstance, null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, getThreadMessage(), replyingQuote, null, null, null, inputContentInfo, 0, null, notify, scheduleDate, scheduleRepeatPeriod, parentFragment == null ? 0 : parentFragment.getChatMode(), parentFragment != null ? parentFragment.getMessageChatSendParams() : null);
             }
             if (delegate != null) {
                 delegate.onMessageSend(null, true, scheduleDate, scheduleRepeatPeriod, 0);
@@ -5937,9 +5937,11 @@ public class ChatActivityEnterView extends FrameLayout implements
                     if (isLiveComment) {
                         return true;
                     }
+                    InputContentInfoCompat permissionToRelease = null;
                     if (BuildCompat.isAtLeastNMR1() && (flags & InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0) {
                         try {
                             inputContentInfo.requestPermission();
+                            permissionToRelease = inputContentInfo;
                         } catch (Exception e) {
                             return false;
                         }
@@ -5951,7 +5953,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                             send(inputContentInfo, true, 0, 0);
                         }
                     } else {
-                        editPhoto(inputContentInfo.getContentUri(), inputContentInfo.getDescription().getMimeType(0));
+                        editPhoto(inputContentInfo.getContentUri(), inputContentInfo.getDescription().getMimeType(0), permissionToRelease);
                     }
                     return true;
                 };
@@ -6119,45 +6121,88 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         private void editPhoto(Uri uri, String mime) {
-            boolean isVideo = mime.contains("video");
-            final File file = AndroidUtilities.generatePicturePath(parentFragment != null && parentFragment.isSecretChat(), MimeTypeMap.getSingleton().getExtensionFromMimeType(mime));
-            Utilities.globalQueue.postRunnable(() -> {
-                try {
-                    InputStream in = getContext().getContentResolver().openInputStream(uri);
-                    FileOutputStream fos = new FileOutputStream(file);
-                    byte[] buffer = new byte[1024];
-                    int lengthRead;
-                    while ((lengthRead = in.read(buffer)) > 0) {
-                        fos.write(buffer, 0, lengthRead);
-                        fos.flush();
+            editPhoto(uri, mime, null);
+        }
+
+        private void editPhoto(Uri uri, String mime, InputContentInfoCompat inputContent) {
+            if (uri == null) {
+                if (inputContent != null) {
+                    try {
+                        inputContent.releasePermission();
+                    } catch (Throwable e) {
+                        FileLog.e(e);
                     }
-                    in.close();
-                    fos.close();
+                }
+                return;
+            }
+            String resolvedMime = mime;
+            if (TextUtils.isEmpty(resolvedMime) || resolvedMime.endsWith("/*")) {
+                try {
+                    resolvedMime = getContext().getContentResolver().getType(uri);
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+            }
+            if (TextUtils.isEmpty(resolvedMime)) {
+                resolvedMime = "image/jpeg";
+            }
+            boolean isVideo = resolvedMime.startsWith("video/");
+            String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolvedMime);
+            if (TextUtils.isEmpty(extension)) {
+                extension = isVideo ? "mp4" : "jpg";
+            }
+            final File file = AndroidUtilities.generatePicturePath(parentFragment != null && parentFragment.isSecretChat(), extension);
+            Utilities.globalQueue.postRunnable(() -> {
+                boolean copied = false;
+                try (InputStream in = getContext().getContentResolver().openInputStream(uri);
+                     FileOutputStream fos = file == null ? null : new FileOutputStream(file)) {
+                    if (in == null || fos == null) {
+                        throw new IllegalStateException("Unable to open pasted media");
+                    }
+                    byte[] buffer = new byte[32 * 1024];
+                    int lengthRead;
+                    while ((lengthRead = in.read(buffer)) != -1) {
+                        fos.write(buffer, 0, lengthRead);
+                    }
+                    fos.flush();
+                    copied = file.length() > 0;
+                    if (!copied) {
+                        throw new IllegalStateException("Pasted media is empty");
+                    }
                     MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, -1, 0, file.getAbsolutePath(), 0, isVideo, 0, 0, 0);
                     ArrayList<Object> entries = new ArrayList<>();
                     entries.add(photoEntry);
-                    AndroidUtilities.runOnUIThread(() -> {
-                        openPhotoViewerForEdit(entries, file);
-                    });
+                    AndroidUtilities.runOnUIThread(() -> openPhotoViewerForEdit(entries, file));
                 } catch (Throwable e) {
-                    e.printStackTrace();
+                    FileLog.e(e);
+                    if (file != null) {
+                        file.delete();
+                    }
+                    AndroidUtilities.runOnUIThread(() -> Toast.makeText(getContext(), getString(R.string.UnknownError), Toast.LENGTH_SHORT).show());
+                } finally {
+                    if (inputContent != null) {
+                        try {
+                            inputContent.releasePermission();
+                        } catch (Throwable e) {
+                            FileLog.e(e);
+                        }
+                    }
                 }
             });
         }
 
         private void openPhotoViewerForEdit(ArrayList<Object> entries, File sourceFile) {
+            openPhotoViewerForEdit(entries, sourceFile, 0);
+        }
+
+        private void openPhotoViewerForEdit(ArrayList<Object> entries, File sourceFile, int keyboardHideAttempts) {
             if (parentFragment == null || parentFragment.getParentActivity() == null) {
                 return;
             }
             MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entries.get(0);
-            if (keyboardVisible) {
+            if (keyboardVisible && keyboardHideAttempts < 5) {
                 AndroidUtilities.hideKeyboard(this);
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        openPhotoViewerForEdit(entries, sourceFile);
-                    }
-                }, 100);
+                AndroidUtilities.runOnUIThread(() -> openPhotoViewerForEdit(entries, sourceFile, keyboardHideAttempts + 1), 100);
                 return;
             }
 
@@ -8253,6 +8298,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             dismissSendPreviewSent = true;
             if (videoToSendMessageObject != null) {
+                if (delegate != null && delegate.hasForwardingMessages()) {
+                    delegate.beforeMessageSend(null, notify, scheduleDate, payStars);
+                }
                 delegate.needStartRecordVideo(4, notify, scheduleDate, 0, voiceOnce ? 0x7FFFFFFF : 0, effectId, payStars);
                 sendButton.setEffect(effectId = 0);
                 hideRecordedAudioPanel(true);
@@ -8265,6 +8313,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 millisecondsRecorded = 0;
                 return;
             } else if (audioToSend != null) {
+                if (delegate != null && delegate.hasForwardingMessages()) {
+                    delegate.beforeMessageSend(null, notify, scheduleDate, payStars);
+                }
                 MessageObject playing = MediaController.getInstance().getPlayingMessageObject();
                 if (playing != null && playing == audioToSendMessageObject) {
                     MediaController.getInstance().cleanupPlayer(true, true);
@@ -8322,6 +8373,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 millisecondsRecorded = 0;
                 return;
             } else if (richDraftActive && richDraftMessage != null) {
+                if (delegate != null && delegate.hasForwardingMessages()) {
+                    delegate.beforeMessageSend(null, notify, scheduleDate, payStars);
+                }
                 sendRichDraft(notify, scheduleDate, scheduleRepeatPeriod, payStars);
                 return;
             }
@@ -8340,6 +8394,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             if (checkPremiumAnimatedEmoji(currentAccount, dialog_id, parentFragment, null, message)) {
                 return;
+            }
+            if (delegate != null && delegate.hasForwardingMessages()
+                    && (!TextUtils.isEmpty(message) || forceShowSendButton)) {
+                delegate.beforeMessageSend(message, notify, scheduleDate, payStars);
             }
             if (processSendingText(message, notify, scheduleDate, scheduleRepeatPeriod, payStars)) {
                 if (delegate.hasForwardingMessages() || (scheduleDate != 0 && !isInScheduleMode()) || isInScheduleMode()) {
