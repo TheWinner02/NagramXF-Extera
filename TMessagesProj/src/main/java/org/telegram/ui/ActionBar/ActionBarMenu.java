@@ -12,6 +12,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.find;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -747,6 +748,7 @@ public class ActionBarMenu extends LinearLayout {
     private final ArrayList<View> m3VisibleChildren = new ArrayList<>();
     private final ArrayList<View> m3ManualGroupChildren = new ArrayList<>();
     private final Map<View, M3ChildState> m3ChildStates = new HashMap<>();
+    private final Map<View, Rect> m3OriginalChildBounds = new HashMap<>();
     private boolean m3ManualGroupInsideContainer;
     private float m3ChildSizeChange = 0.18f;
     private float m3OuterCornerRadius = dp(20);
@@ -936,6 +938,7 @@ public class ActionBarMenu extends LinearLayout {
     @Override
     public void onViewRemoved(View child) {
         super.onViewRemoved(child);
+        m3OriginalChildBounds.remove(child);
         if (UIStyleEngine.isMaterial3Expressive()) {
             M3ChildState state = m3ChildStates.remove(child);
             if (state != null) {
@@ -982,12 +985,17 @@ public class ActionBarMenu extends LinearLayout {
             return;
         }
 
-        int totalW = getWidth() - getPaddingLeft() - getPaddingRight();
-        int totalH = getHeight() - getPaddingTop() - getPaddingBottom();
-        if (totalW <= 0 || totalH <= 0) {
-            invalidate();
-            return;
+        // Only redistribute the native button slots, never the search field's reserved width.
+        int totalW = 0;
+        for (View child : m3VisibleChildren) {
+            Rect bounds = m3OriginalChildBounds.get(child);
+            if (bounds == null || bounds.isEmpty()) {
+                return;
+            }
+            totalW += bounds.width();
         }
+        m3VisibleChildren.sort((first, second) -> Integer.compare(
+                m3OriginalChildBounds.get(first).left, m3OriginalChildBounds.get(second).left));
 
         float[] weights = new float[visibleCount];
         float totalWeight = 0f;
@@ -1007,7 +1015,7 @@ public class ActionBarMenu extends LinearLayout {
         for (int i = 0; i < visibleCount; i++) {
             View child = m3VisibleChildren.get(i);
             M3ChildState state = m3ChildStates.get(child);
-            float base = state != null ? state.baseWeight : 1.0f;
+            float base = m3OriginalChildBounds.get(child).width();
             float progress = state != null ? state.progress : 0f;
             if (progress > 0.001f) {
                 weights[i] = base * (1f + m3ChildSizeChange * progress);
@@ -1020,25 +1028,27 @@ public class ActionBarMenu extends LinearLayout {
             totalWeight += weights[i];
         }
 
-        int curX = getPaddingLeft();
-        int topY = getPaddingTop();
+        int curX = m3OriginalChildBounds.get(m3VisibleChildren.get(0)).left;
+        int usedWidth = 0;
+        float cumulativeWeight = 0f;
 
         for (int i = 0; i < visibleCount; i++) {
             View child = m3VisibleChildren.get(i);
-            int childW;
-            if (i == visibleCount - 1) {
-                childW = (getPaddingLeft() + totalW) - curX;
-            } else {
-                childW = Math.round((weights[i] / totalWeight) * totalW);
-            }
-            childW = Math.max(dp(28), childW);
+            Rect bounds = m3OriginalChildBounds.get(child);
+            cumulativeWeight += weights[i];
+            int endWidth = i == visibleCount - 1 ? totalW : Math.round(cumulativeWeight / totalWeight * totalW);
+            int childW = endWidth - usedWidth;
 
             child.measure(
                 MeasureSpec.makeMeasureSpec(childW, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(totalH, MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(bounds.height(), MeasureSpec.EXACTLY)
             );
-            child.layout(curX, topY, curX + childW, topY + totalH);
+            child.layout(curX, bounds.top, curX + childW, bounds.bottom);
             curX += childW;
+            if (i + 1 < visibleCount) {
+                curX += m3OriginalChildBounds.get(m3VisibleChildren.get(i + 1)).left - bounds.right;
+            }
+            usedWidth = endWidth;
         }
         invalidate();
     }
@@ -1135,6 +1145,17 @@ public class ActionBarMenu extends LinearLayout {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         if (UIStyleEngine.isMaterial3Expressive()) {
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child.getVisibility() != GONE) {
+                    Rect bounds = m3OriginalChildBounds.get(child);
+                    if (bounds == null) {
+                        bounds = new Rect();
+                        m3OriginalChildBounds.put(child, bounds);
+                    }
+                    bounds.set(child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
+                }
+            }
             updateChildShapes();
             if (m3VisibleChildren.size() > 1) {
                 applyM3ChildLayouts();

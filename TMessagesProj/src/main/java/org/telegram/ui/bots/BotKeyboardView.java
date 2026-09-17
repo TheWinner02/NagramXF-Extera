@@ -32,6 +32,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
@@ -42,6 +43,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.M3ExpressiveButtonDrawable;
+import org.telegram.ui.Components.M3ExpressiveButtonGroup;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.chat.ChatInputViewsContainer;
 import org.telegram.ui.Components.inset.InAppKeyboardInsetView;
@@ -52,6 +55,7 @@ import java.util.ArrayList;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.core.lambda.Destroyable;
+import xyz.nextalone.nagram.ui.UIStyleEngine;
 
 @SuppressLint("ViewConstructor")
 public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetView, ReplaceAnimator.Callback {
@@ -67,6 +71,11 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
     private int buttonHeight;
     private final ArrayList<Button> buttonViews = new ArrayList<>();
     private final ScrollView scrollView;
+    private final boolean expressive = UIStyleEngine.isMaterial3Expressive();
+
+    private int getButtonGap() {
+        return expressive ? 2 : MIDDLE_MARGIN;
+    }
 
     public interface BotKeyboardViewDelegate {
         void didPressedButton(TL_keyboard.KeyboardButton button);
@@ -102,7 +111,7 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
     public void setPanelHeight(int height) {
         panelHeight = height;
         if (isFullSize && botButtons != null && !botButtons.rows.isEmpty()) {
-            buttonHeight = !isFullSize ? 44 : (int) Math.max(44, (panelHeight - dp(BORDER_MARGIN * 2) - (botButtons.rows.size() - 1) * dp(MIDDLE_MARGIN)) / botButtons.rows.size() / AndroidUtilities.density);
+            buttonHeight = calculateButtonHeight();
             final int newHeight = dp(buttonHeight);
             for (ListAnimator.Entry<ButtonsLayout> entry : animator) {
                 for (int a = 0, N = entry.item.getChildCount(); a < N; a++) {
@@ -149,26 +158,33 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
             frameLayout.addView(container);
 
             isFullSize = !buttons.resize;
-            buttonHeight = !isFullSize ? 44 : (int) Math.max(44, (panelHeight - dp(BORDER_MARGIN * 2) - (botButtons.rows.size() - 1) * dp(MIDDLE_MARGIN)) / botButtons.rows.size() / AndroidUtilities.density);
+            buttonHeight = calculateButtonHeight();
             for (int a = 0; a < buttons.rows.size(); a++) {
                 TL_keyboard.KeyboardButtonRow row = buttons.rows.get(a);
 
                 LinearLayout layout = new LinearLayout(getContext());
                 layout.setOrientation(LinearLayout.HORIZONTAL);
-                container.addView(layout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, buttonHeight, BORDER_MARGIN, a == 0 ? BORDER_MARGIN : MIDDLE_MARGIN, BORDER_MARGIN, a == buttons.rows.size() - 1 ? BORDER_MARGIN : 0));
+                if (expressive) {
+                    layout.setLayoutDirection(LocaleController.isRTL ? LAYOUT_DIRECTION_RTL : LAYOUT_DIRECTION_LTR);
+                }
+                container.addView(layout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, buttonHeight, BORDER_MARGIN, a == 0 ? BORDER_MARGIN : getButtonGap(), BORDER_MARGIN, a == buttons.rows.size() - 1 ? BORDER_MARGIN : 0));
 
                 float weight = 1.0f / row.buttons.size();
                 for (int b = 0; b < row.buttons.size(); b++) {
                     TL_keyboard.KeyboardButton button = row.buttons.get(b);
-                    Button textView = new Button(getContext(), button);
-                    textView.setPositionFlags(b == 0, a == 0, b == row.buttons.size() - 1, a == buttons.rows.size() - 1);
+                    Button textView = new Button(getContext(), button, container);
+                    boolean rtl = expressive && LocaleController.isRTL;
+                    textView.setPositionFlags(rtl ? b == row.buttons.size() - 1 : b == 0, a == 0,
+                            rtl ? b == 0 : b == row.buttons.size() - 1, a == buttons.rows.size() - 1);
 
                     FrameLayout frame = new FrameLayout(getContext());
                     frame.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-                    layout.addView(frame, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, weight, 0, 0, b != row.buttons.size() - 1 ? MIDDLE_MARGIN : 0, 0));
+                    layout.addView(frame, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, weight, 0, 0, b != row.buttons.size() - 1 ? getButtonGap() : 0, 0));
                     textView.setOnClickListener(v -> delegate.didPressedButton((TL_keyboard.KeyboardButton) v.getTag()));
-                    ScaleStateListAnimator.apply(textView, 0.02f, 1.5f);
+                    if (!expressive) {
+                        ScaleStateListAnimator.apply(textView, 0.02f, 1.5f);
+                    }
                     buttonViews.add(textView);
 
                     textView.updateColors();
@@ -186,10 +202,12 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
         private final ImageView icon;
         private final TL_keyboard.KeyboardButton button;
         private boolean isLeft, isTop, isRight, isBottom;
+        private final M3ExpressiveButtonGroup.ChildState expressiveState;
 
-        public Button(Context context, TL_keyboard.KeyboardButton button) {
+        public Button(Context context, TL_keyboard.KeyboardButton button, ButtonsLayout container) {
             super(context);
             this.button = button;
+            expressiveState = expressive ? new M3ExpressiveButtonGroup.ChildState(this, container::layoutExpressiveButtons) : null;
 
             textView = new SpoilersTextView(context);
             textView.allowClickSpoilers = false;
@@ -219,6 +237,36 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
             addView(icon, LayoutHelper.createFrame(12, 12, Gravity.RIGHT | Gravity.TOP, 0, 8, 8, 0));
 
             textView.setText(ssb);
+            if (expressive) {
+                textView.setGravity(Gravity.CENTER);
+                textView.setPadding(dp(7), 0, dp(7), 0);
+            }
+        }
+
+        @Override
+        protected void drawableStateChanged() {
+            super.drawableStateChanged();
+            if (expressiveState != null && expressiveState.pressed != isPressed()) {
+                expressiveState.pressed = isPressed();
+                if (isPressed()) {
+                    com.exteragram.messenger.utils.system.VibratorUtils.vibrateClick(this);
+                }
+                expressiveState.springAnimation.animateToFinalPosition(isPressed() ? 1f : 0f);
+            }
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            if (expressiveState != null) {
+                expressiveState.springAnimation.cancel();
+                expressiveState.springAnimation.setStartValue(0f);
+                expressiveState.progress = 0f;
+                expressiveState.pressed = false;
+                if (expressiveState.drawable != null) {
+                    expressiveState.drawable.setMorphProgress(0f);
+                }
+            }
+            super.onDetachedFromWindow();
         }
 
         public void setPositionFlags(boolean isLeft, boolean isTop, boolean isRight, boolean isBottom) {
@@ -238,6 +286,11 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
             int pressed = getThemedColor(Theme.key_chat_botKeyboardButtonBackgroundPressed);
             int textColor = getThemedColor(Theme.key_chat_botKeyboardButtonText);
 
+            if (expressive) {
+                textColor = getThemedColor(Theme.key_windowBackgroundWhiteBlackText);
+                color = ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundWhite), textColor, 0.05f);
+            }
+
             if (button.style != null) {
                 if (button.style.bg_primary) {
                     color = Theme.multAlpha(getThemedColor(Theme.key_botKeyboard_button_primary), 0.8f);
@@ -256,6 +309,24 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
 
             icon.setColorFilter(textColor);
             textView.setTextColor(textColor);
+            if (expressive) {
+                final float outer = dp(24), inner = dp(8), down = dp(16);
+                // The drawable takes an overlay, unlike the stock selector's full pressed fill.
+                pressed = ColorUtils.setAlphaComponent(getThemedColor(Theme.key_listSelector),
+                        Math.round(Color.alpha(getThemedColor(Theme.key_listSelector)) * 0.45f));
+                float tl = isLeft && isTop ? outer : inner;
+                float tr = isRight && isTop ? outer : inner;
+                float brRadius = isRight && isBottom ? outer : inner;
+                float bl = isLeft && isBottom ? outer : inner;
+                M3ExpressiveButtonDrawable drawable = new M3ExpressiveButtonDrawable(color, pressed,
+                        new float[]{tl, tl, tr, tr, brRadius, brRadius, bl, bl},
+                        new float[]{down, down, down, down, down, down, down, down}, 0);
+                drawable.setStroke(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_windowBackgroundWhiteGrayIcon), 80), dp(1));
+                drawable.setMorphProgress(expressiveState.progress);
+                expressiveState.drawable = drawable;
+                setBackground(drawable);
+                return;
+            }
             setBackground(Theme.createSimpleSelectorRoundRectDrawable(
                 isLeft && isTop ? br : dr,
                 isRight && isTop ? br : dr,
@@ -271,7 +342,14 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
         if (botButtons == null) {
             return 0;
         }
-        return isFullSize ? panelHeight : botButtons.rows.size() * dp(buttonHeight) + dp(BORDER_MARGIN * 2) + (botButtons.rows.size() - 1) * dp(MIDDLE_MARGIN);
+        return isFullSize ? panelHeight : botButtons.rows.size() * dp(buttonHeight) + dp(BORDER_MARGIN * 2) + (botButtons.rows.size() - 1) * dp(getButtonGap());
+    }
+
+    private int calculateButtonHeight() {
+        int minimum = expressive ? 48 : 44;
+        return !isFullSize ? minimum : (int) Math.max(minimum,
+                (panelHeight - dp(BORDER_MARGIN * 2) - (botButtons.rows.size() - 1) * dp(getButtonGap()))
+                        / botButtons.rows.size() / AndroidUtilities.density);
     }
 
     private int getThemedColor(int key) {
@@ -330,9 +408,73 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
         }
     }
 
-    private static class ButtonsLayout extends LinearLayout implements Destroyable {
+    private class ButtonsLayout extends LinearLayout implements Destroyable {
         public ButtonsLayout(Context context) {
             super(context);
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            super.onLayout(changed, left, top, right, bottom);
+            layoutExpressiveButtons();
+        }
+
+        private void layoutExpressiveButtons() {
+            if (!expressive || getWidth() <= 0) {
+                return;
+            }
+            for (int r = 0; r < getChildCount(); r++) {
+                LinearLayout row = (LinearLayout) getChildAt(r);
+                int count = row.getChildCount();
+                if (count == 0 || row.getWidth() <= 0 || row.getHeight() <= 0) {
+                    continue;
+                }
+                // Rows with the same number of buttons share column expansion, as in the settings grid.
+                float[] progress = new float[count];
+                for (int other = 0; other < getChildCount(); other++) {
+                    LinearLayout otherRow = (LinearLayout) getChildAt(other);
+                    if (otherRow.getChildCount() != count) {
+                        continue;
+                    }
+                    for (int c = 0; c < count; c++) {
+                        Button button = (Button) ((FrameLayout) otherRow.getChildAt(c)).getChildAt(0);
+                        progress[c] = Math.max(progress[c], Math.max(0f, Math.min(1f, button.expressiveState.progress)));
+                    }
+                }
+                float totalExpansion = 0f;
+                int active = 0;
+                for (float value : progress) {
+                    if (value > 0f) {
+                        totalExpansion += 0.18f * value;
+                        active++;
+                    }
+                }
+                float totalWeight = 0f;
+                for (int c = 0; c < count; c++) {
+                    progress[c] = progress[c] > 0f ? 1f + 0.18f * progress[c]
+                            : 1f - (active < count ? totalExpansion / (count - active) : 0f);
+                    totalWeight += progress[c];
+                }
+                int gap = dp(getButtonGap());
+                int available = Math.max(0, row.getWidth() - gap * (count - 1));
+                boolean rtl = row.getLayoutDirection() == LAYOUT_DIRECTION_RTL;
+                int used = 0;
+                float cumulativeWeight = 0f;
+                for (int c = 0; c < count; c++) {
+                    FrameLayout frame = (FrameLayout) row.getChildAt(c);
+                    cumulativeWeight += progress[c];
+                    int end = Math.round(available * cumulativeWeight / totalWeight);
+                    int width = end - used;
+                    int x = used + c * gap;
+                    if (rtl) {
+                        x = row.getWidth() - x - width;
+                    }
+                    frame.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                            MeasureSpec.makeMeasureSpec(row.getHeight(), MeasureSpec.EXACTLY));
+                    frame.layout(x, 0, x + width, row.getHeight());
+                    used = end;
+                }
+            }
         }
 
         @Override
