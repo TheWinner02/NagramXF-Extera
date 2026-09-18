@@ -282,4 +282,5 @@
     <string name="MainTabsBlurRadius">Intensitas buram bilah bawah</string>
     <string name="ActionBarGlassAlpha">Opasitas kaca bilah atas</string>
     <string name="ActionBarBlurRadius">Intensitas buram bilah atas</string>
+    <string name="OpenProfileByAvatar">Buka profil dengan mengetuk avatar</string>
 </resources>

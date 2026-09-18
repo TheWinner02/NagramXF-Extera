@@ -280,4 +280,5 @@
     <string name="MainTabsBlurRadius">Intensywność rozmycia dolnego paska</string>
     <string name="ActionBarGlassAlpha">Przezroczystość szkła górnego paska</string>
     <string name="ActionBarBlurRadius">Intensywność rozmycia górnego paska</string>
+    <string name="OpenProfileByAvatar">Otwórz profil po dotknięciu awatara</string>
 </resources>

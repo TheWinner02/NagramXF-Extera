@@ -279,4 +279,5 @@
     <string name="MainTabsBlurRadius">Cường độ làm mờ thanh dưới</string>
     <string name="ActionBarGlassAlpha">Độ mờ kính thanh tiêu đề trên</string>
     <string name="ActionBarBlurRadius">Cường độ làm mờ thanh trên</string>
+    <string name="OpenProfileByAvatar">Mở hồ sơ bằng cách nhấn vào ảnh đại diện</string>
 </resources>

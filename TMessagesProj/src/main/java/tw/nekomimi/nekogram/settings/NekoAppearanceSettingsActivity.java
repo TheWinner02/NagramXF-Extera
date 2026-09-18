@@ -150,6 +150,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell avatarCornersInfoRow = cellGroup.appendCell(new ConfigCellCustom("SingleCornerRadiusInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell headerDialogs = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.DialogsSettings)));
     private final AbstractConfigCell chatListPreviewRow = cellGroup.appendCell(new ConfigCellCustom("ChatListPreview", ConfigCellCustom.CUSTOM_ITEM_ChatListPreview, false));
+    private final AbstractConfigCell openProfileByAvatarRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.openProfileByAvatar));
     private final AbstractConfigCell forceSnowfallRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getForceSnowfall(), getString(R.string.ForceSnowfallInfo), getString(R.string.ForceSnowfall)));
     private final AbstractConfigCell centerActionBarTitleRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getCenterActionBarTitle(), null, getString(R.string.CenterActionBarTitleType)));
     private final AbstractConfigCell folderNameAsTitleRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getFolderNameAsTitle()));
@@ -278,6 +279,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         List<AbstractConfigCell> dialogsBlock = Arrays.asList(
                 headerDialogs,
                 chatListPreviewRow,
+                openProfileByAvatarRow,
                 forceSnowfallRow,
                 centerActionBarTitleRow,
                 folderNameAsTitleRow,

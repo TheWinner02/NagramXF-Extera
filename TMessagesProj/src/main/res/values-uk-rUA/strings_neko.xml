@@ -280,4 +280,5 @@
     <string name="MainTabsBlurRadius">Інтенсивність розмиття нижньої панелі</string>
     <string name="ActionBarGlassAlpha">Прозорість скла верхньої панелі</string>
     <string name="ActionBarBlurRadius">Інтенсивність розмиття верхньої панелі</string>
+    <string name="OpenProfileByAvatar">Відкривати профіль дотиком до аватара</string>
 </resources>

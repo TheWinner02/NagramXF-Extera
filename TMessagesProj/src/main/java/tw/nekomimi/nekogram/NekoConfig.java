@@ -131,6 +131,7 @@ public class NekoConfig {
     public static ConfigItem unlimitedFavedStickers = addConfig("UnlimitedFavoredStickers", configTypeBool, false);
     public static ConfigItem unlimitedPinnedDialogs = addConfig("UnlimitedPinnedDialogs", configTypeBool, false);
     public static ConfigItem openArchiveOnPull = addConfig("OpenArchiveOnPull", configTypeBool, false);
+    public static ConfigItem openProfileByAvatar = addConfig("OpenProfileByAvatar", configTypeBool, false);
     public static ConfigItem hideKeyboardOnChatScroll = addConfig("HideKeyboardOnChatScroll", configTypeBool, false);
     public static ConfigItem useSystemEmoji = addConfig("EmojiUseDefault", configTypeBool, false);
     public static ConfigItem rearVideoMessages = addConfig("RearVideoMessages", configTypeBool, false);

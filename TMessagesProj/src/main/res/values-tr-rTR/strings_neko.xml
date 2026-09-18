@@ -280,4 +280,5 @@
     <string name="MainTabsBlurRadius">Alt çubuk bulanıklık yoğunluğu</string>
     <string name="ActionBarGlassAlpha">Üst çubuk cam opaklığı</string>
     <string name="ActionBarBlurRadius">Üst çubuk bulanıklık yoğunluğu</string>
+    <string name="OpenProfileByAvatar">Avatara dokunarak profili aç</string>
 </resources>

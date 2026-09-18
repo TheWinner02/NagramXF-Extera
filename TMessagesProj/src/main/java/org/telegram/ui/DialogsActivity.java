@@ -8360,6 +8360,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
 
+        if (!onlySelect && NekoConfig.openProfileByAvatar.Bool() && view instanceof DialogCell) {
+            DialogCell dialogCell = (DialogCell) view;
+            if (!dialogCell.isDialogFolder() && dialogCell.isPointInsideAvatar(x, y) && !DialogObject.isEncryptedDialog(dialogId)) {
+                presentFragment(ProfileActivity.of(dialogId));
+                return;
+            }
+        }
+
         if (onlySelect) {
             if (!validateSlowModeDialog(dialogId)) {
                 return;
@@ -8994,6 +9002,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     previewActivity[0].getFragmentView().setLayoutParams(lp);
                 }
             });
+        }
+
+        if (!DialogObject.isEncryptedDialog(dialogId)) {
+            ActionBarMenuSubItem openProfileItem = new ActionBarMenuSubItem(getParentActivity(), true, false);
+            openProfileItem.setTextAndIcon(LocaleController.getString(R.string.OpenProfile), R.drawable.msg_openprofile);
+            openProfileItem.setMinimumWidth(160);
+            openProfileItem.setOnClickListener(e -> {
+                finishPreviewFragment();
+                AndroidUtilities.runOnUIThread(() -> presentFragment(ProfileActivity.of(dialogId)), 500);
+            });
+            previewMenu[0].addView(openProfileItem);
         }
 
         if (!isCommunityCell) {
