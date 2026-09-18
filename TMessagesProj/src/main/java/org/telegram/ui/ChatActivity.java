@@ -25478,9 +25478,9 @@ public class ChatActivity extends BaseFragment implements
                 if (!isTopic) {
                     scheduledMessagesCount = (Integer) args[1];
                     updateScheduledInterface(openAnimationEnded);
-                } else if (chatMode == 0) {
-//                    waitingForLoad.add(lastLoadIndex);
-//                    getMessagesController().loadMessages(dialog_id, mergeDialogId, false, 1, 0, 0, true, 0, classGuid, 2, 0, MODE_SCHEDULED, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
+                } else if (chatMode == 0 && fromCache) {
+                    waitingForLoad.add(lastLoadIndex);
+                    getMessagesController().loadMessages(dialog_id, mergeDialogId, false, 1, 0, 0, true, 0, classGuid, 2, 0, MODE_SCHEDULED, threadMessageId, replyMaxReadId, lastLoadIndex++, true);
                 }
             }
         } else if (id == NotificationCenter.diceStickersDidLoad) {

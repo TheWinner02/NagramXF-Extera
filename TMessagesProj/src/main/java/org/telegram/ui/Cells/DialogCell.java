@@ -4876,8 +4876,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         if (rightFragmentOpenedProgress > 0 && currentDialogFolderId == 0) {
             final boolean drawCounterMuted = isCounterMuted();
-            int countLeftLocal = (int) (storyParams.originalAvatarRect.left + storyParams.originalAvatarRect.width() - countWidth - dp(5f));
-            int countLeftOld =  (int) (storyParams.originalAvatarRect.left + storyParams.originalAvatarRect.width() - countWidthOld - dp(5f));
+            float counterRight = Math.min(
+                    storyParams.originalAvatarRect.right - dp(10f),
+                    dp(RightSlidingDialogContainer.getRightPaddingSize() - 12f)
+            );
+            int countLeftLocal = (int) (counterRight - countWidth - dp(BADGE_TEXT_PADDING * 2));
+            int countLeftOld = (int) (counterRight - countWidthOld - dp(BADGE_TEXT_PADDING * 2));
             int countTop = (int) (avatarImage.getImageY() + storyParams.originalAvatarRect.height() - dp(22));
             drawCounter(canvas, drawCounterMuted, countTop, countLeftLocal, countLeftOld, rightFragmentOpenedProgress, true);
         }
